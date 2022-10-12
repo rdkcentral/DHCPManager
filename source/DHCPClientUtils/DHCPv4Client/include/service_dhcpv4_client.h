@@ -50,10 +50,10 @@ typedef struct _serv_dhcp {
 int serv_dhcp_init();
 int get_dhcpc_pidfile(char *pidfile,int size);
 int dhcp_parse_vendor_info( char *options, const int length, char *ethWanMode);
-int dhcpv4_client_service_start(serv_dhcp *sd);
-int dhcpv4_client_service_stop(serv_dhcp *sd);
-int dhcpv4_client_service_restart(serv_dhcp *sd);
-int dhcpv4_client_service_renew(serv_dhcp *sd);
-int dhcpv4_client_service_release(serv_dhcp *sd);
+void dhcpv4_client_service_start(void *arg);
+void dhcpv4_client_service_stop(void *arg);
+void dhcpv4_client_service_restart(void *arg);
+void dhcpv4_client_service_renew(void *arg);
+void dhcpv4_client_service_release(void *arg);
 int dhcpv4_client_start(serv_dhcp *sd);
 int dhcpv4_client_stop(const char *ifname);

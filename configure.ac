@@ -152,6 +152,73 @@ AC_ARG_ENABLE([dropearly],
            ],
          [echo "dropearly is enable"])
 
+# Checks for DHCPServer support
+AC_ARG_ENABLE([dhcp_server_support],
+[  --enable-dhcp_server_support=val Turn on dhcp_server, val=true or false],
+[case "${enableval}" in
+  yes) dhcp_server_support=true ;;
+  no)  dhcp_server_support=false ;;
+  *) AC_MSG_ERROR([bad value ${enableval} for --enable-dhcp_server_support]) ;;
+esac],[dhcp_server_support=true])
+AM_CONDITIONAL(DHCP_SERVER_SUPPORT, test x"$dhcp_server_support" = x"true")
+
+# Checks for DHCPClient support
+AC_ARG_ENABLE([dhcp_client_support],
+[  --enable-dhcp_client_support=val Turn on dhcp_client, val=true or false],
+[case "${enableval}" in
+  yes) dhcp_client_support=true ;;
+  no)  dhcp_client_support=false ;;
+  *) AC_MSG_ERROR([bad value ${enableval} for --enable-dhcp_client_support]) ;;
+esac],[dhcp_client_support=true])
+AM_CONDITIONAL(DHCP_CLIENT_SUPPORT, test x"$dhcp_client_support" = x"true")
+
+
+# Checks for DHCPv4Server support
+AC_ARG_ENABLE([dhcpv4_server_support],
+[  --enable-dhcpv4_server_support=val Turn on dhcpv4_server, val=true or false],
+[case "${enableval}" in
+  yes) dhcpv4_server_support=true ;;
+  no)  dhcpv4_server_support=false ;;
+  *) AC_MSG_ERROR([bad value ${enableval} for --enable-dhcpv4_server_support]) ;;
+esac],[dhcpv4_server_support=true])
+AM_CONDITIONAL(DHCPV4_SERVER_SUPPORT, test x"$dhcpv4_server_support" = x"true")
+
+
+# Checks for DHCPv6Server support
+AC_ARG_ENABLE([dhcpv6_server_support],
+[  --enable-dhcpv6_server_support=val Turn on dhcpv6_server, val=true or false],
+[case "${enableval}" in
+  yes) dhcpv6_server_support=true ;;
+  no)  dhcpv6_server_support=false ;;
+  *) AC_MSG_ERROR([bad value ${enableval} for --enable-dhcpv6_server_support]) ;;
+esac],[dhcpv6_server_support=true])
+AM_CONDITIONAL(DHCPV6_SERVER_SUPPORT, test x"$dhcpv6_server_support" = x"true")
+
+
+
+# Checks for DHCPv4Client support
+AC_ARG_ENABLE([dhcpv4_client_support],
+[  --enable-dhcpv4_client_support=val Turn on dhcpv4_client, val=true or false],
+[case "${enableval}" in
+  yes) dhcpv4_client_support=true ;;
+  no)  dhcpv4_client_support=false ;;
+  *) AC_MSG_ERROR([bad value ${enableval} for --enable-dhcpv4_client_support]) ;;
+esac],[dhcpv4_client_support=true])
+AM_CONDITIONAL(DHCPV4_CLIENT_SUPPORT, test x"$dhcpv4_client_support" = x"true")
+
+
+
+# Checks for DHCPv6Client support
+AC_ARG_ENABLE([dhcpv6_client_support],
+[  --enable-dhcpv6_client_support=val Turn on dhcpv6_client, val=true or false],
+[case "${enableval}" in
+  yes) dhcpv6_client_support=true ;;
+  no)  dhcpv6_client_support=false ;;
+  *) AC_MSG_ERROR([bad value ${enableval} for --enable-dhcpv6_client_support]) ;;
+esac],[dhcpv6_client_support=true])
+AM_CONDITIONAL(DHCPV6_CLIENT_SUPPORT, test x"$dhcpv6_client_support" = x"true")
+
+
 # Checks for header files.
 AC_CHECK_HEADERS([stdlib.h string.h unistd.h])
 
@@ -168,9 +235,15 @@ AC_SUBST(SYSTEMD_LDFLAGS)
 AC_SUBST(NONROOT_CFLAGS)
 
 AC_CONFIG_FILES(
-        source/service_udhcpc/Makefile
+        source/DHCPMgrInterface/Makefile
         source/DHCPServerUtils/Makefile
+        source/DHCPServerUtils/DHCPv4Server/Makefile
+        source/DHCPServerUtils/DHCPv6Server/Makefile
+        source/DHCPServerUtils/utils/Makefile
         source/DHCPClientUtils/Makefile
+        source/DHCPClientUtils/DHCPv4Client/Makefile
+        source/DHCPClientUtils/DHCPv6Client/Makefile
+        source/DHCPMgrUtils/Makefile
         source/TR-181/board_sbapi/Makefile
         source/TR-181/middle_layer_src/Makefile
         source/TR-181/Makefile

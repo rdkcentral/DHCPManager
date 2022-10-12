@@ -75,6 +75,10 @@
 #include "cosa_drg_common.h"
 #include "cosa_apis_util.h"
 
+#ifdef DHCPV6_CLIENT_SUPPORT
+#include "service_dhcpv6_client.h"
+#endif
+
 #define MIN 60
 #define HOURS 3600
 #define DAYS 86400
@@ -84,6 +88,19 @@
 
 extern void* g_pDslhDmlAgent;
 extern ANSC_HANDLE g_Dhcpv6Object;
+
+#ifdef DHCPV6_CLIENT_SUPPORT
+extern void dhcpv6_client_service_enable();
+extern void dhcpv6_client_service_disable();
+
+int dhcpv6_client_enabled = 1;
+#endif
+
+#ifdef DHCPV6_SERVER_SUPPORT
+//extern void dhcpv6_server_init();
+int dhcpv6_server_enabled = 1;
+#endif
+
 /***********************************************************************
  IMPORTANT NOTE:
 
@@ -980,6 +997,11 @@ Client3_SetParamBoolValue
         /* save update to backup */
         pDhcpc->Cfg.bEnabled = bValue;
 
+#ifdef DHCPV6_CLIENT_SUPPORT
+        dhcpv6_client_service_enable();
+        dhcpv6_client_enabled = 1;
+#endif
+
         return TRUE;
     }
 
@@ -1023,6 +1045,12 @@ Client3_SetParamBoolValue
     }
 
     /* CcspTraceWarning(("Unsupported parameter '%s'\n", ParamName)); */
+   
+#ifdef DHCPV6_CLIENT_SUPPORT 
+    dhcpv6_client_service_disable();
+    dhcpv6_client_enabled = 0;
+#endif
+
     return FALSE;
 }
 
@@ -3783,6 +3811,11 @@ Server3_SetParamBoolValue
         {
             return FALSE;
         }
+
+#ifdef DHCPV6_SERVER_SUPPORT
+        //dhcpv6_server_init();
+        dhcpv6_server_enabled = 1;
+#endif
 
         return TRUE;
     }

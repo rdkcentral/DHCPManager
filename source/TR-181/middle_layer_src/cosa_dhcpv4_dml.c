@@ -83,6 +83,14 @@
 #include "cosa_apis_util.h"
 #include "cosa_webconfig_api.h"
 
+#ifdef DHCPV4_CLIENT_SUPPORT
+#include "service_dhcpv4_client.h"
+#endif
+
+#ifdef DHCPV4_SERVER_SUPPORT
+#include "dhcpv4_server_interface.h"
+#endif
+
 #include <syscfg/syscfg.h>
 
 extern void* g_pDslhDmlAgent;
@@ -91,6 +99,22 @@ extern ANSC_HANDLE g_Dhcpv4Object;
 extern ULONG g_currentBsUpdate;
 extern char * getRequestorString();
 extern char * getTime();
+
+//extern int serv_dhcp_init();
+//extern int serv_dhcp_deinit();
+//extern int dhcp_server_init();
+
+//extern void dhcpv4_client_service_stop(void *arg);
+//extern void dhcpv4_client_service_start(void *arg);
+
+#ifdef DHCPV4_SERVER_SUPPORT
+int dhcpv4_server_enabled = 1;
+#endif
+
+#ifdef DHCPV4_CLIENT_SUPPORT
+void *sd;
+int dhcpv4_client_enabled = 1;
+#endif
 
 ANSC_STATUS
 CosaDmlDhcpsARPing
@@ -722,6 +746,7 @@ Client_GetParamBoolValue
     }
 
     /* CcspTraceWarning(("Unsupported parameter '%s'\n", ParamName)); */
+
     return FALSE;
 }
 
@@ -1100,6 +1125,12 @@ Client_SetParamBoolValue
         /* save update to backup */
         pDhcpc->Cfg.bEnabled = bValue;
 
+#ifdef DHCPV4_CLIENT_SUPPORT
+        //serv_dhcp_init();
+        dhcpv4_client_service_start(sd);
+        dhcpv4_client_enabled = 1;
+#endif
+
         return  TRUE;
     }
 
@@ -1119,6 +1150,13 @@ Client_SetParamBoolValue
     }
 
     /* CcspTraceWarning(("Unsupported parameter '%s'\n", ParamName)); */
+
+#ifdef DHCPV4_CLIENT_SUPPORT
+//    serv_dhcp_deinit();
+    dhcpv4_client_service_stop(sd);
+    dhcpv4_client_enabled = 0;
+#endif
+
     return  FALSE;
 }
 
@@ -3472,6 +3510,7 @@ Server_GetParamBoolValue
     }
 
     /* CcspTraceWarning(("Unsupported parameter '%s'\n", ParamName)); */
+
     return FALSE;
 }
 
@@ -3681,8 +3720,18 @@ Server_SetParamBoolValue
 
         if ( returnStatus != ANSC_STATUS_SUCCESS )
         {
+
+#ifdef DHCPV4_SERVER_SUPPORT
+            //dhcp_server_deinit();
+            dhcpv4_server_enabled = 0;
+#endif
             return FALSE;
         }
+
+#ifdef DHCPV4_SERVER_SUPPORT
+        //dhcp_server_init();
+        dhcpv4_server_enabled = 1;
+#endif
 
         return TRUE;
     }

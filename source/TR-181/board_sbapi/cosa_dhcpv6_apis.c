@@ -81,16 +81,15 @@
 #include "cosa_apis_util.h"
 #include "service_dhcpv6_client.h"
 #include "ccsp_trace.h"
+#include "util.h"
 
 extern void* g_pDslhDmlAgent;
 extern ANSC_HANDLE bus_handle;
 extern char g_Subsystem[32];
 extern int executeCmd(char *cmd);
 
-static async_id_t l_sAsyncID[6];
-static pthread_t sysevent_tid_v6cli;
-static int sysevent_fd_v6cli;
-static token_t sysevent_token_v6cli;
+//static int sysevent_fd_server = 0;
+//static token_t sysevent_token_server;
 
 #define BUFF_LEN_8      8
 #define BUFF_LEN_16    16
@@ -99,8 +98,6 @@ static token_t sysevent_token_v6cli;
 #define BUFF_LEN_128  128
 #define BUFF_LEN_256  256
 
-static void *dhcpv6_client_sysevent_handler();
-void dhcpv6_client_sysevent_close();
 extern int executeCmd(char *cmd);
 
 #include "ipc_msg.h"
@@ -1109,7 +1106,10 @@ static struct {
 }g_be_ctx;
 
 static void * dhcpv6c_dbg_thrd(void * in);
-static void * dhcpv6s_dbg_thrd(void * in);
+
+#ifdef DHCPV6_SERVER_SUPPORT
+extern void * dhcpv6s_dbg_thrd(void * in);
+#endif
 
 extern COSARepopulateTableProc            g_COSARepopulateTable;
 
@@ -1546,10 +1546,11 @@ static void Utopia_Free(UtopiaContext * ctx, ULONG commit)
 /* this is test part End*/
 
 
-static ULONG                               uDhcpv6ServerPoolNum                                  = 0;
-static COSA_DML_DHCPSV6_POOL_FULL          sDhcpv6ServerPool[DHCPV6S_POOL_NUM]                   = {};
-static ULONG                               uDhcpv6ServerPoolOptionNum[DHCPV6S_POOL_NUM]          = {0};
-static COSA_DML_DHCPSV6_POOL_OPTION        sDhcpv6ServerPoolOption[DHCPV6S_POOL_NUM][DHCPV6S_POOL_OPTION_NUM] = {};
+ULONG                               uDhcpv6ServerPoolNum                                  = 0;
+COSA_DML_DHCPSV6_POOL_FULL          sDhcpv6ServerPool[DHCPV6S_POOL_NUM]                   = {};
+ULONG                               uDhcpv6ServerPoolOptionNum[DHCPV6S_POOL_NUM]          = {0};
+COSA_DML_DHCPSV6_POOL_OPTION        sDhcpv6ServerPoolOption[DHCPV6S_POOL_NUM][DHCPV6S_POOL_OPTION_NUM] = {};
+
 #if defined(MULTILAN_FEATURE)
 static char v6addr_prev[IPV6_PREF_MAXLEN] = {0};
 #endif
@@ -1559,7 +1560,7 @@ ULONG g_dhcpv6_server_type = DHCPV6_SERVER_TYPE_STATELESS;
 
 BOOL g_lan_ready = FALSE;
 BOOL g_dhcpv6_server_prefix_ready = FALSE;
-ULONG g_dhcpv6s_restart_count = 0;
+//ULONG g_dhcpv6s_restart_count = 0;
 ULONG g_dhcpv6s_refresh_count = 0;
 
 #if defined (_HUB4_PRODUCT_REQ_)
@@ -1866,9 +1867,13 @@ static int _dibbler_client_operation(char * arg);
 
 static COSA_DML_DHCPCV6_FULL  g_dhcpv6_client;
 
-static int _dibbler_server_operation(char * arg);
-void _cosa_dhcpsv6_refresh_config();
-static int CosaDmlDHCPv6sTriggerRestart(BOOL OnlyTrigger);
+#ifdef DHCPV6_SERVER_SUPPORT
+extern int _dibbler_server_operation(char * arg);
+extern void _cosa_dhcpsv6_refresh_config();
+extern int CosaDmlDHCPv6sTriggerRestart(BOOL OnlyTrigger);
+//extern int CosaDmlDhcpv6sRestartOnLanStarted(void * arg);
+#endif
+
 #define DHCPS6V_SERVER_RESTART_FIFO "/tmp/ccsp-dhcpv6-server-restart-fifo.txt"
 
 #if defined(CISCO_CONFIG_DHCPV6_PREFIX_DELEGATION) && ! defined(_CBR_PRODUCT_REQ_) && ! defined(_BCI_FEATURE_REQ)
@@ -1906,8 +1911,10 @@ CosaDmlDhcpv6SMsgHandler
     /*we start a thread to hear dhcpv6 server messages */
     if ( !mkfifo(DHCPS6V_SERVER_RESTART_FIFO, 0666) || errno == EEXIST )
     {
+	#ifdef DHCPV6_SERVER_SUPPORT
         if (pthread_create(&g_be_ctx.dbgthrds, NULL, dhcpv6s_dbg_thrd, NULL)  || pthread_detach(g_be_ctx.dbgthrds))
             CcspTraceWarning(("%s error in creating dhcpv6s_dbg_thrd\n", __FUNCTION__));
+        #endif
     }
 
     //CosaDmlStartDHCP6Client();
@@ -1955,14 +1962,24 @@ int CosaDmlDhcpv6sRestartOnLanStarted(void * arg)
     g_dhcpv6_server_prefix_ready = TRUE; // To start dibbler server while lan-statues value is 'started'
     /* we have to start the dibbler client on Box bootup even without wan-connection
      * This needs to call dibbler-stop action, before dibbler-start */
+#ifdef DHCPV6_SERVER_SUPPORT
     CosaDmlDHCPv6sTriggerRestart(FALSE);
+    //sysevent_set(sysevent_fd_server, sysevent_token_server, "dhcpv6s_trigger_restart", "0", 0);
+#endif
+
 #else
+
+#ifdef DHCPV6_SERVER_SUPPORT
     CosaDmlDHCPv6sTriggerRestart(TRUE);
+    //sysevent_set(sysevent_fd_server, sysevent_token_server, "dhcpv6s_trigger_restart", "1", 0);
+#endif
+
 #endif
     //the thread will start dibbler if need
 
     return 0;
 }
+
 #endif
 
 ANSC_STATUS
@@ -2120,8 +2137,6 @@ CosaDmlDhcpv6Init
     /*register callback function to restart dibbler-server at right time*/
     CcspTraceWarning(("%s -- %d register lan-status to event dispatcher \n", __FUNCTION__, __LINE__));
     EvtDispterRgstCallbackForEvent("lan-status", CosaDmlDhcpv6sRestartOnLanStarted, NULL);
-
-
 #endif
 
 #if defined(FEATURE_RDKB_WAN_MANAGER)
@@ -2129,9 +2144,6 @@ CosaDmlDhcpv6Init
     pthread_create(&Ipv6Handle_tid, NULL, Ipv6ModeHandler_thrd, NULL);
 #endif
 #endif
-
-    pthread_create(&sysevent_tid_v6cli, NULL, dhcpv6_client_sysevent_handler, NULL);
-    CcspTraceInfo(("%s Creating dhcpv6_client_sysevent_handler monitor thread\n", __func__));
 
     return ANSC_STATUS_SUCCESS;
 }
@@ -2431,83 +2443,6 @@ static int _prepare_client_conf(PCOSA_DML_DHCPCV6_CFG       pCfg)
 
 void _get_shell_output(FILE *fp, char * buf, int len);
 int _get_shell_output2(FILE *fp, char * dststr);
-
-void dhcpv6_client_sysevent_close()
-{
-    sysevent_rmnotification(sysevent_fd_v6cli, sysevent_token_v6cli, l_sAsyncID[0]);
-    sysevent_rmnotification(sysevent_fd_v6cli, sysevent_token_v6cli, l_sAsyncID[1]);
-    sysevent_rmnotification(sysevent_fd_v6cli, sysevent_token_v6cli, l_sAsyncID[2]);
-    sysevent_rmnotification(sysevent_fd_v6cli, sysevent_token_v6cli, l_sAsyncID[3]);
-    sysevent_rmnotification(sysevent_fd_v6cli, sysevent_token_v6cli, l_sAsyncID[4]);
-    sysevent_rmnotification(sysevent_fd_v6cli, sysevent_token_v6cli, l_sAsyncID[5]);
-    CcspTraceInfo(("%s  Removing all the sysevent notifications Before killing dhcpv6_client_sysevent_handler\n", __func__));
-
-    sysevent_close(sysevent_fd_v6cli, sysevent_token_v6cli);
-    CcspTraceInfo(("%s Closing sysevent \n", __func__));
-}
-
-static void *dhcpv6_client_sysevent_handler()
-{
-    CcspTraceInfo(("Entering %s thread\n", __func__));
-
-    sysevent_fd_v6cli = sysevent_open("127.0.0.1", SE_SERVER_WELL_KNOWN_PORT, SE_VERSION, "dhcpv6_client_handler", &sysevent_token_v6cli);
-    sysevent_set_options(sysevent_fd_v6cli, sysevent_token_v6cli, "erouter_mode-updated", TUPLE_FLAG_EVENT);
-    sysevent_setnotification(sysevent_fd_v6cli, sysevent_token_v6cli, "erouter_mode-updated", &l_sAsyncID[0]);
-    sysevent_set_options(sysevent_fd_v6cli, sysevent_token_v6cli, "phylink_wan_state", TUPLE_FLAG_EVENT);
-    sysevent_setnotification(sysevent_fd_v6cli, sysevent_token_v6cli, "phylink_wan_state", &l_sAsyncID[1]);
-    sysevent_set_options(sysevent_fd_v6cli, sysevent_token_v6cli, "current_wan_ifname", TUPLE_FLAG_EVENT);
-    sysevent_setnotification(sysevent_fd_v6cli, sysevent_token_v6cli, "current_wan_ifname", &l_sAsyncID[2]);
-    sysevent_set_options(sysevent_fd_v6cli, sysevent_token_v6cli, "bridge_mode", TUPLE_FLAG_EVENT);
-    sysevent_setnotification(sysevent_fd_v6cli, sysevent_token_v6cli, "bridge_mode", &l_sAsyncID[3]);
-    sysevent_set_options(sysevent_fd_v6cli, sysevent_token_v6cli, "dhcpv6_client-start", TUPLE_FLAG_EVENT);
-    sysevent_setnotification(sysevent_fd_v6cli, sysevent_token_v6cli, "dhcpv6_client-start", &l_sAsyncID[4]);
-    sysevent_set_options(sysevent_fd_v6cli, sysevent_token_v6cli, "dhcpv6_client-stop", TUPLE_FLAG_EVENT);
-    sysevent_setnotification(sysevent_fd_v6cli, sysevent_token_v6cli, "dhcpv6_client-stop", &l_sAsyncID[5]);
-
-    for (;;)
-    {
-       char name[BUFF_LEN_128], val[BUFF_LEN_128];
-       memset(name,0,sizeof(name));
-       memset(val,0,sizeof(val));
-       int namelen = sizeof(name);
-       int vallen  = sizeof(val);
-       int err;
-       async_id_t getnotification_id_v6cli;
-
-       err = sysevent_getnotification(sysevent_fd_v6cli, sysevent_token_v6cli, name, &namelen,
-                                      val, &vallen, &getnotification_id_v6cli);
-
-       if (err)
-       {
-            CcspTraceWarning(("sysevent_getnotification failed with error: %d %s\n", err,__FUNCTION__));
-            CcspTraceWarning(("sysevent_getnotification failed name: %s val : %s\n", name,val));
-            if ( 0 != v_secure_system("pidof syseventd")) {
-                CcspTraceWarning(("%s syseventd not running ,breaking the receive notification loop \n",__FUNCTION__));
-                break;
-            }
-       }
-       else
-       {
-            CcspTraceInfo(("%s Recieved notification event  %s\n",__FUNCTION__, name));
-            if ((!strncmp(name,"erouter_mode-updated",20)) || (!strncmp(name,"phylink_wan_state",17)) ||
-                (!strncmp(name,"current_wan_ifname",18)) || (!strncmp(name,"bridge_mode",11)))
-            {
-                dhcpv6_client_service_update();
-            }
-            else if (!strncmp(name,"dhcpv6_client-start",19))
-            {
-                dhcpv6_client_service_enable();
-            }
-            else if (!strncmp(name,"dhcpv6_client-stop",18))
-            {
-                dhcpv6_client_service_disable();
-            }
-       }
-    }
-    CcspTraceInfo(("Exiting %s thread\n", __func__));
-    dhcpv6_client_sysevent_close();
-    return NULL;
-}
 
 static int _dibbler_client_operation(char * arg)
 {
@@ -2960,7 +2895,10 @@ CosaDmlDhcpv6cRenew
 static int g_sent_option_num;
 static COSA_DML_DHCPCV6_SENT * g_sent_options;
 static int g_recv_option_num   = 0;
-static COSA_DML_DHCPCV6_RECV * g_recv_options = NULL;
+
+COSA_DML_DHCPCV6_RECV * g_recv_options = NULL;
+
+#if 0 // MOVED_TO_DHCPV6SERVER
 
 struct DHCP_TAG tagList[] =
 {
@@ -2977,6 +2915,8 @@ struct DHCP_TAG tagList[] =
     {31, "ntp-server"},
     {42, "time-zone"}
 };
+
+#endif //MOVED_TO_DHCPV6SERVER
 
 ULONG
 CosaDmlDhcpv6cGetNumberOfSentOption
@@ -3510,129 +3450,6 @@ CosaDmlDhcpv6cGetReceivedOptionCfg
     return ANSC_STATUS_SUCCESS;
 }
 
-static int CosaDmlDHCPv6sTriggerRestart(BOOL OnlyTrigger)
-{
-
-    DHCPVS_DEBUG_PRINT
-  #if defined(CISCO_CONFIG_DHCPV6_PREFIX_DELEGATION) && ! defined(DHCPV6_PREFIX_FIX)
-    UNREFERENCED_PARAMETER(OnlyTrigger);
-    commonSyseventSet("dhcpv6_server-restart", "");
-  #else
-    int fd = 0;
-    char str[32] = "restart";
-    //not restart really.we only need trigger pthread to check whether there is pending action.
-    if ( !OnlyTrigger ) {
-        g_dhcpv6s_restart_count++;
-    }
-
-    fd= open(DHCPS6V_SERVER_RESTART_FIFO, O_RDWR);
-
-    if (fd < 0)
-    {
-        DHCPVS_DEBUG_PRINT
-        DHCPMGR_LOG_INFO("open dhcpv6 server restart fifo when writing.");
-        return 1;
-    }
-    write( fd, str, sizeof(str) );
-    close(fd);
-
-  #endif
-    return 0;
-}
-
-/*SKYH4-3227 : variable to check if process is started already*/
-#if defined (_HUB4_PRODUCT_REQ_)
-    BOOL  g_dhcpv6_server_started = FALSE;
-#endif
-
-/*
- *  DHCP Server
- */
-static int _dibbler_server_operation(char * arg)
-{
-    char cmd[256] = {0};
-    ULONG Index  = 0;
-    int fd = 0;
-
-    CcspTraceInfo(("%s:%d\n",__FUNCTION__, __LINE__));
-    if (!strncmp(arg, "stop", 4))
-    {
-        /*stop the process only if it is started*/
-        #if defined (_HUB4_PRODUCT_REQ_)
-            if ( !g_dhcpv6_server_started )
-                goto EXIT;
-        #endif
-        fd = open(DHCPV6S_SERVER_PID_FILE, O_RDONLY);
-        if (fd >= 0) {
-            CcspTraceInfo(("%s:%d stop dibbler.\n",__FUNCTION__, __LINE__));
-            //DHCPMGR_LOG_INFO("%s -- %d stop", __LINE__);
-            //dibbler stop seems to be hanging intermittently with v_secure_system
-            //replacing with system call
-            //v_secure_system(SERVER_BIN " stop >/dev/null");
-            snprintf(cmd,sizeof(cmd), "%s stop >/dev/null", SERVER_BIN);
-            executeCmd(cmd);
-            close(fd);
-        }else{
-            //this should not happen.
-            CcspTraceInfo(("%s:%d No PID server is not running.\n",__FUNCTION__, __LINE__));
-            //DHCPMGR_LOG_INFO("%s -- %d server is not running. ", __LINE__);
-        }
-    }
-    else if (!strncmp(arg, "start", 5))
-    {
-        /* We need judge current config file is right or not.
-                    * There is not interface enabled. Not start
-                    * There is not valid pool. Not start.
-                */
-        CcspTraceInfo(("Dibbler Server Start %s Line (%d)\n", __FUNCTION__, __LINE__));
-        if ( !g_dhcpv6_server )
-        {
-            goto EXIT;
-        }
-
-        for ( Index = 0; Index < uDhcpv6ServerPoolNum; Index++ )
-        {
-            if ( sDhcpv6ServerPool[Index].Cfg.bEnabled )
-                if ( ( !sDhcpv6ServerPool[Index].Info.IANAPrefixes[0] ) && ( !sDhcpv6ServerPool[Index].Info.IAPDPrefixes[0] ) )
-                    break;
-        }
-        if ( Index < uDhcpv6ServerPoolNum )
-        {
-            goto EXIT;
-        }
-#ifdef FEATURE_RDKB_WAN_MANAGER
-        char prefix[64] = {0};
-        commonSyseventGet("ipv6_prefix", prefix, sizeof(prefix));
-        if (strlen(prefix) > 3)
-        {
-            g_dhcpv6_server_prefix_ready = TRUE;
-        }
-#endif
-        if (g_dhcpv6_server_prefix_ready && g_lan_ready)
-        {
-            CcspTraceInfo(("%s:%d start dibbler %d\n",__FUNCTION__, __LINE__,g_dhcpv6_server));
-            //DHCPMGR_LOG_INFO("%s -- %d start %d", __LINE__, g_dhcpv6_server);
-
-            #if defined (_HUB4_PRODUCT_REQ_)
-                g_dhcpv6_server_started = TRUE;
-            #endif
-
-            //v_secure_system(SERVER_BIN " start");
-            snprintf(cmd,sizeof(cmd), "%s start", SERVER_BIN);
-            executeCmd(cmd);
-        }
-    }
-    else if (!strncmp(arg, "restart", 7))
-    {
-        CcspTraceInfo(("%s:%d restart dibbler.\n",__FUNCTION__, __LINE__));
-        _dibbler_server_operation("stop");
-	_dibbler_server_operation("start");
-    }
-
-EXIT:
-
-    return 0;
-}
 /*
 log-level 8
 log-mode short
@@ -3688,6 +3505,9 @@ iface "eth0" {
     2018CAFE00000000020C29FFFE97FCCC ==>
     2018:CAFE:0000:0000:020C:29FF:FE97:FCCC
 */
+
+#if 0 //MOVED_TO_DHCPV6SERVER
+
 char * CosaDmlDhcpv6sGetAddressFromString(char * address){
     static char     ipv6Address[256] = {0};
     ULONG   i =0;
@@ -3734,9 +3554,12 @@ char * CosaDmlDhcpv6sGetStringFromHex(char * hexString){
     return newString;
 }
 
+#endif // MOVED_TO_DHCPV6SERVER
 
+#if 0 // MOVED_TO_DHCPV6SERVER
 /*now we have 2 threads to access __cosa_dhcpsv6_refresh_config(), one is the big thread to process datamodel, the other is dhcpv6c_dbg_thrd(void * in),
  add a lock*/
+
 void __cosa_dhcpsv6_refresh_config();
 void _cosa_dhcpsv6_refresh_config()
 {
@@ -3746,6 +3569,7 @@ void _cosa_dhcpsv6_refresh_config()
     __cosa_dhcpsv6_refresh_config();
     pthread_mutex_unlock(&mutex);
 }
+#endif // MOVED_TO_DHCPV6SERVER
 
 /*
     This function will translate DNS from flat string to dns strings by comma.
@@ -3758,6 +3582,9 @@ void _cosa_dhcpsv6_refresh_config()
     Fail when return 1
     Succeed when return 0
 */
+
+#if 0 // MOVED_TO_DHCPV6SERVER
+
 int CosaDmlDHCPv6sGetDNS(char* Dns, char* output, int outputLen)
 {
     char oneDns[64]  = {0};
@@ -3804,6 +3631,7 @@ int format_dibbler_option(char *option)
 
     return 0;
 }
+#endif // MOVED_TO_DHCPV6SERVER
 
 int remove_single_quote (char *buf)
 {
@@ -4254,6 +4082,8 @@ static int get_iapd_info(ia_pd_t *iapd)
 
 static int sysevent_fd_global = 0;
 static token_t sysevent_token_global;
+
+#if 0 // MOVED_TO_DHCPV6SERVER
 
 #ifdef _COSA_INTEL_USG_ARM_
 void __cosa_dhcpsv6_refresh_config()
@@ -5569,6 +5399,9 @@ EXIT:
 
 #endif
 
+#endif // MOVED_TO_DHCPV6SERVER
+
+#if 0 // MOVED_TO_DHCPV6SERVER
 int CosaDmlDhcpv6s_format_DNSoption( char *option )
 {
     if (option == NULL)
@@ -5583,6 +5416,8 @@ int CosaDmlDhcpv6s_format_DNSoption( char *option )
 
     return 0;
 }
+
+#endif // MOVED_TO_DHCPV6SERVER
 
 ANSC_STATUS
 CosaDmlDhcpv6sEnable
@@ -5615,8 +5450,12 @@ CosaDmlDhcpv6sEnable
        #if defined(_BCI_FEATURE_REQ)
        CcspTraceInfo(("Enable DHCPv6. Starting Dibbler-Server and Zebra Process\n"));
        #endif
+ 
+        #ifdef DHCPV6_SERVER_SUPPORT
         /* We need enable server */
         CosaDmlDHCPv6sTriggerRestart(FALSE);
+	//sysevent_set(sysevent_fd_server, sysevent_token_server, "dhcpv6s_trigger_restart", "0", 0);
+        #endif
     }
     else if ( !bEnable  )
     {
@@ -5628,7 +5467,12 @@ CosaDmlDhcpv6sEnable
        #if defined(CISCO_CONFIG_DHCPV6_PREFIX_DELEGATION) && ! defined(DHCPV6_PREFIX_FIX)
         commonSyseventSet("dhcpv6_server-stop", "");
        #else
+
+       #ifdef DHCPV6_SERVER_SUPPORT
         _dibbler_server_operation("stop");
+	//sysevent_set(sysevent_fd_server, sysevent_token_server, "dibbler_server_operation", "stop", 0);
+       #endif
+
        #endif
     }
 
@@ -5698,8 +5542,13 @@ CosaDmlDhcpv6sSetType
 
     if ( g_dhcpv6_server && bApply )
     {
+       
+#ifdef DHCPV6_SERVER_SUPPORT
         /* We need enable server */
         CosaDmlDHCPv6sTriggerRestart(FALSE);
+	//sysevent_set(sysevent_fd_server, sysevent_token_server, "dhcpv6s_trigger_restart", "0", 0);
+#endif
+
 #ifdef _HUB4_PRODUCT_REQ_
         v_secure_system("sysevent set zebra-restart");
 #endif
@@ -5829,7 +5678,10 @@ CosaDmlDhcpv6sAddPool
     SETI_INTO_UTOPIA(DHCPV6S_NAME, "", 0, "", 0, "poolnumber", uDhcpv6ServerPoolNum)
     Utopia_Free(&utctx,1);
 
+#ifdef DHCPV6_SERVER_SUPPORT
     CosaDmlDHCPv6sTriggerRestart(FALSE);
+    //sysevent_set(sysevent_fd_server, sysevent_token_server, "dhcpv6s_trigger_restart", "0", 0);
+#endif
 
     return ANSC_STATUS_SUCCESS;
 }
@@ -5895,7 +5747,10 @@ CosaDmlDhcpv6sDelPool
     SETI_INTO_UTOPIA(DHCPV6S_NAME, "", 0, "", 0, "poolnumber", uDhcpv6ServerPoolNum)
     Utopia_Free(&utctx,1);
 
+#ifdef DHCPV6_SERVER_SUPPORT
     CosaDmlDHCPv6sTriggerRestart(FALSE);
+    //sysevent_set(sysevent_fd_server, sysevent_token_server, "dhcpv6s_trigger_restart", "0", 0);
+#endif
 
     return ANSC_STATUS_SUCCESS;
 
@@ -6185,7 +6040,10 @@ CosaDmlDhcpv6sSetPoolCfg
 
     setpool_into_utopia((PUCHAR)DHCPV6S_NAME, (PUCHAR)"pool", Index, &sDhcpv6ServerPool[Index]);
 
+#ifdef DHCPV6_SERVER_SUPPORT
     CosaDmlDHCPv6sTriggerRestart(FALSE);
+    //sysevent_set(sysevent_fd_server, sysevent_token_server, "dhcpv6s_trigger_restart", "0", 0);
+#endif
 
         // Check whether static DNS got enabled or not. If enabled then we need to restart the zebra process
         if( bNeedZebraRestart )
@@ -6278,6 +6136,8 @@ ULONG   g_dhcps6v_client_num  = 0;
 PCOSA_DML_DHCPSV6_CLIENT        g_dhcps6v_client        = NULL;
 PCOSA_DML_DHCPSV6_CLIENTCONTENT g_dhcps6v_clientcontent = NULL;
 
+#if 0 // MOVED_TO_DHCPV6SERVER
+
 BOOL tagPermitted(int tag)
 {
     unsigned int i = 0;
@@ -6293,6 +6153,8 @@ BOOL tagPermitted(int tag)
     else
         return false;
 }
+
+#endif // MOVED_TO_DHCPV6SERVER
 
 /*
 file: /var/lib/dibbler/server-client.txt
@@ -7040,8 +6902,10 @@ CosaDmlDhcpv6sAddOption
             sDhcpv6ServerPoolOption[Index][Index2] = *pEntry;
             setpooloption_into_utopia((PUCHAR)DHCPV6S_NAME,(PUCHAR)"pool",Index,(PUCHAR)"option",Index2,&sDhcpv6ServerPoolOption[Index][Index2]);
 
+#ifdef DHCPV6_SERVER_SUPPORT
             CosaDmlDHCPv6sTriggerRestart(FALSE);
-
+	    //sysevent_set(sysevent_fd_server, sysevent_token_server, "dhcpv6s_trigger_restart", "0", 0);
+#endif
             return ANSC_STATUS_SUCCESS;
         }
     }
@@ -7093,7 +6957,10 @@ CosaDmlDhcpv6sDelOption
             SETI_INTO_UTOPIA(DHCPV6S_NAME, "pool", Index, "", 0, "optionnumber", uDhcpv6ServerPoolOptionNum[Index])
             Utopia_Free(&utctx,1);
 
+#ifdef DHCPV6_SERVER_SUPPORT
             CosaDmlDHCPv6sTriggerRestart(FALSE);
+            //sysevent_set(sysevent_fd_server, sysevent_token_server, "dhcpv6s_trigger_restart", "0", 0);
+#endif
 
             return ANSC_STATUS_SUCCESS;
         }
@@ -7134,7 +7001,10 @@ CosaDmlDhcpv6sSetOption
 
                     setpooloption_into_utopia((PUCHAR)DHCPV6S_NAME, (PUCHAR)"pool", Index, (PUCHAR)"option", Index2, &sDhcpv6ServerPoolOption[Index][Index2]);
 
+#ifdef DHCPV6_SERVER_SUPPORT
                     CosaDmlDHCPv6sTriggerRestart(FALSE);
+                    //sysevent_set(sysevent_fd_server, sysevent_token_server, "dhcpv6s_trigger_restart", "0", 0);
+#endif
 
                     return ANSC_STATUS_SUCCESS;
                 }
@@ -7288,92 +7158,6 @@ int dhcpv6_assign_global_ip(char * prefix, char * intfName, char * ipAddr)
     return 0;
 }
 
-
-/* Dibbler reboot need 3 conditions.
-    a get a global prefix.
-    b need brlan0 is ready
-    c need brlan0 has the link local address(this should be ready when brlan0 is ready)
-*/
-void CosaDmlDhcpv6sRebootServer()
-{
-
-    char event_value[64] = {0};
-#ifdef FEATURE_RDKB_WAN_MANAGER
-    commonSyseventGet("ipv6_prefix", event_value, sizeof(event_value));
-    if (strlen(event_value) > 3)
-    {
-        g_dhcpv6_server_prefix_ready = TRUE;
-    }
-    memset(event_value,0,sizeof(event_value));
-#endif
-    commonSyseventGet("lan-status", event_value, sizeof(event_value));
-    if ( !strncmp(event_value, "started", strlen("started") ) )
-    {
-        g_lan_ready = TRUE;
-    }
-    if (!g_dhcpv6_server_prefix_ready || !g_lan_ready)
-        return;
-#if defined (MULTILAN_FEATURE)
-    commonSyseventSet("dhcpv6s-restart", "");
-#else
-    FILE *fp = NULL;
-    int fd = 0;
-    if (g_dhcpv6s_restart_count) {
-        g_dhcpv6s_restart_count=0;
-
-        //when need stop, it's supposed the configuration file need to be updated.
-        _cosa_dhcpsv6_refresh_config();
-        CcspTraceInfo(("%s - Call _dibbler_server_operation stop\n",__FUNCTION__));
-        _dibbler_server_operation("stop");
-    }
-
-    fd = open(DHCPV6S_SERVER_PID_FILE, O_RDONLY);
-/* dibbler-server process start fix for HUB4 and ADA */
-#if defined (_HUB4_PRODUCT_REQ_)
-    FILE *fp_bin = NULL;
-    char binbuff[64] = {0};
-    fp_bin = v_secure_popen("r","ps|grep %s|grep -v grep", SERVER_BIN);
-    _get_shell_output(fp_bin, binbuff, sizeof(binbuff));
-    if ((fd < 0) || (!strstr(binbuff, SERVER_BIN))) {
-#else
-    if (fd < 0) {
-#endif
-        BOOL isBridgeMode = FALSE;
-        char out[128] = {0};
-
-/* dibbler-server process start fix for HUB4 and ADA */
-#if defined (_HUB4_PRODUCT_REQ_)
-        if(fd >= 0)
-            close(fd);
-#endif
-        /* Unchecked return value*/
-        if((ANSC_STATUS_SUCCESS == is_usg_in_bridge_mode(&isBridgeMode)) &&
-           ( TRUE == isBridgeMode ))
-            return;
-
-        //make sure it's not in a bad status
-        fp = v_secure_popen("r","busybox ps|grep %s|grep -v grep", SERVER_BIN);
-        _get_shell_output(fp, out, sizeof(out));
-        if (strstr(out, SERVER_BIN))
-        {
-            v_secure_system("kill -15 `pidof " SERVER_BIN "`");
-	    sleep(1);
-        }
-        CcspTraceInfo(("%s - Call _dibbler_server_operation start\n",__FUNCTION__));
-        _dibbler_server_operation("start");
-    } else{
-        close(fd);
-    }
-#endif
-
-    // refresh lan if we were asked to
-    if (g_dhcpv6s_refresh_count) {
-        g_dhcpv6s_refresh_count = 0;
-        v_secure_system("gw_lan_refresh");
-    }
-
-    return;
-}
 /*int calcPrefixNumber(int prefixLen, int req_prefixLen)
 int delta = 0;
 int numOfSubnets = 2;
@@ -8203,73 +7987,6 @@ void configureLTEIpv6(char* v6addr)
 #endif
 
 static void *
-dhcpv6s_dbg_thrd(void * in)
-{
-    UNREFERENCED_PARAMETER(in);
-    int v6_srvr_fifo_file_dscrptr=0;
-    char msg[1024] = {0};
-    fd_set rfds;
-    struct timeval tm;
-
-    v6_srvr_fifo_file_dscrptr = open(DHCPS6V_SERVER_RESTART_FIFO, O_RDWR);
-
-    if (v6_srvr_fifo_file_dscrptr< 0)
-    {
-        DHCPMGR_LOG_INFO("open dhcpv6 server restart fifo!!!!!");
-        goto EXIT;
-    }
-
-    while (1)
-    {
-        int retCode = 0;
-        tm.tv_sec  = 60;
-        tm.tv_usec = 0;
-
-        FD_ZERO(&rfds);
-        FD_SET(v6_srvr_fifo_file_dscrptr, &rfds);
-
-        retCode = select(v6_srvr_fifo_file_dscrptr+1, &rfds, NULL, NULL, &tm);
-        /* When return -1, it's error.
-           When return 0, it's timeout
-           When return >0, it's the number of valid fds */
-        if (retCode < 0) {
-            DHCPMGR_LOG_ERROR("dbg_thrd : select returns error " );
-
-            if (errno == EINTR)
-                continue;
-
-            DHCPVS_DEBUG_PRINT
-            CcspTraceWarning(("%s -- select(): %s", __FUNCTION__, strerror(errno)));
-            goto EXIT;
-        }
-        else if(retCode == 0 )
-            continue;
-
-        /* We need consume the data.
-	 * It's possible more than one triggering events are consumed in one time, which is expected.*/
-        if (FD_ISSET(v6_srvr_fifo_file_dscrptr, &rfds)) {
-            /* This sleep help do two things:
-             * When GUI operate too fast, it gurantees more operations combine into one;
-             * Not frequent dibbler start/stop. When do two start fast, dibbler will in bad status.
-             */
-            sleep(3);
-            memset(msg, 0, sizeof(msg));
-            read(v6_srvr_fifo_file_dscrptr, msg, sizeof(msg));
-
-            CosaDmlDhcpv6sRebootServer();
-            continue;
-        }
-    }
-
-EXIT:
-    if(v6_srvr_fifo_file_dscrptr>=0) {
-        close(v6_srvr_fifo_file_dscrptr);
-    }
-
-    return NULL;
-}
-
-static void *
 dhcpv6c_dbg_thrd(void * in)
 {
     UNREFERENCED_PARAMETER(in);
@@ -8784,7 +8501,11 @@ dhcpv6c_dbg_thrd(void * in)
                         }
 #endif
 
+                        #ifdef DHCPV6_SERVER_SUPPORT
                         CosaDmlDHCPv6sTriggerRestart(FALSE);
+                        //sysevent_set(sysevent_fd_server, sysevent_token_server, "dhcpv6s_trigger_restart", "0", 0);
+                        #endif
+
 #if defined(_COSA_BCM_ARM_) || defined(INTEL_PUMA7)
                         CcspTraceWarning((" %s dhcpv6_assign_global_ip to brlan0 \n", __FUNCTION__));
                         ret = dhcpv6_assign_global_ip(v6pref, "brlan0", globalIP);
@@ -9023,7 +8744,10 @@ dhcpv6c_dbg_thrd(void * in)
 #endif
                         g_dhcpv6_server_prefix_ready = TRUE;
 
+                        #ifdef DHCPV6_SERVER_SUPPORT
                         CosaDmlDHCPv6sTriggerRestart(FALSE);
+                        //sysevent_set(sysevent_fd_server, sysevent_token_server, "dhcpv6s_trigger_restart", "0", 0);
+                        #endif
 
                         /*We need get a global ip addres */
 #if defined(_COSA_BCM_ARM_) || defined(INTEL_PUMA7)
@@ -9320,7 +9044,11 @@ void *Ipv6ModeHandler_thrd(void *data)
                 sysevent_get(sysevent_fd, sysevent_token, "wan_ifname", tmpBuf, sizeof(tmpBuf));
                 if (strcmp(val,tmpBuf) != 0 )
                 {
+                    #ifdef DHCPV6_SERVER_SUPPORT
                     _dibbler_server_operation("stop");
+		    //sysevent_set(sysevent_fd_server, sysevent_token_server, "dibbler_server_operation", "stop", 0);
+                    #endif
+
                     addRemoteWanIpv6Route();
                 }
                 Switch_ipv6_mode(val,vallen);

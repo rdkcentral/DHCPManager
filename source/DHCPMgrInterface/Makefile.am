@@ -17,21 +17,14 @@
 # limitations under the License.
 ##########################################################################
 
-bin_PROGRAMS = udhcpc_response_handler
+noinst_LTLIBRARIES = libifl.la
 
-AM_CFLAGS = -I${PKG_CONFIG_SYSROOT_DIR}$(includedir)/dbus-1.0 -I${PKG_CONFIG_SYSROOT_DIR}$(libdir)/dbus-1.0/include
+AM_CFLAGS = -fno-exceptions -Os -Wall -Wextra
 
-AM_LDFLAGS =  -lpthread -lz -lnanomsg
+AM_LDFLAGS =  -lpthread -lccsp_common -lnanomsg
 
-udhcpc_response_handler_SOURCES = service_udhcpc.c
+libifl_la_CPPFLAGS = -I$(top_srcdir)/source/DHCPMgrInterface/include
 
-udhcpc_response_handler_LDADD =  -ltelemetry_msgsender -lulog -lsyscfg -lsysevent -ltime_conversion
+libifl_la_SOURCES = ifl_thread.c ifl_queue_impl.c ifl.c
 
-#udhcpc_response_handler_LDADD = $(top_builddir)/source/util/utils/libutopiautil.la \
-#                    $(top_builddir)/source/services/lib/libsrvmgr.la \
-#                    $(top_builddir)/source/sysevent/lib/libsysevent.la \
-#                    $(top_builddir)/source/syscfg/lib/libsyscfg.la \
-#                    $(top_builddir)/source/ulog/libulog.la \
-#                    $(top_builddir)/source/util/print_uptime/libprint_uptime.la \
-#                    -ltelemetry_msgsender
-
+libifl_la_LIBADD = -lccsp_common -lsysevent -lulog

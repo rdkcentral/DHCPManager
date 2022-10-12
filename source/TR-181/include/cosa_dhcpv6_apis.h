@@ -115,15 +115,6 @@
 #define COSA_DML_DHCPV6S_ADDR_SYSEVENT_NAME      "tr_"COSA_DML_DHCPV6_SERVER_IFNAME"_dhcpv6_server_v6addr"
 #endif
 
-#define DHCPMGR_LOG_INFO(format, ...)     \
-                              CcspTraceInfo   (("%s - "format"\n", __FUNCTION__, ##__VA_ARGS__))
-#define DHCPMGR_LOG_ERROR(format, ...)    \
-                              CcspTraceError  (("%s - "format"\n", __FUNCTION__, ##__VA_ARGS__))
-#define DHCPMGR_LOG_NOTICE(format, ...)   \
-                              CcspTraceNotice (("%s - "format"\n", __FUNCTION__, ##__VA_ARGS__))
-#define DHCPMGR_LOG_WARNING(format, ...)  \
-                              CcspTraceWarning(("%s - "format"\n", __FUNCTION__, ##__VA_ARGS__))
-
 /*
  *  DHCP Client
  */
