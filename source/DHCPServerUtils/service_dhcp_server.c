@@ -1497,7 +1497,7 @@ void get_device_props()
 int executeCmd(char *cmd)
 {
         int l_iSystem_Res;
-        l_iSystem_Res = v_secure_system("%s",cmd);
+        l_iSystem_Res = system(cmd);
     if (0 != l_iSystem_Res && ECHILD != errno)
     {
         DHCPMGR_LOG_INFO("%s command didnt execute successfully", cmd);

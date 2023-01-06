@@ -27,7 +27,6 @@ AM_LDFLAGS =
 AM_LDFLAGS += -lhal_platform
 AM_LDFLAGS += -lz
 
-AM_CPPFLAGS = -Wall -Werror
 ACLOCAL_AMFLAGS = -I m4
 hardware_platform = i686-linux-gnu
 

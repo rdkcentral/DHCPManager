@@ -25,7 +25,6 @@ AM_LDFLAGS = -ltime_conversion -lhal_plaform -lsysevent -lutapi -lhal_moca -lutc
 AM_LDFLAGS = -lwebconfig_framework
 AM_LDFLAGS = -lmsgpackc
 
-AM_CPPFLAGS = -Wall -Werror
 ACLOCAL_AMFLAGS = -I m4
 hardware_platform = i686-linux-gnu
 
