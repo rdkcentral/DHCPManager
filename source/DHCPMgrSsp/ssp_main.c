@@ -283,7 +283,7 @@ static int is_core_dump_opened(void)
     return 0;
 }
 #endif
-
+#if 0
 static bool drop_root()
 {
   appcaps.caps = NULL;
@@ -309,7 +309,7 @@ static bool drop_root()
   }
   return retval;
 }
-
+#endif
 int main(int argc, char* argv[])
 {
     BOOL                            bRunAsDaemon       = TRUE;
@@ -402,13 +402,13 @@ int main(int argc, char* argv[])
         cmd_dispatch(cmdChar);
     }
 #elif defined(_ANSC_LINUX)
-    
+#if 0
     if(!drop_root())
     {
         CcspTraceError(("drop_root function failed!\n"));
         gain_root_privilege();
     }
-
+#endif
     if ( bRunAsDaemon ) 
         daemonize();
 
