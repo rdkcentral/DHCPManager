@@ -335,7 +335,32 @@ int dnsmasq_server_start()
         }
     }
 #endif
-    return executeCmd(l_cSystemCmd);
+
+    /* Lets ignore sigchld, to prevent child process becoming zombies.
+     * Preferring to ignore sig chld instead of setting
+     * flags SA_NOCLDWAIT | SA_NOCLDSTP
+     */
+    {
+       struct sigaction sigAct;
+
+       sigAct.sa_handler = SIG_IGN;
+       sigAct.sa_flags   = 0;
+       sigemptyset (&sigAct.sa_mask);
+
+       if (-1 == sigaction (SIGCHLD, &sigAct, NULL))
+       {
+           CcspTraceError(("Failed to ignore SIGCHLD !"));
+       }
+    }
+
+    int32_t pid = fork();
+    if (pid == 0)
+    {
+	signal(SIGCHLD, SIG_DFL);
+	executeCmd(l_cSystemCmd);
+	exit(0);
+    }
+    return 0;
 }
 
 void dhcp_server_stop()
