@@ -879,6 +879,12 @@ Client3_GetParamStringValue
         return  update_pValue(pValue,pUlSize, (char*)pDhcpc->Cfg.Alias);
     }
 
+    if( AnscEqualString(ParamName, "X_RDK_LinuxInterface", TRUE) )
+    {
+        /* collect value */
+        return  update_pValue(pValue,pUlSize, (char*)pDhcpc->Cfg.Interface);
+    }
+
     if( AnscEqualString(ParamName, "Interface", TRUE) )
     {
         /* collect value */

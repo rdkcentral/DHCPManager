@@ -956,6 +956,12 @@ Client_GetParamStringValue
         return  update_pValue(pValue,pUlSize, pDhcpc->Cfg.Alias);
     }
 
+    if( AnscEqualString(ParamName, "X_RDK_LinuxInterface", TRUE))
+    {
+        /* collect value */
+        return  update_pValue(pValue,pUlSize, pDhcpc->Cfg.Interface);
+    }
+
     if( AnscEqualString(ParamName, "X_CISCO_COM_BootFileName", TRUE))
     {
         /* collect value */
