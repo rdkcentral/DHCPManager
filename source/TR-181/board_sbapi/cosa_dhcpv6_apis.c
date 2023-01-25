@@ -2961,9 +2961,7 @@ CosaDmlDhcpv6cRenew
 {
     UNREFERENCED_PARAMETER(hContext);
     UNREFERENCED_PARAMETER(ulInstanceNumber);
-
-    v_secure_system("killall -SIGUSR2 " CLIENT_BIN);
-
+    _dibbler_client_operation("restart");
     return ANSC_STATUS_SUCCESS;
 }
 
