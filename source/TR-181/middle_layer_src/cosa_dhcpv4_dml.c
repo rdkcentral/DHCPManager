@@ -1256,30 +1256,11 @@ Client_SetParamStringValue
     char*                       pString
     )
 {
-    PCOSA_DATAMODEL_DHCPV4          pDhcpv4           = (PCOSA_DATAMODEL_DHCPV4)g_Dhcpv4Object;
     PCOSA_CONTEXT_DHCPC_LINK_OBJECT pCxtLink          = (PCOSA_CONTEXT_DHCPC_LINK_OBJECT)hInsContext;
     PCOSA_DML_DHCPC_FULL            pDhcpc            = (PCOSA_DML_DHCPC_FULL)pCxtLink->hContext;
     errno_t   rc = -1;
 
     /* check the parameter name and set the corresponding value */
-    if( AnscEqualString(ParamName, "Alias", TRUE))
-    {
-        rc = STRCPY_S_NOCLOBBER(pDhcpv4->AliasOfClient, sizeof(pDhcpv4->AliasOfClient), pDhcpc->Cfg.Alias);
-        if(rc != EOK)
-        {
-            ERR_CHK(rc);
-            return FALSE;
-        }
-
-        rc = STRCPY_S_NOCLOBBER(pDhcpc->Cfg.Alias, sizeof(pDhcpc->Cfg.Alias), pString);
-        if(rc != EOK)
-        {
-            ERR_CHK(rc);
-            return FALSE;
-        }
-
-        return TRUE;
-    }
 
     if( AnscEqualString(ParamName, "X_CISCO_COM_BootFileName", TRUE))
     {
@@ -1346,60 +1327,9 @@ Client_Validate
     ULONG*                      puLength
     )
 {
-    PCOSA_DATAMODEL_DHCPV4          pDhcpv4           = (PCOSA_DATAMODEL_DHCPV4)g_Dhcpv4Object;
-    PCOSA_CONTEXT_DHCPC_LINK_OBJECT pCxtLink          = (PCOSA_CONTEXT_DHCPC_LINK_OBJECT)hInsContext;
-    PCOSA_DML_DHCPC_FULL            pDhcpc            = (PCOSA_DML_DHCPC_FULL)pCxtLink->hContext;
-    PSINGLE_LINK_ENTRY              pSListEntry       = NULL;
-    PCOSA_DML_DHCPC_FULL            pDhcpc2           = NULL;
-    BOOL                            bFound            = FALSE;
-    errno_t                         rc                = -1;
-
     UNREFERENCED_PARAMETER(puLength);
-
-    /*  only for Alias */
-    if ( pDhcpv4->AliasOfClient[0] )
-    {
-        pSListEntry           = AnscSListGetFirstEntry(&pDhcpv4->ClientList);
-        while( pSListEntry != NULL)
-        {
-            pCxtLink          = ACCESS_COSA_CONTEXT_DHCPC_LINK_OBJECT(pSListEntry);
-            pSListEntry       = AnscSListGetNextEntry(pSListEntry);
-
-            pDhcpc2 = (PCOSA_DML_DHCPC_FULL)pCxtLink->hContext;
-
-            if( DHCPV4_CLIENT_ENTRY_MATCH2(pDhcpc2->Cfg.Alias, pDhcpc->Cfg.Alias) )
-            {
-                if ( (ANSC_HANDLE)pCxtLink == hInsContext )
-                {
-                    continue;
-                }
-
-                rc = strcpy_s(pReturnParamName, *puLength,"Alias");
-                if(rc != EOK)
-                {
-                    ERR_CHK(rc);
-                    return FALSE;
-                }
-
-                bFound = TRUE;
-
-                break;
-            }
-        }
-
-        if ( bFound )
-        {
-#if COSA_DHCPV4_ROLLBACK_TEST
-            Client_Rollback(hInsContext);
-#endif
-            return FALSE;
-        }
-    }
-
-    /* some other checking */
-
-
-
+    UNREFERENCED_PARAMETER(pReturnParamName);
+    UNREFERENCED_PARAMETER(hInsContext);
 
     return TRUE;
 }
@@ -1436,7 +1366,6 @@ Client_Commit
     PCOSA_CONTEXT_DHCPC_LINK_OBJECT pCxtLink          = (PCOSA_CONTEXT_DHCPC_LINK_OBJECT)hInsContext;
     PCOSA_DML_DHCPC_FULL            pDhcpc            = (PCOSA_DML_DHCPC_FULL)pCxtLink->hContext;
     PCOSA_DATAMODEL_DHCPV4          pDhcpv4           = (PCOSA_DATAMODEL_DHCPV4)g_Dhcpv4Object;
-    errno_t   rc  = -1;
 
     if ( pCxtLink->bNew )
     {
@@ -1451,12 +1380,6 @@ Client_Commit
         else
         {
             DHCPV4_CLIENT_SET_DEFAULTVALUE(pDhcpc);
-
-            if ( pDhcpv4->AliasOfClient[0] )
-            {
-                rc = STRCPY_S_NOCLOBBER( pDhcpc->Cfg.Alias, sizeof(pDhcpc->Cfg.Alias), pDhcpv4->AliasOfClient );
-                ERR_CHK(rc);
-            }
         }
     }
     else
@@ -1469,9 +1392,7 @@ Client_Commit
         }
     }
 
-    AnscZeroMemory( pDhcpv4->AliasOfClient, sizeof(pDhcpv4->AliasOfClient) );
-
-    return returnStatus;
+      return returnStatus;
 }
 
 /**********************************************************************
@@ -1504,17 +1425,9 @@ Client_Rollback
     )
 {
     ANSC_STATUS                     returnStatus      = ANSC_STATUS_SUCCESS;
-    PCOSA_DATAMODEL_DHCPV4          pDhcpv4           = (PCOSA_DATAMODEL_DHCPV4)g_Dhcpv4Object;
     PCOSA_CONTEXT_DHCPC_LINK_OBJECT pCxtLink          = (PCOSA_CONTEXT_DHCPC_LINK_OBJECT)hInsContext;
     PCOSA_DML_DHCPC_FULL            pDhcpc            = (PCOSA_DML_DHCPC_FULL)pCxtLink->hContext;
-    errno_t    rc  = -1;
-
-    if ( pDhcpv4->AliasOfClient[0] )
-    {
-        rc = STRCPY_S_NOCLOBBER( pDhcpc->Cfg.Alias, sizeof(pDhcpc->Cfg.Alias),pDhcpv4->AliasOfClient );
-        ERR_CHK(rc);
-    }
-
+    
     if ( !pCxtLink->bNew )
     {
         CosaDmlDhcpcGetCfg( NULL, &pDhcpc->Cfg );
@@ -1523,8 +1436,6 @@ Client_Rollback
     {
         DHCPV4_CLIENT_SET_DEFAULTVALUE(pDhcpc);
     }
-
-    AnscZeroMemory( pDhcpv4->AliasOfClient, sizeof(pDhcpv4->AliasOfClient) );
 
     return returnStatus;
 }
@@ -6964,7 +6875,7 @@ Pool_Commit
         {
             DHCPV4_POOL_SET_DEFAULTVALUE(pPool);
 
-            if ( pDhcpv4->AliasOfClient[0] )
+            if ( pDhcpv4->AliasOfPool[0] )
             {
                 rc = STRCPY_S_NOCLOBBER( pPool->Cfg.Alias, sizeof(pPool->Cfg.Alias), pDhcpv4->AliasOfPool );
                 ERR_CHK(rc);

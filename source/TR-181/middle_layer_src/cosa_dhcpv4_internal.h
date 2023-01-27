@@ -156,10 +156,9 @@ COSA_CONTEXT_POOL_LINK_OBJECT, *PCOSA_CONTEXT_POOL_LINK_OBJECT;
     ULONG                           PreviousVisitTime;                                    \
     ULONG                           maxInstanceOfPool;                                    \
     CHAR                            AliasOfX_CISCO_COM_SAddr[COSA_DML_DHCPV4_ALIAS];      \
-    CHAR                            AliasOfClient[COSA_DML_DHCPV4_ALIAS];                 \
     CHAR                            AliasOfPool[COSA_DML_DHCPV4_ALIAS];                   \
     ANSC_HANDLE                     hIrepFolderDhcpv4;                                    \
-    BOOL                            syncStaticClientsTable;                                \
+    BOOL                            syncStaticClientsTable;                               \
 
 typedef  struct
 _COSA_DATAMODEL_DHCPV4

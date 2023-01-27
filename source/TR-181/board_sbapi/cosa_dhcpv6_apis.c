@@ -2198,7 +2198,7 @@ CosaDmlDhcpv6cGetEntry
     char buf[256] = {0};
     char out[256] = {0};
     errno_t rc = -1;
-
+    
     if (ulIndex)
         return ANSC_STATUS_FAILURE;
 
@@ -2208,10 +2208,6 @@ CosaDmlDhcpv6cGetEntry
         return ANSC_STATUS_FAILURE;
 
     /*Cfg members*/
-    rc = strcpy_s(buf, sizeof(buf), SYSCFG_FORMAT_DHCP6C"_alias");
-    ERR_CHK(rc);
-    memset(pEntry->Cfg.Alias, 0, sizeof(pEntry->Cfg.Alias));
-    Utopia_RawGet(&utctx,NULL,buf,(char*)pEntry->Cfg.Alias,sizeof(pEntry->Cfg.Alias));
 
     pEntry->Cfg.SuggestedT1 = pEntry->Cfg.SuggestedT2 = 0;
 
@@ -2231,6 +2227,8 @@ CosaDmlDhcpv6cGetEntry
     rc = strcpy_s((char*)pEntry->Cfg.Interface, sizeof(pEntry->Cfg.Interface), COSA_DML_DHCPV6_CLIENT_IFNAME);
     ERR_CHK(rc);
 
+    sprintf_s((char*)pEntry->Cfg.Alias, sizeof(pEntry->Cfg.Alias), "cpe-%s", pEntry->Cfg.Interface);
+    
     rc = strcpy_s(buf, sizeof(buf), SYSCFG_FORMAT_DHCP6C"_requested_options");
     ERR_CHK(rc);
     memset(pEntry->Cfg.RequestedOptions, 0, sizeof(pEntry->Cfg.RequestedOptions));
@@ -2271,20 +2269,7 @@ CosaDmlDhcpv6cGetEntry
     _get_client_duid(pEntry->Info.DUID, sizeof(pEntry->Info.DUID));
 
     Utopia_Free(&utctx,0);
-
-    /*if we don't have alias, set a default one*/
-    if (!pEntry->Cfg.Alias[0])
-    {
-        if (Utopia_Init(&utctx))
-        {
-            Utopia_RawSet(&utctx,NULL,SYSCFG_FORMAT_DHCP6C"_alias","Client1");
-            Utopia_Free(&utctx,1);
-
-            rc = STRCPY_S_NOCLOBBER((char*)pEntry->Cfg.Alias, sizeof(pEntry->Cfg.Alias), "Client1");
-            ERR_CHK(rc);
-        }
-    }
-
+    
     AnscCopyMemory(&g_dhcpv6_client, pEntry, sizeof(g_dhcpv6_client));
 
     if (pEntry->Cfg.bEnabled)

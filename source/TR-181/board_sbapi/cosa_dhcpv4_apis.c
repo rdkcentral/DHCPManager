@@ -1602,9 +1602,7 @@ CosaDmlDhcpcGetCfg
     {
         return ANSC_STATUS_FAILURE;
     }
-
-        rc = strcpy_s(pCfg->Alias, sizeof(pCfg->Alias), "eRouter");
-        ERR_CHK(rc);
+   
         pCfg->bEnabled = TRUE;
         pCfg->InstanceNumber = 1;
         if(dhcpv4c_get_ert_ifname(ifname))
@@ -1614,6 +1612,10 @@ CosaDmlDhcpcGetCfg
                 rc = strcpy_s(pCfg->Interface, sizeof(pCfg->Interface), ifname);
                 ERR_CHK(rc);
         }
+        
+        rc=sprintf_s(pCfg->Alias, sizeof(pCfg->Alias),"cpe-%s", pCfg->Interface);
+        ERR_CHK(rc);
+        
         pCfg->PassthroughEnable = TRUE;
         pCfg->PassthroughDHCPPool[0] = 0;
 

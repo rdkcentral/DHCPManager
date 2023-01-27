@@ -1175,7 +1175,6 @@ Client3_SetParamStringValue
 {
     PCOSA_CONTEXT_DHCPCV6_LINK_OBJECT pCxtLink          = (PCOSA_CONTEXT_DHCPCV6_LINK_OBJECT)hInsContext;
     PCOSA_DML_DHCPCV6_FULL            pDhcpc            = (PCOSA_DML_DHCPCV6_FULL)pCxtLink->hContext;
-    PCOSA_DATAMODEL_DHCPV6            pDhcpv6           = (PCOSA_DATAMODEL_DHCPV6)pCxtLink->hParentTable;
     errno_t rc = -1;
     int ind    = -1;
 
@@ -1191,38 +1190,11 @@ Client3_SetParamStringValue
             ERR_CHK(rc);
             return FALSE;
         }
-
+        
         return TRUE;
     }
 
     /* check the parameter name and set the corresponding value */
-    rc = strcmp_s("Alias", strlen("Alias"), ParamName , &ind);
-    ERR_CHK(rc);
-    if((ind == 0) && (rc == EOK))
-    {
-        /* save update to backup */
-        rc = STRCPY_S_NOCLOBBER(pDhcpv6->AliasOfClient, sizeof(pDhcpv6->AliasOfClient), (const char *)pDhcpc->Cfg.Alias);
-        if(rc != EOK)
-        {
-            ERR_CHK(rc);
-            return FALSE;
-        }
-
-        rc = STRCPY_S_NOCLOBBER((char *)pDhcpc->Cfg.Alias, sizeof(pDhcpc->Cfg.Alias), pString);
-        if(rc != EOK)
-        {
-            ERR_CHK(rc);
-            return FALSE;
-        }
-
-        rc = STRCPY_S_NOCLOBBER((char*)pDhcpc->Cfg.Alias, sizeof(pDhcpc->Cfg.Alias), pString);
-        if(rc != EOK)
-        {
-            ERR_CHK(rc);
-            return FALSE;
-        }
-        return TRUE;
-    }
 
     rc = strcmp_s("Interface", strlen("Interface"), ParamName , &ind);
     ERR_CHK(rc);
@@ -1239,7 +1211,6 @@ Client3_SetParamStringValue
 
         return TRUE;
     }
-
 
     /* CcspTraceWarning(("Unsupported parameter '%s'\n", ParamName)); */
     return FALSE;
@@ -1283,64 +1254,19 @@ Client3_Validate
         ULONG*                      puLength
     )
 {
-    PCOSA_DATAMODEL_DHCPV6            pDhcpv6           = (PCOSA_DATAMODEL_DHCPV6)g_Dhcpv6Object;
     PCOSA_CONTEXT_DHCPCV6_LINK_OBJECT pCxtLink          = (PCOSA_CONTEXT_DHCPCV6_LINK_OBJECT)hInsContext;
     PCOSA_DML_DHCPCV6_FULL            pDhcpc            = (PCOSA_DML_DHCPCV6_FULL)pCxtLink->hContext;
-    PSINGLE_LINK_ENTRY                pSListEntry       = NULL;
-    PCOSA_DML_DHCPCV6_FULL            pDhcpc2           = NULL;
-    BOOL                              bFound            = FALSE;
-    errno_t                           rc                = -1;
-    UNREFERENCED_PARAMETER(puLength);
-    /*  only for Alias */
-    if ( pDhcpv6->AliasOfClient[0] )
-    {
-        pSListEntry           = AnscSListGetFirstEntry(&pDhcpv6->ClientList);
-        while( pSListEntry != NULL)
-        {
-            pCxtLink          = ACCESS_COSA_CONTEXT_DHCPCV6_LINK_OBJECT(pSListEntry);
-            pSListEntry       = AnscSListGetNextEntry(pSListEntry);
-
-            pDhcpc2 = (PCOSA_DML_DHCPCV6_FULL)pCxtLink->hContext;
-
-            if( DHCPV6_CLIENT_ENTRY_MATCH2((char*)pDhcpc2->Cfg.Alias, (char*)pDhcpc->Cfg.Alias) )
-            {
-                if ( (ANSC_HANDLE)pCxtLink == hInsContext )
-                {
-                    continue;
-                }
-
-                rc = STRCPY_S_NOCLOBBER(pReturnParamName, *puLength, "Alias");
-                if(rc != EOK)
-                {
-                  ERR_CHK(rc);
-                  return FALSE;
-                }
-
-                bFound = TRUE;
-
-                break;
-            }
-        }
-
-        if ( bFound )
-        {
-#if COSA_DHCPV6_ROLLBACK_TEST
-            Client3_Rollback(hInsContext);
-#endif
-            return FALSE;
-        }
-    }
-
+    
     /* some other checking */
     if (pDhcpc->Cfg.bEnabled)
     {
         if (pDhcpc->Cfg.SuggestedT1 > pDhcpc->Cfg.SuggestedT2)
             return FALSE;
     }
-
-
-
-
+   
+   
+    UNREFERENCED_PARAMETER(pReturnParamName);
+    UNREFERENCED_PARAMETER(puLength);
     return TRUE;
 }
 
@@ -1376,7 +1302,6 @@ Client3_Commit
     PCOSA_CONTEXT_DHCPCV6_LINK_OBJECT pCxtLink          = (PCOSA_CONTEXT_DHCPCV6_LINK_OBJECT)hInsContext;
     PCOSA_DML_DHCPCV6_FULL            pDhcpc            = (PCOSA_DML_DHCPCV6_FULL)pCxtLink->hContext;
     PCOSA_DATAMODEL_DHCPV6            pDhcpv6           = (PCOSA_DATAMODEL_DHCPV6)g_Dhcpv6Object;
-    errno_t    rc = -1;
 
     if ( pCxtLink->bNew )
     {
@@ -1391,12 +1316,6 @@ Client3_Commit
         else
         {
             DHCPV6_CLIENT_SET_DEFAULTVALUE(pDhcpc);
-
-            if ( pDhcpv6->AliasOfClient[0] )
-            {
-                rc = STRCPY_S_NOCLOBBER( (char*)pDhcpc->Cfg.Alias, sizeof(pDhcpc->Cfg.Alias), pDhcpv6->AliasOfClient );
-                ERR_CHK(rc);
-            }
         }
     }
     else
@@ -1408,8 +1327,6 @@ Client3_Commit
             CosaDmlDhcpv6cGetCfg(NULL, &pDhcpc->Cfg);
         }
     }
-
-    AnscZeroMemory( pDhcpv6->AliasOfClient, sizeof(pDhcpv6->AliasOfClient) );
 
     return returnStatus;
 }
@@ -1445,15 +1362,7 @@ Client3_Rollback
 {
     ANSC_STATUS                       returnStatus      = ANSC_STATUS_SUCCESS;
     PCOSA_CONTEXT_DHCPCV6_LINK_OBJECT pCxtLink          = (PCOSA_CONTEXT_DHCPCV6_LINK_OBJECT)hInsContext;
-    PCOSA_DATAMODEL_DHCPV6            pDhcpv6           = (PCOSA_DATAMODEL_DHCPV6)g_Dhcpv6Object;
     PCOSA_DML_DHCPCV6_FULL            pDhcpc            = (PCOSA_DML_DHCPCV6_FULL)pCxtLink->hContext;
-    errno_t     rc = -1;
-
-    if ( pDhcpv6->AliasOfClient[0] )
-    {
-        rc = STRCPY_S_NOCLOBBER( (char*)pDhcpc->Cfg.Alias, sizeof(pDhcpc->Cfg.Alias), pDhcpv6->AliasOfClient );
-        ERR_CHK(rc);
-    }
 
     if ( !pCxtLink->bNew )
     {
@@ -1463,8 +1372,6 @@ Client3_Rollback
     {
         DHCPV6_CLIENT_SET_DEFAULTVALUE(pDhcpc);
     }
-
-    AnscZeroMemory( pDhcpv6->AliasOfClient, sizeof(pDhcpv6->AliasOfClient) );
 
     return returnStatus;
 }
@@ -5479,7 +5386,7 @@ Pool1_Commit
         {
             DHCPV6_POOL_SET_DEFAULTVALUE(pPool);
 
-            if ( pDhcpv6->AliasOfClient[0] )
+            if ( pDhcpv6->AliasOfPool[0] )
             {
                 rc = STRCPY_S_NOCLOBBER( (char*)pPool->Cfg.Alias, sizeof(pPool->Cfg.Alias), pDhcpv6->AliasOfPool );
                 ERR_CHK(rc);

@@ -155,7 +155,6 @@ COSA_CONTEXT_POOLV6_LINK_OBJECT, *PCOSA_CONTEXT_POOLV6_LINK_OBJECT;
     ULONG                           maxInstanceOfClient;                                  \
     ULONG                           maxInstanceOfPool;                                    \
     ANSC_HANDLE                     hIrepFolderDhcpv6;                                    \
-    CHAR                            AliasOfClient[COSA_DML_DHCPV6_ALIAS];                 \
     CHAR                            AliasOfPool[COSA_DML_DHCPV6_ALIAS];                   \
 
 typedef  struct

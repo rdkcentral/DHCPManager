@@ -177,7 +177,6 @@ CosaDhcpv6Initialize
 #ifndef FEATURE_RDKB_WAN_MANAGER
     AnscSListInitializeHeader( &pMyObject->ClientList );
     pMyObject->maxInstanceOfClient  = 0;
-    AnscZeroMemory(pMyObject->AliasOfClient, sizeof(pMyObject->AliasOfClient));
 #endif
     AnscSListInitializeHeader( &pMyObject->PoolList );
     pMyObject->maxInstanceOfPool    = 0;
