@@ -143,7 +143,6 @@ pid_t start_dhcpv4_client (dhcp_params * params,dhcp_opt_list * req_opt_list,dhc
         DBG_PRINT("%s %d: Invalid args for send_opt_list..\n", __FUNCTION__, __LINE__);
     }
 
-   // syscfg_init();
     pid_t pid = FAILURE;
 
     char mapt_mode[16] = {0};
