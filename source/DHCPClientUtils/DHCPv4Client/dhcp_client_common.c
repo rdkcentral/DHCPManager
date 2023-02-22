@@ -201,7 +201,7 @@ static int check_proc_entry_for_pid (char * name, char * args)
     FILE *fp;
     struct dirent *dent;
     bool found=false;
-    int pid, rc, p, i;
+    int pid, rc, p, i,chk_ret;
     int rval = 0;
     char processName[BUFLEN_256];
     char cmdline[512] = {0};
@@ -257,7 +257,8 @@ static int check_proc_entry_for_pid (char * name, char * args)
                         DBG_PRINT("%s %d: opening file %s\n", __FUNCTION__, __LINE__, filename);
 
                         memset (cmdline, 0, sizeof(cmdline));
-                        if (fread(cmdline, 1, sizeof(cmdline), fp) > 0)
+                        chk_ret = fread(cmdline, 1, sizeof(cmdline), fp);
+                        if (chk_ret > 0)
                         {
                             DBG_PRINT("%s %d: comparing cmdline from proc:%s with %s\n", __FUNCTION__, __LINE__, cmdline, args);
                             if (find_strstr(cmdline, sizeof(cmdline), args, strlen(args)) == SUCCESS)
