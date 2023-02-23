@@ -873,6 +873,12 @@ static int divide_ipv6_prefix(struct serv_ipv6 *si6)
         p_prefix++;
     }
 
+    if(sub_prefix_num == 0)
+    {
+        DHCPMGR_LOG_ERROR("sub prefix num is zero");
+        return -1;
+    }
+
     /*break the first sub-prefix to interface prefix for lan interface*/
     iface_prefix_num = (1 << delta_bits) / (sub_prefix_num); /*determine the iface prefix num for each sub-prefix*/
 
@@ -906,6 +912,12 @@ static int divide_ipv6_prefix(struct serv_ipv6 *si6)
 #else
         tmp_prefix++;
 #endif
+    }
+    
+    if(iface_prefix_num == 0)
+    {
+        DHCPMGR_LOG_ERROR("iface prefix num for each sub-prefix failed.");
+        return -1;
     }
 
     /*last set sub-prefix related sysevent*/
