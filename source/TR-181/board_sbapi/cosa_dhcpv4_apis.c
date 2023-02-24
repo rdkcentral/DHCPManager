@@ -1612,10 +1612,11 @@ CosaDmlDhcpcGetCfg
                 rc = strcpy_s(pCfg->Interface, sizeof(pCfg->Interface), ifname);
                 ERR_CHK(rc);
         }
-        
         rc=sprintf_s(pCfg->Alias, sizeof(pCfg->Alias),"cpe-%s", pCfg->Interface);
-        ERR_CHK(rc);
-        
+        if (rc < EOK)
+        {
+            ERR_CHK(rc);
+        }
         pCfg->PassthroughEnable = TRUE;
         pCfg->PassthroughDHCPPool[0] = 0;
 
@@ -3550,7 +3551,10 @@ int _cosa_get_dhcps_client(ULONG instancenum, UCHAR *ifName, ULONG minAddress, U
                         localtime_r(&t1, &t2);
                         rc = sprintf_s((char*)pContentEntry->pIPAddress[0].LeaseTimeRemaining, sizeof(pContentEntry->pIPAddress[0].LeaseTimeRemaining), "%d-%02d-%02dT%02d:%02d:%02dZ",
                  t2.tm_year+1900, t2.tm_mon+1, t2.tm_mday, t2.tm_hour, t2.tm_min, t2.tm_sec);
-                        ERR_CHK(rc);
+                        if (rc < EOK)
+                        {
+                            ERR_CHK(rc);
+                        }
                 }
                 if(pCt){
                         sscanf(pCt,"%lu", &t1);
@@ -3560,7 +3564,10 @@ int _cosa_get_dhcps_client(ULONG instancenum, UCHAR *ifName, ULONG minAddress, U
                                 localtime_r(&t1, &t2);
                                 rc = sprintf_s((char*)pContentEntry->pIPAddress[0].X_CISCO_COM_LeaseTimeCreation, sizeof(pContentEntry->pIPAddress[0].X_CISCO_COM_LeaseTimeCreation), "%d-%02d-%02dT%02d:%02d:%02dZ",
                      t2.tm_year+1900, t2.tm_mon+1, t2.tm_mday, t2.tm_hour, t2.tm_min, t2.tm_sec);
-                                ERR_CHK(rc);
+                                if (rc < EOK)
+                                {
+                                    ERR_CHK(rc);
+                                }
                        }
                 }else{
                      snprintf((char*)pContentEntry->pIPAddress[0].X_CISCO_COM_LeaseTimeCreation, sizeof(pContentEntry->pIPAddress[0].X_CISCO_COM_LeaseTimeCreation),"0001-01-01T00:00:00Z");
