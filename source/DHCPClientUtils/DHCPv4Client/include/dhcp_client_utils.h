@@ -89,6 +89,7 @@ int stop_udhcpc (dhcp_params * params);
 pid_t start_dhcpv6_client (dhcp_params * params);
 int stop_dhcpv6_client (dhcp_params * params);
 pid_t start_exe(char * exe, char * args);
+pid_t start_exe2(char * exe, char * args);
 pid_t return_dhcp6_client_pid ();
 pid_t get_process_pid (char * name, char * args);
 int collect_waiting_process(int pid, int timeout);
