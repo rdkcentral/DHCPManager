@@ -547,8 +547,10 @@ void CosaDmlDhcpv6sRebootServer()
     return;
 }
 
+#if defined(_XB6_PRODUCT_REQ_) && defined(_COSA_BCM_ARM_)
 static int sysevent_fd_global = 0;
 static token_t sysevent_token_global;
+#endif
 
 /*now we have 2 threads to access __cosa_dhcpsv6_refresh_config(), one is the big thread to process datamodel, the other is dhcpv6c_dbg_thrd(void * in),
  add a lock*/

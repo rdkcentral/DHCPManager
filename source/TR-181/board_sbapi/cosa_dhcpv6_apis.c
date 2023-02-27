@@ -2894,7 +2894,7 @@ CosaDmlDhcpv6cRenew
 #define SYSCFG_DHCP6C_SENT_OPTION_FORMAT "tr_dhcp6c_sent_option_%lu"
 static int g_sent_option_num;
 static COSA_DML_DHCPCV6_SENT * g_sent_options;
-static int g_recv_option_num   = 0;
+int g_recv_option_num   = 0;
 
 COSA_DML_DHCPCV6_RECV * g_recv_options = NULL;
 
