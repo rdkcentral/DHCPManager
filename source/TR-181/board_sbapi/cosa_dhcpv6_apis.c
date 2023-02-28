@@ -7310,9 +7310,10 @@ int append_interface(char* Inf_name)
 
         syscfg_get( NULL, "IPv6_Interface", buf, sizeof(buf));
 
-        strncpy(OutBuff, buf, sizeof(buf));
-        strcat(OutBuff,Inf_name);
-        strcat(OutBuff,",");
+	strncpy(OutBuff, buf, sizeof(OutBuff)-1);
+	strncat(OutBuff,Inf_name,sizeof(OutBuff)-strlen(OutBuff)-1);
+	strncat(OutBuff,",", sizeof(OutBuff)-strlen(OutBuff)-1);
+  
         syscfg_set_commit(NULL, "IPv6_Interface",OutBuff);
         return 0;
 }
