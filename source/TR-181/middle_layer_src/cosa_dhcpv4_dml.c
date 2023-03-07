@@ -580,7 +580,7 @@ Client_AddEntry
 
     /* Add into our link tree*/
     pCxtLink = (PCOSA_CONTEXT_DHCPC_LINK_OBJECT)AnscAllocateMemory( sizeof(COSA_CONTEXT_DHCPC_LINK_OBJECT) );
-    if ( !pDhcpc )
+    if ( !pCxtLink )
     {
         goto EXIT1;
     }
