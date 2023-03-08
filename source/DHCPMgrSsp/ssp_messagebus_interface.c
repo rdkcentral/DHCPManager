@@ -108,6 +108,7 @@ ssp_Mbi_MessageBusEngage
     if ( ! component_id || ! path )
     {
         CcspTraceError((" !!! ssp_Mbi_MessageBusEngage: component_id or path is NULL !!!\n"));
+        return ANSC_STATUS_FAILURE;
     }
 
     /* Connect to message bus */
