@@ -7515,7 +7515,7 @@ int handle_MocaIpv6(char *status)
         CcspTraceError(("%s PSM_Get_Record_Value2 failed for dmsb.l2net.9.Name \n",__FUNCTION__));
         return -1;
     }
-    if(!retPsmGet)
+    else
     {
         retPsmGet = CCSP_SUCCESS;
                 if(NULL == Inf_name){
@@ -7525,7 +7525,7 @@ int handle_MocaIpv6(char *status)
     }
     if(strcmp((const char*)status, "ready") == 0)
     {
-       if(( mbuf != NULL ) && ( ipv6If != NULL ) && ( Inf_name != NULL ))
+       if(( strlen(mbuf)!=0 ) && ( ipv6If != NULL ) && ( Inf_name != NULL ))
         {
             if( (strcmp(mbuf, "true") == 0) && (HomeIsolationEnable == 1))
             {
@@ -7565,10 +7565,14 @@ int handle_MocaIpv6(char *status)
     if(strcmp((const char*)status, "stopped") == 0)
     {
         if ( (strcmp(mbuf, "false") == 0) || (HomeIsolationEnable == 0))
-        {
-            if (strstr(ipv6If, Inf_name)) {
-                remove_interface(Inf_name);
-                restart_zebra = 1;
+        {   
+            if (Inf_name != NULL)
+            {
+                if (strstr(ipv6If, Inf_name))
+                {
+                    remove_interface(Inf_name);
+                    restart_zebra = 1;
+                }
             }
         }
     }
