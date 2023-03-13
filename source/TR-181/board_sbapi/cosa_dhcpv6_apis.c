@@ -7276,7 +7276,7 @@ static int interface_num = 4; // Reserving first 4 /64s for dhcp configurations
                 if(CalcIPv6Prefix(GlobalPref,pref,index)==0 )
                 return 0;
         }
-        strcat(pref,"/64");
+        strncat(pref,"/64",sizeof(pref)-strlen(pref)-1);
         CcspTraceInfo(("%s: pref %s\n", __func__, pref));
 return 1;
 
