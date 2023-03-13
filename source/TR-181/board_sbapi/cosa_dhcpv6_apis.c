@@ -7294,8 +7294,8 @@ int remove_interface(char* Inf_name)
    while((token = strtok_r(pt, ",", &pt))) {
         if(strncmp(Inf_name,token,strlen(Inf_name)))
                 {
-                        strcat(OutBuff,token);
-                        strcat(OutBuff,",");
+                        strncat(OutBuff,token,sizeof(OutBuff)-strlen(OutBuff)-1);
+                        strncat(OutBuff,",",sizeof(OutBuff)-strlen(OutBuff)-1);
                 }
    }
         syscfg_set_commit(NULL, "IPv6_Interface",OutBuff);
