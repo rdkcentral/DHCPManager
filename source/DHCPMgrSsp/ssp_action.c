@@ -239,6 +239,9 @@ ssp_cancel
     int                             nRet  = 0;
     char                            CrName[256];
     char                            CpName[256];
+    errno_t                         rc    = -1;
+    
+    
 
     if(  g_pComponent_COMMON_dhcpmgr == NULL)
     {
@@ -247,13 +250,33 @@ ssp_cancel
 
     if ( g_Subsystem[0] != 0 )
     {
-        _ansc_sprintf(CrName, "%s%s", g_Subsystem, CCSP_DBUS_INTERFACE_CR);
-        _ansc_sprintf(CpName, "%s%s", g_Subsystem, CCSP_COMPONENT_NAME_DHCPMGR);
+        rc = sprintf_s(CrName, sizeof(CrName), "%s%s", g_Subsystem, CCSP_DBUS_INTERFACE_CR);
+        if(rc < EOK)
+        {
+           ERR_CHK(rc);
+           return ANSC_STATUS_FAILURE;
+        }
+        rc = sprintf_s(CpName, sizeof(CpName), "%s%s", g_Subsystem, CCSP_COMPONENT_NAME_DHCPMGR);
+        if(rc < EOK)
+        {
+           ERR_CHK(rc);
+           return ANSC_STATUS_FAILURE;
+        }
     }
     else
     {
-        _ansc_sprintf(CrName, "%s", CCSP_DBUS_INTERFACE_CR);
-        _ansc_sprintf(CpName, "%s", CCSP_COMPONENT_NAME_DHCPMGR);
+        rc = sprintf_s(CrName, sizeof(CrName), "%s", CCSP_DBUS_INTERFACE_CR);
+        if(rc < EOK)
+        {
+           ERR_CHK(rc);
+           return ANSC_STATUS_FAILURE;
+        }
+        rc = sprintf_s(CpName, sizeof(CpName), "%s", CCSP_COMPONENT_NAME_DHCPMGR);
+        if(rc < EOK)
+        {
+           ERR_CHK(rc);
+           return ANSC_STATUS_FAILURE;
+        }
     }
     /* unregister component */
     nRet = CcspBaseIf_unregisterComponent(bus_handle, CrName, CpName );  
