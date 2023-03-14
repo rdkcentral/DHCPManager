@@ -96,6 +96,8 @@ extern ANSC_HANDLE bus_handle;
 
 int  cmd_dispatch(int  command)
 {
+  
+  errno_t rc = -1;
     switch ( command )
     {
         case    'e' :
@@ -108,11 +110,22 @@ int  cmd_dispatch(int  command)
 
                 if ( g_Subsystem[0] != 0 )
                 {
-                    _ansc_sprintf(CName, "%s%s", g_Subsystem, CCSP_COMPONENT_ID_DHCPMGR);
+                   rc = sprintf_s(CName, sizeof(CName), "%s%s", g_Subsystem, CCSP_COMPONENT_ID_DHCPMGR);
+                  if (rc < EOK)
+                  {
+                  ERR_CHK(rc);
+                  return -1;
+                  }
+                  
                 }
                 else
                 {
-                    _ansc_sprintf(CName, "%s", CCSP_COMPONENT_ID_DHCPMGR);
+                    rc = sprintf_s(CName, sizeof(CName), "%s", CCSP_COMPONENT_ID_DHCPMGR);
+                   if (rc < EOK)
+                  {
+                  ERR_CHK(rc);
+                  return -1;
+                  }
                 }
 
                 ssp_Mbi_MessageBusEngage
