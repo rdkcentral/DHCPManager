@@ -676,7 +676,12 @@ ANSC_STATUS UpdateJsonParamLegacy
          if (data != NULL)
          {
                 memset( data, 0, ( sizeof(char) * (len + 1) ));
-                fread( data, 1, len, fileRead );
+                int chk_ret = fread( data, 1, len, fileRead );
+                if(chk_ret <=0){
+                 CcspTraceWarning(("%s-%d : Failed to read the data from file \n", __FUNCTION__, __LINE__));
+                 fclose( fileRead );
+                 return ANSC_STATUS_FAILURE;
+                }
          }
          else
          {
