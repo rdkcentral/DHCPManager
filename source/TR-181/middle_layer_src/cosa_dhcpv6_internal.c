@@ -2492,9 +2492,7 @@ EXIT1:
     if ( pPoamIrepFoPoolOption   )
         pPoamIrepFoPoolOption   ->Remove((ANSC_HANDLE)pPoamIrepFoPoolOption   );
 
-    if ( pPoamIrepFoEnumPoolOption   )
-        pPoamIrepFoEnumPoolOption   ->Remove((ANSC_HANDLE)pPoamIrepFoEnumPoolOption   );
-
+    /*CID  56862  Logically dead code - goto EXIT only hit in NULL Case*/
     pPoamIrepFoDhcpv6->EnableFileSync((ANSC_HANDLE)pPoamIrepFoDhcpv6, TRUE);
 
     return returnStatus;
