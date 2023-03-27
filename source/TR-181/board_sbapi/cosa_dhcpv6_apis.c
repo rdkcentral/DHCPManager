@@ -87,6 +87,8 @@ extern void* g_pDslhDmlAgent;
 extern ANSC_HANDLE bus_handle;
 extern char g_Subsystem[32];
 extern int executeCmd(char *cmd);
+extern int g_iSyseventfd;
+extern token_t g_tSysevent_token;
 
 //static int sysevent_fd_server = 0;
 //static token_t sysevent_token_server;
@@ -2781,17 +2783,31 @@ CosaDmlDhcpv6cGetInfo
         PCOSA_DML_DHCPCV6_INFO      pInfo
     )
 {
+    int pid = -1;
+    char l_cWanState[16] = {0};
     UNREFERENCED_PARAMETER(ulInstanceNumber);
     PCOSA_DML_DHCPCV6_FULL            pDhcpc            = (PCOSA_DML_DHCPCV6_FULL)hContext;
 
     _get_client_duid(g_dhcpv6_client.Info.DUID, sizeof(pInfo->DUID));
-
     if (pDhcpc)
     {
-        if (pDhcpc->Cfg.bEnabled)
+        pid = pid_of(DHCPV6_BINARY,NULL);
+        sysevent_get(g_iSyseventfd, g_tSysevent_token, "wan-status", l_cWanState, sizeof(l_cWanState));
+
+        /* To-do:pDhcpc->Cfg.bEnabled is not properly set. */
+        /*The below commented code needs to be handled after it is properly set */
+        if (/*(pDhcpc->Cfg.bEnabled) &&*/ (pid > 0))
+        {
             g_dhcpv6_client.Info.Status = pDhcpc->Info.Status = COSA_DML_DHCP_STATUS_Enabled;
+        }
+        else if(/*(pDhcpc->Cfg.bEnabled) &&*/ (pid < 0) && (!strcmp(l_cWanState,"started")))
+        {
+            g_dhcpv6_client.Info.Status = pDhcpc->Info.Status = COSA_DML_DHCP_STATUS_Error_Misconfigured;
+        }
         else
+        {
             g_dhcpv6_client.Info.Status = pDhcpc->Info.Status = COSA_DML_DHCP_STATUS_Disabled;
+        }
     }
 
     AnscCopyMemory(pInfo,  &g_dhcpv6_client.Info, sizeof(COSA_DML_DHCPCV6_INFO));

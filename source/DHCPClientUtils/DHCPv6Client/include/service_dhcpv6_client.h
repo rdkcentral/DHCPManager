@@ -25,6 +25,14 @@
 
 extern void* g_vBus_handle;
 
+#if defined(_COSA_INTEL_XB3_ARM_) || defined(INTEL_PUMA7)
+#define DHCPV6_BINARY   "ti_dhcp6c"
+#define DHCPV6_PID_FILE "/var/run/erouter_dhcp6c.pid"
+#else
+#define DHCPV6_BINARY   "dibbler-client"
+#define DHCPV6_PID_FILE "/tmp/dibbler/client.pid"
+#endif
+
 void init_dhcpv6_client ();
 void dhcpv6_client_service_start();
 void dhcpv6_client_service_stop();

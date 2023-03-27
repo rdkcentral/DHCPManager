@@ -64,14 +64,6 @@ token_t g_tSysevent_token;
 
 extern void copy_command_output(char *, char *, int);
 
-#if defined(_COSA_INTEL_XB3_ARM_) || defined(INTEL_PUMA7)
-#define DHCPV6_BINARY   "ti_dhcp6c"
-#define DHCPV6_PID_FILE "/var/run/erouter_dhcp6c.pid"
-#else
-#define DHCPV6_BINARY   "dibbler-client"
-#define DHCPV6_PID_FILE "/tmp/dibbler/client.pid"
-#endif
-
 static inline void remove_file(char *tb_removed_file)
 {
     int l_iRemove_Res;

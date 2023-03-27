@@ -81,6 +81,7 @@
 #include "utapi/utapi_util.h"
 #include "safec_lib_common.h"
 #include "cosa_apis_util.h"
+#include "util.h"
 
 #if ( defined _COSA_SIM_ )
 
@@ -119,6 +120,8 @@
 
 #include "lm_api.h"
 #include <cjson/cJSON.h>
+extern int g_iSyseventfd;
+extern token_t g_tSysevent_token;
 
 #undef COSA_DML_DHCP_LEASES_FILE
 #undef COSA_DML_DHCP_OPTIONS_FILE
@@ -1631,15 +1634,43 @@ CosaDmlDhcpcGetInfo
         PCOSA_DML_DHCPC_INFO        pInfo
     )
 {
-    UNREFERENCED_PARAMETER(hContext);
         ULONG i;
         dhcpv4c_ip_list_t ad;
+    int pid = -1;
+    char l_cWanState[16] = {0};
+    char* pDHCPCv4_Bin = "udhcpc";
+    PCOSA_DML_DHCPC_FULL            pDhcpc            = (PCOSA_DML_DHCPC_FULL)hContext;
 
     if ( (!pInfo) || (ulInstanceNumber != 1) ){
         return ANSC_STATUS_FAILURE;
     }
-
-        pInfo->Status = COSA_DML_DHCP_STATUS_Enabled;
+    if (pDhcpc)
+    {
+#if defined(INTEL_PUMA7)
+    {
+        char udhcpflag[16] = {0};
+        syscfg_get( NULL, "UDHCPEnable", udhcpflag, sizeof(udhcpflag));
+        if(strcmp(udhcpflag,"true"))
+        {
+            pDHCPCv4_Bin = "ti_udhcpc";
+        }
+    }
+#endif
+        pid = pid_of(pDHCPCv4_Bin, (char *)pDhcpc->Cfg.Interface);
+        sysevent_get(g_iSyseventfd, g_tSysevent_token, "wan-status", l_cWanState, sizeof(l_cWanState));
+        if ((pDhcpc->Cfg.bEnabled) && (pid > 0))
+        {
+            pInfo->Status = COSA_DML_DHCP_STATUS_Enabled;
+        }
+        else if((pDhcpc->Cfg.bEnabled) && (pid < 0) && (!strcmp(l_cWanState,"started")))
+        {
+            pInfo->Status = COSA_DML_DHCP_STATUS_Error_Misconfigured;
+        }
+        else
+        {
+            pInfo->Status = COSA_DML_DHCP_STATUS_Disabled;
+        }
+    }
         dhcpv4c_get_ert_fsm_state((int*)&pInfo->DHCPStatus);
         dhcpv4c_get_ert_ip_addr((unsigned int*)&pInfo->IPAddress.Value);
         dhcpv4c_get_ert_mask((unsigned int*)&pInfo->SubnetMask.Value);
