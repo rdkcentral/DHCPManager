@@ -2066,7 +2066,7 @@ CosaDmlDcSetFactoryReset
     if (pValue == NULL || pValue[0] == '\0')
         factory_reset_mask |= FR_NONE;
     else {
-        strncpy(value, pValue, sizeof(value));
+        strncpy(value, pValue, sizeof(value)-1);
         tok = strtok_r(value, ",", &sv);
         while (tok) {
             if (strcmp("Router", tok) == 0) {
@@ -2158,12 +2158,16 @@ CosaDmlDcSetFactoryReset
         unsigned int dbValue = 0;
         FILE *pdbFile = NULL;
         char buf[128]={0};
+        int check_ret;
 #define ROUTER_RESET_COUNT_FILE "/nvram/.router_reset_count"
         pdbFile = fopen(ROUTER_RESET_COUNT_FILE, "r");
         if(pdbFile != NULL){
-            fread(buf,sizeof(buf),1,pdbFile);
+            check_ret = fread(buf,sizeof(buf),1,pdbFile);
             fclose(pdbFile);
-            dbValue = atoi(buf);
+            if (check_ret > 0)
+             {
+              dbValue = atoi(buf);
+             }
         }
         dbValue++;
         pdbFile = fopen(ROUTER_RESET_COUNT_FILE, "w+");
