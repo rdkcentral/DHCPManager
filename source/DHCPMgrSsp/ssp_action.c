@@ -190,7 +190,7 @@ ssp_engage
     ANSC_STATUS                     returnStatus                = ANSC_STATUS_SUCCESS;
     PCCC_MBI_INTERFACE              pSsdMbiIf                   = (PCCC_MBI_INTERFACE)MsgHelper_CreateCcdMbiIf((void*)bus_handle, g_Subsystem);
     char                            CrName[256];
-
+    errno_t rc = -1;
      g_pComponent_COMMON_dhcpmgr->Health = CCSP_COMMON_COMPONENT_HEALTH_Yellow;
 
     /* data model configuration */
@@ -202,11 +202,21 @@ ssp_engage
 
     if ( g_Subsystem[0] != 0 )
     {
-        _ansc_sprintf(CrName, "%s%s", g_Subsystem, CCSP_DBUS_INTERFACE_CR);
+       rc = sprintf_s(CrName,sizeof(CrName), "%s%s", g_Subsystem, CCSP_DBUS_INTERFACE_CR);
+       if (rc < EOK)
+      {
+       ERR_CHK(rc);
+       return ANSC_STATUS_FAILURE;
+      }
     }
     else
     {
-        _ansc_sprintf(CrName, "%s", CCSP_DBUS_INTERFACE_CR);
+        rc = sprintf_s(CrName,sizeof(CrName), "%s", CCSP_DBUS_INTERFACE_CR);
+        if (rc < EOK)
+      {
+       ERR_CHK(rc);
+       return ANSC_STATUS_FAILURE;
+      }
     }
 
     returnStatus =
