@@ -7154,8 +7154,8 @@ int dhcpv6_assign_global_ip(char * prefix, char * intfName, char * ipAddr)
     //00:50:56: FF:FE:  92:00:22
     _ansc_strncpy(out, pMac, 9);
     out[9] = '\0';
-    _ansc_strcat(out, "FF:FE:");
-    _ansc_strcat(out, pMac+9);
+    strncat(out, "FF:FE:",sizeof(out)-strlen(out)-1);
+    strncat(out, pMac+9,sizeof(out)-strlen(out)-1);
 
     for(k=0,j=0;out[j];j++){
         if ( out[j] == ':' )
