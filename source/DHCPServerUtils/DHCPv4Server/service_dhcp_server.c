@@ -98,8 +98,8 @@ extern void remove_file(char *);
 extern void print_file(char *);
 void get_device_props();
 extern int executeCmd(char *);
-int g_iSyseventfd;
-token_t g_tSysevent_token;
+int g_iSyseventV4fd;
+token_t g_tSyseventV4_token;
 
 extern char g_cDhcp_Lease_Time[8], g_cTime_File[64];
 extern char g_cBox_Type[8];
@@ -401,7 +401,7 @@ void dhcp_server_stop()
     wait_till_end_state("dhcp_server");
     DHCPMGR_LOG_INFO("\n dhcp server ended");
 
-    sysevent_get(g_iSyseventfd, g_tSysevent_token, "dhcp_server-status", l_cDhcp_Status, sizeof(l_cDhcp_Status));
+    sysevent_get(g_iSyseventV4fd, g_tSyseventV4_token, "dhcp_server-status", l_cDhcp_Status, sizeof(l_cDhcp_Status));
     if (!strncmp(l_cDhcp_Status, "stopped", 7))
     {
             DHCPMGR_LOG_INFO("DHCP SERVER is already stopped not doing anything");
@@ -438,14 +438,14 @@ void dhcp_server_stop()
         DHCPMGR_LOG_INFO("%s command didnt execute successfully", l_cSystemCmd);
     }
 
-    sysevent_set(g_iSyseventfd, g_tSysevent_token, "dns-status", "stopped", 0);
+    sysevent_set(g_iSyseventV4fd, g_tSyseventV4_token, "dns-status", "stopped", 0);
     v_secure_system("killall `basename dnsmasq`");
 
     if (access(PID_FILE, F_OK) == 0) {
         remove_file(PID_FILE);
     }
 
-    sysevent_set(g_iSyseventfd, g_tSysevent_token, "dhcp_server-status", "stopped", 0);
+    sysevent_set(g_iSyseventV4fd, g_tSyseventV4_token, "dhcp_server-status", "stopped", 0);
 
     memset(l_cSystemCmd, 0x00, sizeof(l_cSystemCmd));
 
@@ -454,7 +454,7 @@ void dhcp_server_stop()
     if (0 == l_iSystem_Res)
     {
         DHCPMGR_LOG_INFO("dns-server started successfully");
-        sysevent_set(g_iSyseventfd, g_tSysevent_token, "dns-status", "started", 0);
+        sysevent_set(g_iSyseventV4fd, g_tSyseventV4_token, "dns-status", "started", 0);
     }
     else
     {
@@ -495,15 +495,15 @@ int syslog_restart_request()
     int l_crestart=0;
     char l_cCurrent_PID[8] = {0};
 
-    sysevent_get(g_iSyseventfd, g_tSysevent_token,"dhcp_server-status", Dhcp_server_status, sizeof(Dhcp_server_status));
+    sysevent_get(g_iSyseventV4fd, g_tSyseventV4_token,"dhcp_server-status", Dhcp_server_status, sizeof(Dhcp_server_status));
     if(strncmp(Dhcp_server_status,"started",7))
     {
         DHCPMGR_LOG_INFO("SERVICE DHCP : Return from syslog_restart_request as the event status is not started ");
         return 0;
     }
     
-    sysevent_set(g_iSyseventfd, g_tSysevent_token, "dns-errinfo", "", 0);
-    sysevent_set(g_iSyseventfd, g_tSysevent_token, "dhcp_server_errinfo", "", 0);
+    sysevent_set(g_iSyseventV4fd, g_tSyseventV4_token, "dns-errinfo", "", 0);
+    sysevent_set(g_iSyseventV4fd, g_tSyseventV4_token, "dhcp_server_errinfo", "", 0);
     wait_till_end_state("dns");
     wait_till_end_state("dhcp_server");
 
@@ -615,7 +615,7 @@ int syslog_restart_request()
         {
             l_cRetVal=dnsmasq_server_start();
             DHCPMGR_LOG_INFO("\n dnsmasq_server_start returns %d",l_cRetVal);
-            sysevent_set(g_iSyseventfd, g_tSysevent_token, "dns-status", "started", 0);
+            sysevent_set(g_iSyseventV4fd, g_tSyseventV4_token, "dns-status", "started", 0);
         }
         else
         {
@@ -632,8 +632,8 @@ int syslog_restart_request()
             echo "   sysevent set dhcp_server-restart lan_not_restart" >> $TIME_FILE
             chmod 700 $TIME_FILE
             fi*/
-            sysevent_set(g_iSyseventfd, g_tSysevent_token, "dns-status", "started", 0);
-            sysevent_set(g_iSyseventfd, g_tSysevent_token, "dhcp_server-status", "started", 0);
+            sysevent_set(g_iSyseventV4fd, g_tSyseventV4_token, "dns-status", "started", 0);
+            sysevent_set(g_iSyseventV4fd, g_tSyseventV4_token, "dhcp_server-status", "started", 0);
         }
     }
     return 0;
@@ -660,6 +660,7 @@ int dhcp_server_start (char *input)
 
     char *l_cToken = NULL;
     errno_t safec_rc = -1;
+    int ret_se = 0;
 
     service_dhcp_init();
 
@@ -673,10 +674,10 @@ int dhcp_server_start (char *input)
         DHCPMGR_LOG_INFO("DHCP Server is disabled not proceeding further");
         dhcp_server_stop();
         remove_file("/var/tmp/lan_not_restart");
-        sysevent_set(g_iSyseventfd, g_tSysevent_token,
+        sysevent_set(g_iSyseventV4fd, g_tSyseventV4_token,
                                  "dhcp_server-status", "error", 0);
 
-        sysevent_set(g_iSyseventfd, g_tSysevent_token,
+        sysevent_set(g_iSyseventV4fd, g_tSyseventV4_token,
                                  "dhcp_server-errinfo", "dhcp server is disabled by configuration", 0);
         return 0;
     }
@@ -698,7 +699,8 @@ int dhcp_server_start (char *input)
 #endif
 
     //LAN Status DHCP
-    sysevent_get(g_iSyseventfd, g_tSysevent_token, "lan_status-dhcp", l_cLanStatusDhcp, sizeof(l_cLanStatusDhcp));
+    ret_se = sysevent_get(g_iSyseventV4fd, g_tSyseventV4_token, "lan_status-dhcp", l_cLanStatusDhcp, sizeof(l_cLanStatusDhcp));
+    DHCPMGR_LOG_INFO("SERVICE DHCP: FD: %d (%p) | value: %s | ret: %d", g_iSyseventV4fd, &g_iSyseventV4fd, l_cLanStatusDhcp, ret_se);
     if (strncmp(l_cLanStatusDhcp, "started", 7))
     {
         DHCPMGR_LOG_INFO("lan_status-dhcp is not started return without starting DHCP server");
@@ -706,18 +708,18 @@ int dhcp_server_start (char *input)
         return 0;
     }
 
-    sysevent_get(g_iSyseventfd, g_tSysevent_token, "dhcp_server-progress", l_cDhcp_Server_Prog, sizeof(l_cDhcp_Server_Prog));
+    sysevent_get(g_iSyseventV4fd, g_tSyseventV4_token, "dhcp_server-progress", l_cDhcp_Server_Prog, sizeof(l_cDhcp_Server_Prog));
     while((!(strncmp(l_cDhcp_Server_Prog, "inprogress", 10))) && (dhcp_server_progress_count < 5))
     {
         DHCPMGR_LOG_INFO("SERVICE DHCP : dhcp_server-progress is inprogress , waiting... ");
         sleep(2);
-        sysevent_get(g_iSyseventfd, g_tSysevent_token, "dhcp_server-progress", l_cDhcp_Server_Prog, sizeof(l_cDhcp_Server_Prog));
+        sysevent_get(g_iSyseventV4fd, g_tSyseventV4_token, "dhcp_server-progress", l_cDhcp_Server_Prog, sizeof(l_cDhcp_Server_Prog));
         dhcp_server_progress_count++;
     }
 
-    sysevent_set(g_iSyseventfd, g_tSysevent_token, "dhcp_server-progress", "inprogress", 0);
+    sysevent_set(g_iSyseventV4fd, g_tSyseventV4_token, "dhcp_server-progress", "inprogress", 0);
     DHCPMGR_LOG_INFO("SERVICE DHCP : dhcp_server-progress is set to inProgress from dhcp_server_start ");
-    sysevent_set(g_iSyseventfd, g_tSysevent_token, "dhcp_server-errinfo", "", 0);
+    sysevent_set(g_iSyseventV4fd, g_tSyseventV4_token, "dhcp_server-errinfo", "", 0);
 
     strncpy(l_cDhcp_Tmp_Conf, "/tmp/dnsmasq.conf.orig", sizeof(l_cDhcp_Tmp_Conf));
     if (access(DHCP_CONF, F_OK) == 0) {
@@ -814,13 +816,13 @@ int dhcp_server_start (char *input)
     v_secure_system("killall -HUP `basename dnsmasq`");
     if (FALSE == l_bRestart)
     {
-        sysevent_set(g_iSyseventfd, g_tSysevent_token, "dhcp_server-status", "started", 0);
-        sysevent_set(g_iSyseventfd, g_tSysevent_token, "dhcp_server-progress", "completed", 0);
+        sysevent_set(g_iSyseventV4fd, g_tSyseventV4_token, "dhcp_server-status", "started", 0);
+        sysevent_set(g_iSyseventV4fd, g_tSyseventV4_token, "dhcp_server-progress", "completed", 0);
         remove_file("/var/tmp/lan_not_restart");
         return 0;
     }
 
-    sysevent_set(g_iSyseventfd, g_tSysevent_token, "dns-status", "stopped", 0);
+    sysevent_set(g_iSyseventV4fd, g_tSyseventV4_token, "dns-status", "stopped", 0);
     v_secure_system("kill -KILL `pidof dnsmasq`");
     if (access(PID_FILE, F_OK) == 0)
     {
@@ -846,7 +848,7 @@ int dhcp_server_start (char *input)
         DHCPMGR_LOG_INFO("kill dnsmasq with SIGKILL if its still running ");
         v_secure_system("kill -KILL `pidof dnsmasq`");
     }
-    sysevent_get(g_iSyseventfd, g_tSysevent_token,
+    sysevent_get(g_iSyseventV4fd, g_tSyseventV4_token,
                          "bridge_mode", l_cBridge_Mode,
                          sizeof(l_cBridge_Mode));
 
@@ -862,8 +864,8 @@ int dhcp_server_start (char *input)
         {
             DHCPMGR_LOG_INFO("%s command didnt execute successfully", l_cSystemCmd);
         }
-        sysevent_set(g_iSyseventfd, g_tSysevent_token, "dhcp_server-status", "stopped", 0);
-        sysevent_set(g_iSyseventfd, g_tSysevent_token, "dhcp_server-progress", "completed", 0);
+        sysevent_set(g_iSyseventV4fd, g_tSyseventV4_token, "dhcp_server-status", "stopped", 0);
+        sysevent_set(g_iSyseventV4fd, g_tSyseventV4_token, "dhcp_server-progress", "completed", 0);
         remove_file("/var/tmp/lan_not_restart");
         return 0;
     }
@@ -915,8 +917,8 @@ int dhcp_server_start (char *input)
     chmod 700 $TIME_FILE
     fi*/
 
-    sysevent_get(g_iSyseventfd, g_tSysevent_token, "system_psm_mode", l_cPsm_Mode, sizeof(l_cPsm_Mode));
-    sysevent_get(g_iSyseventfd, g_tSysevent_token, "start-misc", l_cStart_Misc, sizeof(l_cStart_Misc));
+    sysevent_get(g_iSyseventV4fd, g_tSyseventV4_token, "system_psm_mode", l_cPsm_Mode, sizeof(l_cPsm_Mode));
+    sysevent_get(g_iSyseventV4fd, g_tSyseventV4_token, "start-misc", l_cStart_Misc, sizeof(l_cStart_Misc));
     if (strcmp(l_cPsm_Mode, "1")) //PSM Mode is Not 1
     {
         if ((access("/var/tmp/lan_not_restart", F_OK) == -1 && errno == ENOENT) &&
@@ -986,9 +988,9 @@ int dhcp_server_start (char *input)
         DHCPMGR_LOG_INFO("Xfinityhome service is not UP yet");
     }
 
-    sysevent_set(g_iSyseventfd, g_tSysevent_token, "dns-status", "started", 0);
-    sysevent_set(g_iSyseventfd, g_tSysevent_token, "dhcp_server-status", "started", 0);
-    sysevent_set(g_iSyseventfd, g_tSysevent_token, "dhcp_server-progress", "completed", 0);
+    sysevent_set(g_iSyseventV4fd, g_tSyseventV4_token, "dns-status", "started", 0);
+    sysevent_set(g_iSyseventV4fd, g_tSyseventV4_token, "dhcp_server-status", "started", 0);
+    sysevent_set(g_iSyseventV4fd, g_tSyseventV4_token, "dhcp_server-progress", "completed", 0);
     print_with_uptime("DHCP SERVICE :dhcp_server-progress_is_set_to_completed:");
     DHCPMGR_LOG_INFO("RDKB_DNS_INFO is : -------  resolv_conf_dump  -------");
     print_file(RESOLV_CONF);
@@ -1082,7 +1084,7 @@ void resync_to_nonvol(char *RemPools)
 	{
 	    memset(Pool_Values,0,sizeof(Pool_Values[0][0])*6*16);
 		snprintf(sg_buff,sizeof(sg_buff),"dhcp_server_%d_ipv4inst",atoi(LOAD_POOLS[iter]));
-		sysevent_get(g_iSyseventfd, g_tSysevent_token, sg_buff, CUR_IPV4, sizeof(CUR_IPV4));
+		sysevent_get(g_iSyseventV4fd, g_tSyseventV4_token, sg_buff, CUR_IPV4, sizeof(CUR_IPV4));
 
 
 		//psmcli to get all the details
@@ -1106,27 +1108,27 @@ void resync_to_nonvol(char *RemPools)
         //enabled
 		memset(sg_buff,0,sizeof(sg_buff));
 		snprintf(sg_buff,sizeof(sg_buff),"dhcp_server_%s_enabled",LOAD_POOLS[iter]);
-		sysevent_set(g_iSyseventfd, g_tSysevent_token, sg_buff,Pool_Values[0], 0);
+		sysevent_set(g_iSyseventV4fd, g_tSyseventV4_token, sg_buff,Pool_Values[0], 0);
 		//IPInterface
 		memset(sg_buff,0,sizeof(sg_buff));
 		snprintf(sg_buff,sizeof(sg_buff),"dhcp_server_%s_ipv4inst",LOAD_POOLS[iter]);
-		sysevent_set(g_iSyseventfd, g_tSysevent_token, sg_buff,Pool_Values[1], 0);
+		sysevent_set(g_iSyseventV4fd, g_tSyseventV4_token, sg_buff,Pool_Values[1], 0);
 		//MinAddress
 		memset(sg_buff,0,sizeof(sg_buff));
 		snprintf(sg_buff,sizeof(sg_buff),"dhcp_server_%s_startaddr",LOAD_POOLS[iter]);
-		sysevent_set(g_iSyseventfd, g_tSysevent_token, sg_buff,Pool_Values[2], 0);
+		sysevent_set(g_iSyseventV4fd, g_tSyseventV4_token, sg_buff,Pool_Values[2], 0);
 		//MaxAddress
 		memset(sg_buff,0,sizeof(sg_buff));
 		snprintf(sg_buff,sizeof(sg_buff),"dhcp_server_%s_endaddr",LOAD_POOLS[iter]);
-		sysevent_set(g_iSyseventfd, g_tSysevent_token, sg_buff,Pool_Values[3], 0);
+		sysevent_set(g_iSyseventV4fd, g_tSyseventV4_token, sg_buff,Pool_Values[3], 0);
 		//SubnetMask
 		memset(sg_buff,0,sizeof(sg_buff));
 		snprintf(sg_buff,sizeof(sg_buff),"dhcp_server_%s_subnet",LOAD_POOLS[iter]);
-		sysevent_set(g_iSyseventfd, g_tSysevent_token, sg_buff,Pool_Values[4], 0);
+		sysevent_set(g_iSyseventV4fd, g_tSyseventV4_token, sg_buff,Pool_Values[4], 0);
 		//LeaseTime
 		memset(sg_buff,0,sizeof(sg_buff));
 		snprintf(sg_buff,sizeof(sg_buff),"dhcp_server_%s_leasetime",LOAD_POOLS[iter]);
-		sysevent_set(g_iSyseventfd, g_tSysevent_token, sg_buff,Pool_Values[5], 0);
+		sysevent_set(g_iSyseventV4fd, g_tSyseventV4_token, sg_buff,Pool_Values[5], 0);
 	}
 	if(REM_POOLS_cnt > 0)
 	{
@@ -1134,7 +1136,7 @@ void resync_to_nonvol(char *RemPools)
 	    {
 			memset(Pool_Values,0,sizeof(Pool_Values[0][0])*6*16);
  		    snprintf(sg_buff,sizeof(sg_buff),"dhcp_server_%d_ipv4inst",atoi(REM_POOLS[iter]));
-		    sysevent_get(g_iSyseventfd, g_tSysevent_token, sg_buff, CUR_IPV4, sizeof(CUR_IPV4));
+		    sysevent_get(g_iSyseventV4fd, g_tSyseventV4_token, sg_buff, CUR_IPV4, sizeof(CUR_IPV4));
 
 
 		//psmcli to get all the details
@@ -1153,41 +1155,41 @@ void resync_to_nonvol(char *RemPools)
 		    {
                         memset(sg_buff,0,sizeof(sg_buff));
                         snprintf(sg_buff, sizeof(sg_buff), "dhcp_server_%s-ipv4async", REM_POOLS[iter]);
-                        sysevent_get(g_iSyseventfd, g_tSysevent_token, sg_buff,l_sAsyncString, sizeof(l_sAsyncString));
+                        sysevent_get(g_iSyseventV4fd, g_tSyseventV4_token, sg_buff,l_sAsyncString, sizeof(l_sAsyncString));
                         sscanf(l_sAsyncString, "%d %d", &l_sAsyncID.trigger_id, &l_sAsyncID.action_id);
-                        sysevent_rmcallback(g_iSyseventfd, g_tSysevent_token, l_sAsyncID);
+                        sysevent_rmcallback(g_iSyseventV4fd, g_tSyseventV4_token, l_sAsyncID);
                     
 		    }
 
                     //enabled
 		    memset(sg_buff,0,sizeof(sg_buff));
 		    snprintf(sg_buff,sizeof(sg_buff),"dhcp_server_%s_enabled",REM_POOLS[iter]);
-		    sysevent_set(g_iSyseventfd, g_tSysevent_token, sg_buff,Pool_Values[0], 0);
+		    sysevent_set(g_iSyseventV4fd, g_tSyseventV4_token, sg_buff,Pool_Values[0], 0);
 
 		//IPInterface
 		    memset(sg_buff,0,sizeof(sg_buff));
 		    snprintf(sg_buff,sizeof(sg_buff),"dhcp_server_%s_ipv4inst",REM_POOLS[iter]);
-		    sysevent_set(g_iSyseventfd, g_tSysevent_token, sg_buff,Pool_Values[1], 0);
+		    sysevent_set(g_iSyseventV4fd, g_tSyseventV4_token, sg_buff,Pool_Values[1], 0);
 
 		//MinAddress
 		    memset(sg_buff,0,sizeof(sg_buff));
 		    snprintf(sg_buff,sizeof(sg_buff),"dhcp_server_%s_startaddr",REM_POOLS[iter]);
-		    sysevent_set(g_iSyseventfd, g_tSysevent_token, sg_buff,Pool_Values[2], 0);
+		    sysevent_set(g_iSyseventV4fd, g_tSyseventV4_token, sg_buff,Pool_Values[2], 0);
 
 		//MaxAddress
 		    memset(sg_buff,0,sizeof(sg_buff));
 		    snprintf(sg_buff,sizeof(sg_buff),"dhcp_server_%s_endaddr",REM_POOLS[iter]);
-		    sysevent_set(g_iSyseventfd, g_tSysevent_token, sg_buff,Pool_Values[3], 0);
+		    sysevent_set(g_iSyseventV4fd, g_tSyseventV4_token, sg_buff,Pool_Values[3], 0);
 
 		//SubnetMask
 		    memset(sg_buff,0,sizeof(sg_buff));
 		    snprintf(sg_buff,sizeof(sg_buff),"dhcp_server_%s_subnet",REM_POOLS[iter]);
-		    sysevent_set(g_iSyseventfd, g_tSysevent_token, sg_buff,Pool_Values[4], 0);
+		    sysevent_set(g_iSyseventV4fd, g_tSyseventV4_token, sg_buff,Pool_Values[4], 0);
 
 		//LeaseTime
 		    memset(sg_buff,0,sizeof(sg_buff));
 		    snprintf(sg_buff,sizeof(sg_buff),"dhcp_server_%s_leasetime",REM_POOLS[iter]);
-		    sysevent_set(g_iSyseventfd, g_tSysevent_token, sg_buff,Pool_Values[5], 0);
+		    sysevent_set(g_iSyseventV4fd, g_tSyseventV4_token, sg_buff,Pool_Values[5], 0);
         }
 	}
 
@@ -1242,7 +1244,7 @@ void resync_to_nonvol(char *RemPools)
 		memset(asyn,0,sizeof(asyn));
 
 		snprintf(sg_buff,sizeof(sg_buff),"dhcp_server_%s-ipv4async",LOAD_POOLS[iter]);
-		sysevent_get(g_iSyseventfd, g_tSysevent_token, sg_buff, asyn, sizeof(asyn));
+		sysevent_get(g_iSyseventV4fd, g_tSyseventV4_token, sg_buff, asyn, sizeof(asyn));
 
 	        memset(sg_buff,0,sizeof(sg_buff));
 		snprintf(sg_buff,sizeof(sg_buff),Pool_List[1],LOAD_POOLS[iter]);
@@ -1259,13 +1261,13 @@ void resync_to_nonvol(char *RemPools)
 				memset(l_cSystemCmd,0,sizeof(l_cSystemCmd));
                                 snprintf(l_cSystemCmd, sizeof(l_cSystemCmd), "ipv4_%s-status", psm_tmp_buff);
 
-                                sysevent_setcallback(g_iSyseventfd, g_tSysevent_token, ACTION_FLAG_NONE, l_cSystemCmd, THIS, 1, l_cParam, &l_sAsyncID_setcallback);
+                                sysevent_setcallback(g_iSyseventV4fd, g_tSyseventV4_token, ACTION_FLAG_NONE, l_cSystemCmd, THIS, 1, l_cParam, &l_sAsyncID_setcallback);
                                 memset(l_cSystemCmd,0,sizeof(l_cSystemCmd));
                                 snprintf(l_cSystemCmd, sizeof(l_cSystemCmd), "%d %d", l_sAsyncID_setcallback.action_id, l_sAsyncID_setcallback.trigger_id); //l_cAsyncIdstring is l_cSystemCmd here
                   
                                 memset(sg_buff,0,sizeof(sg_buff));
                                 snprintf(sg_buff,sizeof(sg_buff),"dhcp_server_%s-ipv4async",LOAD_POOLS[iter]);
-                                sysevent_set(g_iSyseventfd, g_tSysevent_token, sg_buff, l_cSystemCmd, 0);
+                                sysevent_set(g_iSyseventV4fd, g_tSyseventV4_token, sg_buff, l_cSystemCmd, 0);
 			#endif
 		}
 	}
@@ -1285,7 +1287,7 @@ void resync_to_nonvol(char *RemPools)
 		}
 		iter++;
 	}
-	sysevent_set(g_iSyseventfd, g_tSysevent_token, "dhcp_server_current_pools", sg_buff, 0);
+	sysevent_set(g_iSyseventV4fd, g_tSyseventV4_token, "dhcp_server_current_pools", sg_buff, 0);
         DHCPMGR_LOG_INFO("\n function ENDS ");
 } 
 
@@ -1318,10 +1320,10 @@ int service_dhcp_init()
         {
             if (!strncmp(l_cSlow_Start, "1", 1))
             {
-                 sysevent_get(g_iSyseventfd, g_tSysevent_token, "current_wan_ipaddr",
+                 sysevent_get(g_iSyseventV4fd, g_tSyseventV4_token, "current_wan_ipaddr",
                                     l_cWan_IpAddr, sizeof(l_cWan_IpAddr));
 
-                 sysevent_get(g_iSyseventfd, g_tSysevent_token, "current_hsd_mode",
+                 sysevent_get(g_iSyseventV4fd, g_tSyseventV4_token, "current_hsd_mode",
                                     l_cCurrent_Hsd_Mode, sizeof(l_cCurrent_Hsd_Mode));
 
                  syscfg_get(NULL, "primary_temp_ip_prefix", l_cPrim_Temp_Ip_Prefix, sizeof(l_cPrim_Temp_Ip_Prefix));
@@ -1352,7 +1354,7 @@ int service_dhcp_init()
 
         if (0 == l_cTemp_Dhcp_Lease[0])
         {
-                sysevent_get(g_iSyseventfd, g_tSysevent_token, "dhcp_slow_start_quanta",
+                sysevent_get(g_iSyseventV4fd, g_tSyseventV4_token, "dhcp_slow_start_quanta",
                 l_cDhcpSlowStartQuanta, sizeof(l_cDhcpSlowStartQuanta));
 
                 l_iDhcpSlowQuanta = atoi(l_cDhcpSlowStartQuanta);
@@ -1397,13 +1399,13 @@ int service_dhcp_init()
        }
 
             snprintf(l_cDhcp_Slow_Start_Quanta, sizeof(l_cDhcp_Slow_Start_Quanta), "%d", l_iDhcpSlowQuanta);
-            sysevent_set(g_iSyseventfd, g_tSysevent_token, "dhcp_slow_start_quanta", l_cDhcp_Slow_Start_Quanta, 0);
+            sysevent_set(g_iSyseventV4fd, g_tSyseventV4_token, "dhcp_slow_start_quanta", l_cDhcp_Slow_Start_Quanta, 0);
             snprintf(g_cDhcp_Lease_Time, sizeof(g_cDhcp_Lease_Time), "%d", l_iDhcpSlowQuanta);
         }
         else
         {
         //Setting the dhcp_slow_start_quanta to empty / NULL
-        sysevent_set(g_iSyseventfd, g_tSysevent_token, "dhcp_slow_start_quanta", "", 0);
+        sysevent_set(g_iSyseventV4fd, g_tSyseventV4_token, "dhcp_slow_start_quanta", "", 0);
         }
         if(0 == g_cDhcp_Lease_Time[0])
         {
@@ -1435,8 +1437,10 @@ void lan_status_change(char *input)
 #endif
         char l_cLan_Status[16] = {0}, l_cDhcp_Server_Enabled[8] = {0};
         int l_iSystem_Res;
+        int ret_se = 0;
 
-        sysevent_get(g_iSyseventfd, g_tSysevent_token, "lan-status", l_cLan_Status, sizeof(l_cLan_Status));
+        ret_se = sysevent_get(g_iSyseventV4fd, g_tSyseventV4_token, "lan-status", l_cLan_Status, sizeof(l_cLan_Status));
+        DHCPMGR_LOG_INFO("SERVICE DHCP : sysevent FD: %d (%p) | Ret: %d", g_iSyseventV4fd, &g_iSyseventV4fd, ret_se);
         DHCPMGR_LOG_INFO("SERVICE DHCP : Inside lan status change with lan-status:%s", l_cLan_Status);
         DHCPMGR_LOG_INFO("SERVICE DHCP : Current lan status is:%s", l_cLan_Status);
 
@@ -1460,19 +1464,19 @@ void lan_status_change(char *input)
                 {
                       DHCPMGR_LOG_INFO("%s process didn't start successfully", SERVER);
                 }
-        sysevent_set(g_iSyseventfd, g_tSysevent_token, "dns-status", "started", 0);
+        sysevent_set(g_iSyseventV4fd, g_tSyseventV4_token, "dns-status", "started", 0);
         }
     else
         {
-        sysevent_set(g_iSyseventfd, g_tSysevent_token, "lan_status-dhcp", "started", 0);
+        ret_se = sysevent_set(g_iSyseventV4fd, g_tSyseventV4_token, "lan_status-dhcp", "started", 0);
                 if (NULL == input)
                 {
-                        DHCPMGR_LOG_INFO("SERVICE DHCP : Call start DHCP server from lan status change with NULL");
+                        DHCPMGR_LOG_INFO("SERVICE DHCP : (%d) Call start DHCP server from lan status change with NULL", ret_se);
                         dhcp_server_start(NULL);
                 }
                 else
                 {
-                        DHCPMGR_LOG_INFO("SERVICE DHCP : Call start DHCP server from lan status change with input:%s", input);
+                        DHCPMGR_LOG_INFO("SERVICE DHCP : (%d) Call start DHCP server from lan status change with input:%s", ret_se, input);
             dhcp_server_start(input);
                 }
          }
@@ -1512,8 +1516,8 @@ void dhcp_server_restart()
 
 FILE* g_fArmConsoleLog = NULL;
 void* g_vBus_handle = NULL;
-int g_iSyseventfd;
-token_t g_tSysevent_token;
+//int g_iSyseventV4fd;
+//token_t g_tSyseventV4_token;
 char g_cDhcp_Lease_Time[8] = {0}, g_cTime_File[64] = {0};
 char g_cBox_Type[8] = {0};
 #ifdef XDNS_ENABLE
@@ -1791,7 +1795,7 @@ void wait_till_end_state (char *process_to_wait)
         snprintf(l_cSysevent_Cmd, sizeof(l_cSysevent_Cmd),
                  "sysevent get %s-status", process_to_wait);
 
-        sysevent_get(g_iSyseventfd, g_tSysevent_token,
+        sysevent_get(g_iSyseventV4fd, g_tSyseventV4_token,
                      l_cSysevent_Cmd, l_cProcess_Status, sizeof(l_cProcess_Status));
         if ((!strncmp(l_cProcess_Status, "starting", 8)) ||
             (!strncmp(l_cProcess_Status, "stopping", 8)))
@@ -1807,8 +1811,9 @@ void wait_till_end_state (char *process_to_wait)
 
 int sysevent_syscfg_init()
 {
-        g_iSyseventfd = sysevent_open("127.0.0.1", SE_SERVER_WELL_KNOWN_PORT, SE_VERSION,
-                                               "dhcp_server_service", &g_tSysevent_token);
+        g_iSyseventV4fd = sysevent_open("127.0.0.1", SE_SERVER_WELL_KNOWN_PORT, SE_VERSION,
+                                               "dhcp_server_service", &g_tSyseventV4_token);
+        DHCPMGR_LOG_INFO("DHCPv4_Server sysevent opened FD: %d (%p)", g_iSyseventV4fd, &g_iSyseventV4fd);
 
         g_fArmConsoleLog = freopen(ARM_CONSOLE_LOG_FILE, "a+", stderr);
         if (NULL == g_fArmConsoleLog) //In error case not returning as it is ok to continue
@@ -1820,7 +1825,7 @@ int sysevent_syscfg_init()
                 DHCPMGR_LOG_INFO("Successful in opening while opening Log file:%s", ARM_CONSOLE_LOG_FILE);
         }
 
-    if (g_iSyseventfd < 0)
+    if (g_iSyseventV4fd < 0)
     {
         DHCPMGR_LOG_ERROR("service_dhcp::sysevent_open failed");
         return ERROR;
@@ -1842,7 +1847,7 @@ int sysevent_syscfg_init()
 int init_dhcp_server_service(void )
 {
 
-    if (0 == g_iSyseventfd)
+    if (0 == g_iSyseventV4fd)
          sysevent_syscfg_init();
     return 0;
 }
