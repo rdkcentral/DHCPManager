@@ -852,7 +852,7 @@ Client_GetParamUlongValue
     if( AnscEqualString(ParamName, "Status", TRUE))
     {
         /* collect value */
-        CosaDmlDhcpcGetInfo(NULL, pCxtLink->InstanceNumber, &pDhcpc->Info);
+        CosaDmlDhcpcGetInfo(pDhcpc, pCxtLink->InstanceNumber, &pDhcpc->Info);
 
         *puLong   = pDhcpc->Info.Status;
 
