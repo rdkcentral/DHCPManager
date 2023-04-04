@@ -580,8 +580,8 @@ void __cosa_dhcpsv6_refresh_config()
     ULONG Index2 = 0;
     ULONG Index3 = 0;
     ULONG uSize = 0;
-    ULONG preferedTime = 3600;
-    ULONG validTime = 7200;
+    ULONG preferedTime;
+    ULONG validTime;
     int   returnValue = 0;
     BOOL  isInCaptivePortal = FALSE;
     char * saveptr = NULL;
@@ -709,8 +709,8 @@ void __cosa_dhcpsv6_refresh_config()
                                 }
                                 fprintf(fp, "       T1 %lu\n", T1);
                                 fprintf(fp, "       T2 %lu\n", T2);
-                                fprintf(fp, "       prefered-lifetime %lu\n", iapd_pretm);
-                                fprintf(fp, "       valid-lifetime %lu\n", iapd_vldtm);
+                                fprintf(fp, "       prefered-lifetime %lu\n", preferedTime);
+                                fprintf(fp, "       valid-lifetime %lu\n", validTime);
                 }
                 fprintf(fp, "   }\n");
                 }
