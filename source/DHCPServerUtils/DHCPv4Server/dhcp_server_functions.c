@@ -770,7 +770,9 @@ void UpdateConfigListintoConfFile(FILE *l_fLocal_Dhcp_ConfFile)
             char confInterface[32] = {0};
             char confDhcprange[128] = {0};
             char * token = strtok(dynConfChange, "|");
-            strncpy(confInterface,token,(sizeof(confInterface)-1));
+            if(token != NULL){
+                strncpy(confInterface,token,(sizeof(confInterface)-1));
+            }
             while( token != NULL )
             {
                 strncpy(confDhcprange,token,(sizeof(confDhcprange)-1));
