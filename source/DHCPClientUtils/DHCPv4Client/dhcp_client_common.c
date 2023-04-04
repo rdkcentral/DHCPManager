@@ -533,6 +533,111 @@ pid_t start_exe(char * exe, char * args)
     freeArgs(argv);
     return pid;
 }
+
+
+pid_t start_exe2(char * exe, char * args)
+{
+    sigset_t blockSigchld, saveMask;
+    struct sigaction saIgnore, saSaveQuit, saSaveInt, saDefault;
+    int32_t pid = 0;
+    char **argv = NULL;
+    int ret     = SUCCESS;
+
+    if ((exe == NULL) && (args == NULL))
+    {
+        DBG_PRINT("%s %d: Invalid arguments..\n", __FUNCTION__, __LINE__);
+        return pid;
+    }
+
+    DBG_PRINT("%s %d:exe:%s buff %s\n", __FUNCTION__, __LINE__, exe, args);
+
+    if ((ret = parseArgs(exe, args, &argv)) != SUCCESS)
+    {
+        DBG_PRINT("Failed to parse arguments %d\n",ret);
+        return pid;
+    }
+
+    /* The parent process (the caller of start_exe()) blocks SIGCHLD
+     * and ignore SIGINT and SIGQUIT while the child is executing.
+     * We must change the signal settings prior to forking, to avoid
+     * possible race conditions. This means that we must undo the
+     * effects of the following in the child after fork().
+     */
+
+    sigemptyset(&blockSigchld);            /* Block SIGCHLD */
+    sigaddset(&blockSigchld, SIGCHLD);
+    sigprocmask(SIG_BLOCK, &blockSigchld, &saveMask);
+
+    saIgnore.sa_handler = SIG_IGN;         /* Ignore SIGINT and SIGQUIT */
+    saIgnore.sa_flags = 0;
+    sigemptyset(&saIgnore.sa_mask);
+    sigaction(SIGINT, &saIgnore, &saSaveInt);
+    sigaction(SIGQUIT, &saIgnore, &saSaveQuit);
+
+    switch ((pid = fork()))
+    {
+      case -1: // Failure
+               DBG_PRINT("Fork() failed!");
+               break;
+
+      case 0:  // Child
+          {
+               int32_t devNullFd=-1, fd;
+
+               devNullFd = open("/dev/null", O_RDWR);
+               if (devNullFd == -1)
+               {
+                   DBG_PRINT("open of /dev/null failed");
+                   exit(-1);
+               }
+               close(0);
+               fd = devNullFd;
+               dup2(fd, 0);
+               close(1);
+               fd = devNullFd;
+               dup2(fd, 1);
+               close(2);
+               fd = devNullFd;
+               dup2(fd, 2);
+               if (devNullFd != -1)
+               {
+                   close(devNullFd);
+               }
+
+               saDefault.sa_handler = SIG_DFL;
+               saDefault.sa_flags = 0;
+               sigemptyset(&saDefault.sa_mask);
+
+               if (saSaveInt.sa_handler != SIG_IGN)
+               {
+                   sigaction(SIGINT, &saDefault, NULL);
+               }
+               if (saSaveQuit.sa_handler != SIG_IGN)
+               {
+                   sigaction(SIGQUIT, &saDefault, NULL);
+               }
+
+               sigprocmask(SIG_SETMASK, &saveMask, NULL);
+
+               int err = execv(exe, argv);
+               /* We should not reach this line.  If we do, exec has failed. */
+               DBG_PRINT("%s %d: execv returned %d failed due to %s.\n",
+                                 __FUNCTION__, __LINE__, err, strerror(errno));
+               exit(-1);
+          }
+      default: // Parent
+               break;
+    }
+
+    sigprocmask(SIG_SETMASK, &saveMask, NULL);
+    sigaction(SIGINT, &saSaveInt, NULL);
+    sigaction(SIGQUIT, &saSaveQuit, NULL);
+
+    freeArgs(argv);
+
+    return pid;
+}
+
 /*
  * free_opt_list_data ()
  * @description: This function is called to free all the dynamic list created to hold dhcp options.

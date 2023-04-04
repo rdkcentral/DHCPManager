@@ -41,6 +41,7 @@
 #include "service_dhcp_server.h"
 #include <ccsp_base_api.h>
 #include <ccsp_memory.h>
+#include "dhcp_client_utils.h"
 
 #include "safec_lib_common.h"
 #include <ccsp_psm_helper.h>
@@ -49,7 +50,7 @@
 
 #define THIS        "/usr/bin/service_dhcp"
 #define BIN         "dnsmasq"
-#define SERVER      "dnsmasq"
+#define SERVER      "/usr/bin/dnsmasq"
 #define PMON        "/etc/utopia/service.d/pmon.sh"
 #define RESOLV_CONF "/etc/resolv.conf"
 #define DHCP_CONF   "/var/dnsmasq.conf"
@@ -223,6 +224,26 @@ void getRFC_Value(const char* dnsOption)
     }
 }
 
+/*
+ * thrd func
+ */
+void* reap_process (void* arg)
+{
+  int pID = *(int*)arg;
+
+  pthread_detach(pthread_self());
+
+  DHCPMGR_LOG_INFO("Waiting to reap child[%d] process...", pID);
+  if (collect_waiting_process (pID, 0))
+  {
+      DHCPMGR_LOG_ERROR("Failed to reap child[%d] process!", pID);
+  }
+  DHCPMGR_LOG_INFO("Exiting child[%d] wait.", pID);
+
+  free(arg);
+  return NULL;
+}
+
 int dnsmasq_server_start()
 {
     char l_cSystemCmd[255] = {0};
@@ -245,20 +266,20 @@ int dnsmasq_server_start()
         syscfg_get(NULL, "XDNS_RefacCodeEnable", l_cXdnsRefacCodeEnable, sizeof(l_cXdnsRefacCodeEnable));
         syscfg_get(NULL, "X_RDKCENTRAL-COM_XDNS", l_cXdnsEnable, sizeof(l_cXdnsEnable));
         if (!strncmp(l_cXdnsRefacCodeEnable, "1", 1) && !strncmp(l_cXdnsEnable, "1", 1)){
-                safec_rc = sprintf_s(l_cSystemCmd, sizeof(l_cSystemCmd),"%s -q --clear-on-reload --bind-dynamic --add-mac --add-cpe-id=abcdefgh -P 4096 -C %s %s --xdns-refac-code",
-                                SERVER, DHCP_CONF,dnsOption);
+                safec_rc = sprintf_s(l_cSystemCmd, sizeof(l_cSystemCmd),"-q --clear-on-reload --bind-dynamic --add-mac --add-cpe-id=abcdefgh -P 4096 -C %s %s --xdns-refac-code",
+                                DHCP_CONF,dnsOption);
                 ERR_CHK(safec_rc);
         }
         else{
-                safec_rc = sprintf_s(l_cSystemCmd, sizeof(l_cSystemCmd),"%s -q --clear-on-reload --bind-dynamic --add-mac --add-cpe-id=abcdefgh -P 4096 -C %s %s",
-                                SERVER, DHCP_CONF,dnsOption);
+                safec_rc = sprintf_s(l_cSystemCmd, sizeof(l_cSystemCmd),"-q --clear-on-reload --bind-dynamic --add-mac --add-cpe-id=abcdefgh -P 4096 -C %s %s",
+                                DHCP_CONF,dnsOption);
                 ERR_CHK(safec_rc);
        }
     }
     else //If XDNS is not enabled
 #endif
     {
-        safec_rc = sprintf_s(l_cSystemCmd, sizeof(l_cSystemCmd),"%s -P 4096 -C %s %s", SERVER, DHCP_CONF,dnsOption);
+        safec_rc = sprintf_s(l_cSystemCmd, sizeof(l_cSystemCmd),"-P 4096 -C %s %s", DHCP_CONF,dnsOption);
         ERR_CHK(safec_rc);
     }
 
@@ -276,7 +297,7 @@ int dnsmasq_server_start()
          {
              if(!strncmp(l_cXdnsRefacCodeEnable, "1", 1))
              {
-                 safec_rc = sprintf_s(l_cSystemCmd, sizeof(l_cSystemCmd),"%s -q --clear-on-reload --bind-dynamic --add-mac --add-cpe-id=abcdefgh -P 4096 -C %s %s --dhcp-authoritative --proxy-dnssec --cache-size=0 --xdns-refac-code --stop-dns-rebind --log-facility=/rdklogs/logs/dnsmasq.log",SERVER, DHCP_CONF,dnsOption);
+                 safec_rc = sprintf_s(l_cSystemCmd, sizeof(l_cSystemCmd),"-q --clear-on-reload --bind-dynamic --add-mac --add-cpe-id=abcdefgh -P 4096 -C %s %s --dhcp-authoritative --proxy-dnssec --cache-size=0 --xdns-refac-code --stop-dns-rebind --log-facility=/rdklogs/logs/dnsmasq.log", DHCP_CONF,dnsOption);
                  if(safec_rc < EOK)
                  {
                      ERR_CHK(safec_rc);
@@ -284,7 +305,7 @@ int dnsmasq_server_start()
              }
              else
              {
-                 safec_rc = sprintf_s(l_cSystemCmd, sizeof(l_cSystemCmd),"%s -q --clear-on-reload --bind-dynamic --add-mac --add-cpe-id=abcdefgh -P 4096 -C %s %s --dhcp-authoritative --proxy-dnssec --cache-size=0 --stop-dns-rebind --log-facility=/rdklogs/logs/dnsmasq.log",SERVER, DHCP_CONF,dnsOption);
+                 safec_rc = sprintf_s(l_cSystemCmd, sizeof(l_cSystemCmd),"-q --clear-on-reload --bind-dynamic --add-mac --add-cpe-id=abcdefgh -P 4096 -C %s %s --dhcp-authoritative --proxy-dnssec --cache-size=0 --stop-dns-rebind --log-facility=/rdklogs/logs/dnsmasq.log", DHCP_CONF,dnsOption);
                  if(safec_rc < EOK)
                  {
                      ERR_CHK(safec_rc);
@@ -295,7 +316,7 @@ int dnsmasq_server_start()
          {
              if(!strncmp(l_cXdnsRefacCodeEnable, "1", 1) && !strncasecmp(l_cXdnsEnable, "1", 1))
              {
-               safec_rc = sprintf_s(l_cSystemCmd, sizeof(l_cSystemCmd),"%s -q --clear-on-reload --bind-dynamic --add-mac --add-cpe-id=abcdefgh -P 4096 -C %s %s --dhcp-authoritative --xdns-refac-code  --stop-dns-rebind --log-facility=/rdklogs/logs/dnsmasq.log",SERVER, DHCP_CONF,dnsOption);
+               safec_rc = sprintf_s(l_cSystemCmd, sizeof(l_cSystemCmd),"-q --clear-on-reload --bind-dynamic --add-mac --add-cpe-id=abcdefgh -P 4096 -C %s %s --dhcp-authoritative --xdns-refac-code  --stop-dns-rebind --log-facility=/rdklogs/logs/dnsmasq.log", DHCP_CONF,dnsOption);
                if(safec_rc < EOK)
                {
                   ERR_CHK(safec_rc);
@@ -303,7 +324,7 @@ int dnsmasq_server_start()
              }
              else
              {
-               safec_rc = sprintf_s(l_cSystemCmd, sizeof(l_cSystemCmd),"%s -q --clear-on-reload --bind-dynamic --add-mac --add-cpe-id=abcdefgh -P 4096 -C %s %s --dhcp-authoritative --stop-dns-rebind --log-facility=/rdklogs/logs/dnsmasq.log ",SERVER, DHCP_CONF,dnsOption);
+               safec_rc = sprintf_s(l_cSystemCmd, sizeof(l_cSystemCmd),"-q --clear-on-reload --bind-dynamic --add-mac --add-cpe-id=abcdefgh -P 4096 -C %s %s --dhcp-authoritative --stop-dns-rebind --log-facility=/rdklogs/logs/dnsmasq.log ", DHCP_CONF,dnsOption);
                if(safec_rc < EOK)
                {
                   ERR_CHK(safec_rc);
@@ -313,37 +334,44 @@ int dnsmasq_server_start()
     }
     else // XDNS not enabled
     {
-        safec_rc = sprintf_s(l_cSystemCmd, sizeof(l_cSystemCmd),"%s -P 4096 -C %s",SERVER, DHCP_CONF);
+        safec_rc = sprintf_s(l_cSystemCmd, sizeof(l_cSystemCmd),"-P 4096 -C %s", DHCP_CONF);
         if(safec_rc < EOK)
         {
           ERR_CHK(safec_rc);
         }
     }
 #endif
-
-    /* Lets ignore sigchld, to prevent child process becoming zombies.
-     * Preferring to ignore sig chld instead of setting
-     * flags SA_NOCLDWAIT | SA_NOCLDSTP
-     */
+    /* To prevent dnsmasq zombie */
     {
-       struct sigaction sigAct;
+        pid_t pID = 0;
 
-       sigAct.sa_handler = SIG_IGN;
-       sigAct.sa_flags   = 0;
-       sigemptyset (&sigAct.sa_mask);
+        /* We should have a signal handler registered to reap exiting child?
+         * Ensure if other forked children and their localized wait are aligned? */
+        if (0 > (pID = start_exe2(SERVER, l_cSystemCmd)))
+        {
+            DHCPMGR_LOG_ERROR("Failed to start dnsmasq!");
+            return 1;
+        }
+        else
+        {
+            pthread_t tID = 0;
+            int* tData = malloc(sizeof(int));
 
-       if (-1 == sigaction (SIGCHLD, &sigAct, NULL))
-       {
-           CcspTraceError(("Failed to ignore SIGCHLD !"));
-       }
-    }
+            if (tData)
+            {
+                *tData = pID;
+                DHCPMGR_LOG_INFO("Forked instance for dnsmasq [%d]", pID);
 
-    int32_t pid = fork();
-    if (pid == 0)
-    {
-	signal(SIGCHLD, SIG_DFL);
-	executeCmd(l_cSystemCmd);
-	exit(0);
+                if (pthread_create(&tID, NULL, reap_process, (void*)tData))
+                {
+                    DHCPMGR_LOG_ERROR("Failed pthread create!");
+                }
+            }
+            else
+            {
+                    DHCPMGR_LOG_ERROR("Failed to malloc!");
+            }
+        }
     }
     return 0;
 }
