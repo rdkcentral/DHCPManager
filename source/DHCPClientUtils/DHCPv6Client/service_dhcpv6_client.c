@@ -140,7 +140,7 @@ void dhcpv6_client_service_start ()
         CcspTraceInfo(("SERVICE_DHCP6C : WAN LINK is Down, service_stop\n"));
         dhcpv6_client_service_stop();
     }
-    else if (l_cWanIfname == NULL)
+    else if (strlen(l_cWanIfname) == 0)
     {
         CcspTraceInfo(("SERVICE_DHCP6C : WAN Interface not configured, service_stop\n"));
         dhcpv6_client_service_stop();
