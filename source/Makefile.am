@@ -17,4 +17,15 @@
 # limitations under the License.
 ##########################################################################
 
-SUBDIRS = DHCPServerUtils DHCPClientUtils service_udhcpc TR-181 DHCPMgrSsp
+SUBDIRS = DHCPMgrInterface DHCPMgrUtils TR-181
+
+
+if DHCP_SERVER_SUPPORT
+SUBDIRS += DHCPServerUtils
+endif
+
+if DHCP_CLIENT_SUPPORT
+SUBDIRS += DHCPClientUtils
+endif
+
+SUBDIRS += DHCPMgrSsp

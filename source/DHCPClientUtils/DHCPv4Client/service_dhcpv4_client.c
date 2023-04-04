@@ -39,8 +39,7 @@
 #include "safec_lib_common.h"
 #include "service_dhcpv4_client.h"
 #include "ccsp_trace.h"
-#include "cosa_apis.h"
-
+#include "ifl.h"
 
 #define BUFF_LEN_8      8
 #define BUFF_LEN_16     16
@@ -49,12 +48,25 @@
 #define BUFF_LEN_128    128
 #define BUFF_LEN_256    256
 
+#ifndef UNREFERENCED_PARAMETER
+    #define UNREFERENCED_PARAMETER(_p_)  (void)(_p_)
+#endif
+
 #define SERVICE_NAME            "dhcpv4_client"
 #define DHCPV4_REGISTER_FILE    "/tmp/dhcpv4_registered_events"
 #define VENDOR_SPEC_FILE        "/etc/udhcpc.vendor_specific"
 #define VENDOR_OPTIONS_LENGTH   100
 #define MAX_EVENTS              6
 #define PROG_NAME               "DHCPV4_CLIENT"
+
+#define DHCPV4_CLIENT_START     "dhcp_client-start"
+#define DHCPV4_CLIENT_STOP      "dhcp_client-stop"
+#define EROUTER_MODE_UPDATED    "erouter_mode-updated"
+#define DHCPV4_CLIENT_RESTART   "dhcp_client-restart"
+#define DHCPV4_CLIENT_RELEASE   "dhcp_client-release"
+#define DHCPV4_CLIENT_RENEW     "dhcp_client-renew"
+
+#define DHCPV4C_CALLER_CTX      "dhcpv4_client"
 
 #define EVENTS_EROUTER_ADMINISTRATIVELY_DISABLED         72003001
 #define EVENTS_EROUTER_ADMINISTRATIVELY_DISABLED_STR     "eRouter is administratively disabled"
@@ -63,19 +75,13 @@
         VARIABLE DECLARATIONS
 **********************************************************************/
 char  DHCPC_PID_FILE[BUFF_LEN_128] = "";
-FILE* g_fArmConsoleLog = NULL;
 
-static async_id_t   l_sAsyncID[MAX_EVENTS];
-static pthread_t    sysevent_tid;
-
-serv_dhcp *sd;
+static serv_dhcp *sd;
 
 /**********************************************************************
         FUNCTION DECLARATIONS
 **********************************************************************/
 static int serv_dhcp_deinit();
-static void *dhcpv4_client_sysevent_handler(void *sd_arg);
-
 
 #if defined (_XB6_PRODUCT_REQ_) || defined(_CBR_PRODUCT_REQ_) || defined (_XB7_PRODUCT_REQ_)
 #define CONSOLE_LOG_FILE "/rdklogs/logs/Consolelog.txt.0"
@@ -288,6 +294,7 @@ int serv_dhcp_init()
             return -1;
         }
     }
+
     if ((sd->sefd = sysevent_open(SE_SERV, SE_SERVER_WELL_KNOWN_PORT,
                     SE_VERSION, PROG_NAME, &sd->setok)) < 0)
     {
@@ -341,9 +348,15 @@ int serv_dhcp_init()
             break;
     }
 
-    // Sysevent handler thread creation
-    CcspTraceInfo(("Create sysevent handler thread \n"));
-    pthread_create(&sysevent_tid, NULL, dhcpv4_client_sysevent_handler, (void*)sd);
+    CcspTraceInfo(("DHCPV4 client event registration started\n"));
+    ifl_register_event_handler( DHCPV4_CLIENT_START, IFL_EVENT_NOTIFY_TRUE, DHCPV4C_CALLER_CTX, dhcpv4_client_service_start);
+    ifl_register_event_handler( DHCPV4_CLIENT_STOP, IFL_EVENT_NOTIFY_TRUE, DHCPV4C_CALLER_CTX, dhcpv4_client_service_stop);
+    ifl_register_event_handler( EROUTER_MODE_UPDATED, IFL_EVENT_NOTIFY_TRUE, DHCPV4C_CALLER_CTX, dhcpv4_client_service_restart);
+    ifl_register_event_handler( DHCPV4_CLIENT_RESTART, IFL_EVENT_NOTIFY_TRUE, DHCPV4C_CALLER_CTX, dhcpv4_client_service_restart);
+    ifl_register_event_handler( DHCPV4_CLIENT_RELEASE, IFL_EVENT_NOTIFY_TRUE, DHCPV4C_CALLER_CTX, dhcpv4_client_service_release);
+    ifl_register_event_handler( DHCPV4_CLIENT_RENEW, IFL_EVENT_NOTIFY_TRUE, DHCPV4C_CALLER_CTX, dhcpv4_client_service_renew);
+    CcspTraceInfo(("DHCPV4 client event registration completed\n"));
+
     return 0;
 }
 
@@ -381,16 +394,15 @@ static int serv_dhcp_deinit()
         0  if success
         -1 if error
 **********************************************************************/
-int dhcpv4_client_service_start(serv_dhcp *sd)
+void dhcpv4_client_service_start(void *arg)
 {
+    UNREFERENCED_PARAMETER(arg);
     CcspTraceInfo(("%s: BEGIN \n", __FUNCTION__));
     int pid;
     int has_pid_file = 0;
     #if defined(_PLATFORM_IPQ_)
-        int ret = -1;
+    int ret = -1;
     #endif
-
-    //serv_dhcp_init(sd);
 
     #if defined(_PLATFORM_IPQ_)
         pid = pid_of("udhcpc", sd->ifname);
@@ -420,7 +432,6 @@ int dhcpv4_client_service_start(serv_dhcp *sd)
     if (pid > 0 && has_pid_file)
     {
         CcspTraceInfo(("%s: DHCP client has already running as PID %d\n", __FUNCTION__, pid));
-        return 0;
     }
 
     if (pid > 0 && !has_pid_file)
@@ -442,7 +453,6 @@ int dhcpv4_client_service_start(serv_dhcp *sd)
         if ( 0 != (ret = dhcpv4_client_start(sd)) )
         {
             CcspTraceError(("Dhcpv4 client start Failure \n"));
-            return ret;
         }
 
         system("sysevent set current_ipv4_link_state up");
@@ -450,9 +460,11 @@ int dhcpv4_client_service_start(serv_dhcp *sd)
                        | grep \"inet addr\" | cut -d':' -f2 | awk '{print$1}'`");
         system("sysevent set ipv4_wan_subnet `ifconfig erouter0 \
                        | grep \"inet addr\" | cut -d':' -f4 | awk '{print$1}'`");
-        return 0;
     #else
-        return dhcpv4_client_start(sd);
+        if ( dhcpv4_client_start(sd) != 0 )
+        {
+            CcspTraceError(("Dhcpv4 client start Failure \n"));
+        }
     #endif
 }
 
@@ -467,13 +479,17 @@ int dhcpv4_client_service_start(serv_dhcp *sd)
         0  if success
         -1 if error
 **********************************************************************/
-int dhcpv4_client_service_stop
+void dhcpv4_client_service_stop
 (
-    serv_dhcp *sd
+    void *arg
 )
 {
+    UNREFERENCED_PARAMETER(arg);
     CcspTraceInfo(("%s: BEGIN \n", __FUNCTION__));
-    return dhcpv4_client_stop(sd->ifname);
+    if (dhcpv4_client_stop(sd->ifname) != 0)
+    {
+        CcspTraceError(("Dhcpv4 client stop Failure \n"));
+    }
 }
 
 /**********************************************************************
@@ -487,18 +503,22 @@ int dhcpv4_client_service_stop
         0  if success
         -1 if error
 **********************************************************************/
-int dhcpv4_client_service_restart
+void dhcpv4_client_service_restart
 (
-    serv_dhcp *sd
+    void *arg
 )
 {
+    UNREFERENCED_PARAMETER(arg);
     CcspTraceInfo(("%s: BEGIN \n", __FUNCTION__));
     if (dhcpv4_client_stop(sd->ifname) != 0)
     {
         CcspTraceError(("DHCPv4 stop error \n"));
     }
 
-    return dhcpv4_client_start(sd);
+    if (dhcpv4_client_start(sd) != 0)
+    {
+        CcspTraceError(("Dhcpv4 client start Error \n"));
+    }
 }
 
 /**********************************************************************
@@ -512,11 +532,12 @@ int dhcpv4_client_service_restart
         0  if success
         -1 if error
 **********************************************************************/
-int dhcpv4_client_service_renew
+void dhcpv4_client_service_renew
 (
-    serv_dhcp *sd
+    void *arg
 )
 {
+    UNREFERENCED_PARAMETER(arg);
     CcspTraceInfo(("%s: BEGIN \n", __FUNCTION__));
     FILE *fp;
     char pid[BUFF_LEN_16];
@@ -526,7 +547,10 @@ int dhcpv4_client_service_renew
     if ((fp = fopen(DHCPC_PID_FILE, "rb")) == NULL)
     {
         CcspTraceInfo(("Call dhcpv4 start \n"));
-        return dhcpv4_client_start(sd);
+        if (dhcpv4_client_start(sd) != 0)
+        {
+            CcspTraceError(("Error in starting Dhcpv4 client\n"));
+        }
     }
 
     if (fgets(pid, sizeof(pid), fp) != NULL && atoi(pid) > 0)
@@ -539,7 +563,7 @@ int dhcpv4_client_service_renew
 
     if ((fp = fopen("/proc/uptime", "rb")) == NULL)
     {
-        return -1;
+        CcspTraceError(("Error in opening /proc/uptime\n"));
     }
     if (fgets(line, sizeof(line), fp) != NULL)
 	{
@@ -550,7 +574,6 @@ int dhcpv4_client_service_renew
         sysevent_set(sd->sefd, sd->setok, "wan_start_time", line, 0);
     }
     fclose(fp);
-    return 0;
 }
 
 /**********************************************************************
@@ -564,11 +587,12 @@ int dhcpv4_client_service_renew
         0  if success
         -1 if error
 **********************************************************************/
-int dhcpv4_client_service_release
+void dhcpv4_client_service_release
 (
-    serv_dhcp *sd
+    void *arg
 )
 {
+    UNREFERENCED_PARAMETER(arg);
     CcspTraceInfo(("%s: BEGIN \n", __FUNCTION__));
     FILE *fp;
     char pid[BUFF_LEN_16];
@@ -577,7 +601,6 @@ int dhcpv4_client_service_release
     if ((fp = fopen(DHCPC_PID_FILE, "rb")) == NULL)
     {
         CcspTraceError(("Fopen failure \n"));
-        return -1;
     }
 
     if (fgets(pid, sizeof(pid), fp) != NULL && atoi(pid) > 0)
@@ -589,88 +612,6 @@ int dhcpv4_client_service_release
     fclose(fp);
 
     vsystem("ip -4 addr flush dev %s", sd->ifname);
-    return 0;
-}
-
-/**********************************************************************
-    function:
-        dhcpv4_client_sysevent_handler
-    description:
-        This function is to handle the sysevents.
-    argument:
-        void *sd_arg
-    return:
-        0  if success
-        -1 if error
-**********************************************************************/
-static void *dhcpv4_client_sysevent_handler
-(
-    void *sd_arg
-)
-{
-    CcspTraceInfo(("%s: BEGIN \n", __FUNCTION__));
-    sd = (serv_dhcp*)sd_arg;
-
-    sd->sefd = sysevent_open("127.0.0.1", SE_SERVER_WELL_KNOWN_PORT, SE_VERSION, "dhcpv4_client_handler", &sd->setok);
-    sysevent_set_options(sd->sefd, sd->setok, "dhcp_client-start", TUPLE_FLAG_EVENT);
-    sysevent_setnotification(sd->sefd, sd->setok, "dhcp_client-start", &l_sAsyncID[0]);
-    sysevent_set_options(sd->sefd, sd->setok, "dhcp_client-stop", TUPLE_FLAG_EVENT);
-    sysevent_setnotification(sd->sefd, sd->setok, "dhcp_client-stop", &l_sAsyncID[1]);
-    sysevent_set_options(sd->sefd, sd->setok, "erouter_mode-updated", TUPLE_FLAG_EVENT);
-    sysevent_setnotification(sd->sefd, sd->setok, "erouter_mode-updated", &l_sAsyncID[2]);
-    sysevent_set_options(sd->sefd, sd->setok, "dhcp_client-restart", TUPLE_FLAG_EVENT);
-    sysevent_setnotification(sd->sefd, sd->setok, "dhcp_client-restart", &l_sAsyncID[3]);
-    sysevent_set_options(sd->sefd, sd->setok, "dhcp_client-release", TUPLE_FLAG_EVENT);
-    sysevent_setnotification(sd->sefd, sd->setok, "dhcp_client-release", &l_sAsyncID[4]);
-    sysevent_set_options(sd->sefd, sd->setok, "dhcp_client-renew", TUPLE_FLAG_EVENT);
-    sysevent_setnotification(sd->sefd, sd->setok, "dhcp_client-renew", &l_sAsyncID[5]);
-
-    for (;;)
-    {
-        char name[BUFF_LEN_128], val[BUFF_LEN_128];
-        memset(name,0,sizeof(name));
-        memset(val,0,sizeof(val));
-        int namelen = sizeof(name);
-        int vallen  = sizeof(val);
-        int err;
-        async_id_t getnotification_id;
-
-        err = sysevent_getnotification(sd->sefd, sd->setok, name, &namelen,
-                                       val, &vallen, &getnotification_id);
-
-        if (err)
-        {
-            CcspTraceError(("SysEvent get notification ERROR : %d \n", err));
-        }
-        else
-        {
-            CcspTraceInfo(("SysEvent %s Received \n", name));
-            if (!strncmp(name,"dhcp_client-start",17))
-            {
-                dhcpv4_client_service_start(sd);
-            }
-            else if (!strncmp(name,"dhcp_client-stop",16))
-            {
-                dhcpv4_client_service_stop(sd);
-            }
-            else if ((!strncmp(name,"erouter_mode-updated",20)) ||
-                     (!strncmp(name,"dhcp_client-restart",19)))
-            {
-                dhcpv4_client_service_restart(sd);
-            }
-            else if (!strncmp(name,"dhcp_client-release",19))
-            {
-                dhcpv4_client_service_release(sd);
-            }
-            else if (!strncmp(name,"dhcp_client-renew",17))
-            {
-                dhcpv4_client_service_renew(sd);
-            }
-        }
-
-    }
-    CcspTraceInfo(("Exiting thread \n"));
-    return NULL;
 }
 
 /**********************************************************************
@@ -692,6 +633,7 @@ int dhcpv4_client_start
     CcspTraceInfo(("%s: BEGIN \n", __FUNCTION__));
     int err = 0;
     char l_cErouter_Mode[BUFF_LEN_16] = {0}, l_cWan_if_name[BUFF_LEN_16] = {0}, cEthWanMode[BUFF_LEN_8] = {0};
+    int pid = -1;
 
     syscfg_get(NULL, "last_erouter_mode", l_cErouter_Mode, sizeof(l_cErouter_Mode));
     syscfg_get(NULL, "wan_physical_ifname", l_cWan_if_name, sizeof(l_cWan_if_name));
@@ -706,6 +648,11 @@ int dhcpv4_client_start
     }
     if (sd->rtmod == RTMOD_IPV4 || sd->rtmod == RTMOD_DS)
     {
+        if (0 < (pid = pid_of("udhcpc", NULL)))
+        {
+            CcspTraceInfo(("udhcpc is already running , terminating it to restart it"));
+            kill(pid, SIGTERM);
+        }
         CcspTraceInfo(("RTMOD = %d \n", sd->rtmod));
         /*TCHXB6 is configured to use udhcpc */
         #if defined(_PLATFORM_IPQ_)
@@ -740,11 +687,6 @@ int dhcpv4_client_start
                 err = v_secure_system("ti_udhcpc -plugin /lib/libert_dhcpv4_plugin.so -i %s "
                                       "-H DocsisGateway -p %s -B -b 4",
                                       sd->ifname, DHCPC_PID_FILE);
-                //#else
-                    /*err = vsystem("ti_udhcpc -plugin /lib/libert_dhcpv4_plugin.so -i %s "
-                                  "-H DocsisGateway -p %s -B -b 1",
-                                  sd->ifname, DHCPC_PID_FILE);*/
-                //#endif
             }
         }
         #else
@@ -792,11 +734,6 @@ int dhcpv4_client_start
             }
         #endif
 
-/*
-        err = vsystem("strace -o /tmp/stracelog -f ti_udhcpc -plugin /lib/libert_dhcpv4_plugin.so -i %s "
-              "-H DocsisGateway -p %s -B -b 1",
-              ifname, DHCPC_PID_FILE);
-*/
         if (err != 0)
         {
             CcspTraceError(("Failed to start udhcp"));
@@ -863,30 +800,12 @@ int dhcpv4_client_stop
         sleep(1);
         kill(pid, SIGTERM); // terminate DHCP client
 
-        /*
-        sleep(1);
-        if (pid_of("ti_udhcpc", ifname) == pid)
-        {
-            CcspTraceInfo(("%s: ti_udhcpc is still exist ! kill -9 it\n", __FUNCTION__));
-            kill(pid, SIGKILL);
-        }
-        */
         #if defined (_PROPOSED_BUG_FIX_)
             syslog(LOG_INFO, "%u-%s", EVENTS_EROUTER_ADMINISTRATIVELY_DISABLED,
                                       EVENTS_EROUTER_ADMINISTRATIVELY_DISABLED_STR);
         #endif
     }
-/*
-    for (unsigned int i = 0; i < MAX_EVENTS; i++)
-    {
-        sysevent_rmnotification(sd->sefd, sd->setok, l_sAsyncID[i]);
-    }
 
-    CcspTraceInfo(("Removing all the sysevent notifications Before killing dhcpv4_client_sysevent_handler \n"));
-
-    pthread_cancel(sysevent_tid);
-    CcspTraceInfo(("Killed dhcpv4_client_sysevent_handler monitor thread \n"));
-*/
     unlink(DHCPC_PID_FILE);
     unlink("/tmp/udhcp.log");
     return 0;

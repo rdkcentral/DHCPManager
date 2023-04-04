@@ -35,22 +35,34 @@
 #include <safec_lib_common.h>
 #include <secure_wrapper.h>
 #include <libnet.h>
+#include "ifl.h"
 
-#define DHCPV6_CONF_FILE    "/etc/dhcp6c.conf"
+#define EROUTER_MODE_UPDATED    "erouter_mode-updated"
+#define PHYLINK_WAN_STATE       "phylink_wan_state"
+#define CURR_WAN_IFNAME         "current_wan_ifname"
+#define BRIDGE_MODE             "bridge_mode"
+#define DHCPV6_CLIENT_START     "dhcpv6_client-start"
+#define DHCPV6_CLIENT_STOP      "dhcpv6_client-stop"
+
+#define DHCPV6C_CALLER_CTX      "dhcpv6_client"
+
+#define DHCPV6_CONF_FILE        "/etc/dhcp6c.conf"
 #define DHCPV6_REGISTER_FILE    "/tmp/dhcpv6_registered_events"
 #define DHCP6C_PROGRESS_FILE    "/tmp/dhcpv6c_inprogress"
-#define DIBBLER_DEBUG_DIR   "/var/log/dibbler"
-#define DIBBLER_INFO_DIR    "/tmp/.dibbler-info"
+#define DIBBLER_DEBUG_DIR       "/var/log/dibbler"
+#define DIBBLER_INFO_DIR        "/tmp/.dibbler-info"
 
-#define BUFF_LEN_8    8
-#define BUFF_LEN_16    16
-#define BUFF_LEN_32    32
-#define BUFF_LEN_64    64
-#define BUFF_LEN_128    128
-#define BUFF_LEN_256    256
+#define BUFF_LEN_8       8
+#define BUFF_LEN_16     16
+#define BUFF_LEN_32     32
+#define BUFF_LEN_64     64
+#define BUFF_LEN_128   128
+#define BUFF_LEN_256   256
 
 int g_iSyseventfd;
 token_t g_tSysevent_token;
+
+extern void copy_command_output(char *, char *, int);
 
 #if defined(_COSA_INTEL_XB3_ARM_) || defined(INTEL_PUMA7)
 #define DHCPV6_BINARY   "ti_dhcp6c"
@@ -83,31 +95,16 @@ static inline void remove_file(char *tb_removed_file)
 
 }
 
-void copy_command_output(char *cmd, char *out, int len)
+void init_dhcpv6_client ()
 {
-    FILE *l_fFp = NULL;
-    errno_t safec_rc = -1;
-    int buff_len;
-    char l_cBuf[BUFF_LEN_256] = {0};
-    l_fFp = popen(cmd, "r");
-    if (l_fFp)
-    {
-        fgets(l_cBuf, sizeof(l_cBuf), l_fFp);
-        /*we need to remove the \n char in buf*/
-        if(l_cBuf[strlen(l_cBuf)-1] == '\n')
-        {
-            l_cBuf[strlen(l_cBuf)-1] = '\0';
-        }
-        buff_len = strlen(l_cBuf);
-        if (buff_len > len)
-        {
-            CcspTraceInfo(("SERVICE_DHCP6C : Warning Output will be truncated\n"));
-        }
-        safec_rc = strcpy_s(out, len-1, l_cBuf);
-        ERR_CHK(safec_rc);
-
-        pclose(l_fFp);
-    }
+    CcspTraceInfo(("SERVICE_DHCP6C : Cleint event registration started\n"));
+    ifl_register_event_handler( EROUTER_MODE_UPDATED, IFL_EVENT_NOTIFY_TRUE, DHCPV6C_CALLER_CTX, dhcpv6_client_service_update);
+    ifl_register_event_handler( PHYLINK_WAN_STATE, IFL_EVENT_NOTIFY_TRUE, DHCPV6C_CALLER_CTX, dhcpv6_client_service_update);
+    ifl_register_event_handler( CURR_WAN_IFNAME, IFL_EVENT_NOTIFY_TRUE, DHCPV6C_CALLER_CTX, dhcpv6_client_service_update);
+    ifl_register_event_handler( BRIDGE_MODE, IFL_EVENT_NOTIFY_TRUE, DHCPV6C_CALLER_CTX, dhcpv6_client_service_update);
+    ifl_register_event_handler( DHCPV6_CLIENT_START, IFL_EVENT_NOTIFY_TRUE, DHCPV6C_CALLER_CTX, dhcpv6_client_service_enable);
+    ifl_register_event_handler( DHCPV6_CLIENT_STOP, IFL_EVENT_NOTIFY_TRUE, DHCPV6C_CALLER_CTX, dhcpv6_client_service_disable);
+    CcspTraceInfo(("SERVICE_DHCP6C : Cleint event registration completed\n"));
 }
 
 void dhcpv6_client_service_start ()
@@ -303,7 +300,7 @@ void dhcpv6_client_service_enable()
 
 void dhcpv6_client_service_disable()
 {
-    CcspTraceInfo(("SERVICE_DHCP6C : SERVICE ENABLE\n"));
+    CcspTraceInfo(("SERVICE_DHCP6C : SERVICE DISABLE\n"));
 
     char l_cDhcpv6cEnabled[BUFF_LEN_8] = {0};
     sysevent_get(g_iSyseventfd, g_tSysevent_token, "dhcpv6c_enabled", l_cDhcpv6cEnabled, sizeof(l_cDhcpv6cEnabled));

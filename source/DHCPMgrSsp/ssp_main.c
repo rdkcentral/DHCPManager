@@ -66,11 +66,26 @@
 #include "syscfg/syscfg.h"
 #include "cap.h"
 #include "safec_lib_common.h"
-//#include "dhcp_rbus_interface.h"
-#include "service_dhcp_server.h"
-#include "service_dhcpv4_client.h"
+#include "ifl.h"
 
+#ifdef DHCPV4_SERVER_SUPPORT
+#include "service_dhcp_server.h"
 #include "dhcpv4_server_interface.h"
+#endif
+
+#ifdef DHCPV4_CLIENT_SUPPORT
+#include "service_dhcpv4_client.h"
+#endif
+
+#ifdef DHCPV6_CLIENT_SUPPORT
+#include "service_dhcpv6_client.h"
+#endif
+
+#ifdef DHCPV6_SERVER_SUPPORT
+extern void dhcpv6_server_init();
+#endif
+
+extern void remove_file(char *);
 
 static cap_user appcaps;
 
@@ -330,6 +345,12 @@ int main(int argc, char* argv[])
     RDK_LOGGER_INIT();
 #endif
 
+    if (access("/tmp/dhcpmgr_initialized", F_OK) == 0)
+    {
+        CcspTraceInfo(("/tmp/dhcpmgr_initialized already exists, removing it"));
+        remove_file("/tmp/dhcpmgr_initialized");
+    }
+
     for (idx = 1; idx < argc; idx++)
     {
          rc = strcmp_s("-subsys",strlen("-subsys"),argv[idx],&ind);
@@ -483,17 +504,52 @@ CcspTraceWarning(("\nAfter Cdm_Init\n"));
         fprintf(stderr, "Cdm_Init: %s\n", Cdm_StrError(err));
         exit(1);
     }
-    // init dhcp server services
-    init_dhcp_server_service();
 
+    CcspTraceInfo(("DHCPMgr InterfaceLayer initialization started\n"));
+    // inti dhcpmgr interfacelayer
+    if (ifl_init("DHCP-Mgr") == IFL_SUCCESS)
+    {
+        CcspTraceInfo(("DHCPMgr InterfaceLayer initialized Ended\n"));
+    }
+    else
+    {
+        CcspTraceError(("Error in initialising DHCPMgr InterfaceLayer\n"));
+    }
+
+#ifdef DHCPV4_CLIENT_SUPPORT
     //Init dhcpv4 client
+    CcspTraceInfo(("serv_dhcp_init (dhcpv4 client) Started\n"));
     serv_dhcp_init();
+    CcspTraceInfo(("serv_dhcp_init (dhcpv4 client) Ended\n"));
+#endif
 
-    // init rbus services to handle request from wan manager
-    //init_rbus_service();
-   
-    // init dhcpv4 server
+#ifdef DHCPV6_CLIENT_SUPPORT
+    //Init dhcpv6 cleint
+    CcspTraceInfo(("init_dhcpv6_client (dhcpv6 cleint) Started\n"));
+    init_dhcpv6_client ();
+    CcspTraceInfo(("init_dhcpv6_client (dhcpv6 cleint) Ended\n"));
+#endif
+
+#ifdef DHCPV4_SERVER_SUPPORT
+    //Init dhcpv4 server
+    CcspTraceInfo(("dhcp_server_init (dhcpv4 server) Started\n"));
     dhcp_server_init();
+    CcspTraceInfo(("dhcp_server_init (dhcpv4 server) Ended\n"));
+#endif
+
+#ifdef DHCPV6_SERVER_SUPPORT
+    //Init dhcpv6 server
+    CcspTraceInfo(("dhcp_server_init (dhcpv6 server) Started\n"));
+    dhcpv6_server_init();
+    CcspTraceInfo(("dhcp_server_init (dhcpv6 server) Ended\n"));
+#endif
+ 
+#ifdef DHCPV4_SERVER_SUPPORT
+    //Init dhcp server services
+    CcspTraceInfo(("init_dhcp_server_service Started\n"));
+    init_dhcp_server_service();
+    CcspTraceInfo(("init_dhcp_server_service Ended\n"));
+#endif
 
     system("touch /tmp/dhcpmgr_initialized");
 

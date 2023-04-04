@@ -25,6 +25,7 @@
 
 extern void* g_vBus_handle;
 
+void init_dhcpv6_client ();
 void dhcpv6_client_service_start();
 void dhcpv6_client_service_stop();
 void dhcpv6_client_service_update();
