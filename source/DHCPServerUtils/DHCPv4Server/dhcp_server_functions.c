@@ -662,54 +662,70 @@ void do_extra_pools (FILE *local_dhcpconf_file, char *prefix, unsigned char bDhc
                 {
                         l_iPool = atoi(l_cToken);
                         safec_rc = sprintf_s(l_cSysevent_Cmd, sizeof(l_cSysevent_Cmd),"dhcp_server_%d_enabled", l_iPool);
-                        ERR_CHK(safec_rc);
-
+                        if(safec_rc < EOK)
+                        {
+                                ERR_CHK(safec_rc);
+                        }
                 sysevent_get(g_iSyseventfd, g_tSysevent_token,
                               l_cSysevent_Cmd, l_cDhcpEnabled, sizeof(l_cDhcpEnabled));
 
                         if (!strncmp(l_cDhcpEnabled, "TRUE", 4))
                         {
                                 safec_rc = sprintf_s(l_cSysevent_Cmd, sizeof(l_cSysevent_Cmd),"dhcp_server_%d_ipv4inst", l_iPool);
-                                ERR_CHK(safec_rc);
-
+                                if(safec_rc < EOK)
+                                {
+                                        ERR_CHK(safec_rc);
+                                }
                         sysevent_get(g_iSyseventfd, g_tSysevent_token,
                                                  l_cSysevent_Cmd, l_cIpv4Inst, sizeof(l_cIpv4Inst));
                         l_iIpv4Inst = atoi(l_cIpv4Inst);
                                 safec_rc = sprintf_s(l_cSysevent_Cmd, sizeof(l_cSysevent_Cmd),"ipv4_%d-status", l_iIpv4Inst);
-                                ERR_CHK(safec_rc);
-
+                                if(safec_rc < EOK)
+                                {
+                                        ERR_CHK(safec_rc);
+                                }
                         sysevent_get(g_iSyseventfd, g_tSysevent_token,
                                              l_cSysevent_Cmd, l_cIpv4InstStatus, sizeof(l_cIpv4InstStatus));
 
                                 if (!strncmp(l_cIpv4InstStatus, "up", 2))
                                 {
                                         safec_rc = sprintf_s(l_cSysevent_Cmd, sizeof(l_cSysevent_Cmd),"dhcp_server_%d_startaddr", l_iPool);
-                                        ERR_CHK(safec_rc);
-
+                                        if(safec_rc < EOK)
+                                        {
+                                                ERR_CHK(safec_rc);
+                                        }
                                 sysevent_get(g_iSyseventfd, g_tSysevent_token,
                                             l_cSysevent_Cmd, l_cDhcp_Start_Addr, sizeof(l_cDhcp_Start_Addr));
 
                                         safec_rc = sprintf_s(l_cSysevent_Cmd, sizeof(l_cSysevent_Cmd),"dhcp_server_%d_endaddr", l_iPool);
-                                        ERR_CHK(safec_rc);
-
+                                        if(safec_rc < EOK)
+                                        {
+                                                ERR_CHK(safec_rc);
+                                        }
                                 sysevent_get(g_iSyseventfd, g_tSysevent_token,
                                              l_cSysevent_Cmd, l_cDhcp_End_Addr, sizeof(l_cDhcp_End_Addr));
 
                                         safec_rc = sprintf_s(l_cSysevent_Cmd, sizeof(l_cSysevent_Cmd),"dhcp_server_%d_subnet", l_iPool);
-                                        ERR_CHK(safec_rc);
-
+                                        if(safec_rc < EOK)
+                                        {
+                                                ERR_CHK(safec_rc);
+                                        }
                                 sysevent_get(g_iSyseventfd, g_tSysevent_token,
                                              l_cSysevent_Cmd, l_cLan_Subnet, sizeof(l_cLan_Subnet));
 
                                         safec_rc = sprintf_s(l_cSysevent_Cmd, sizeof(l_cSysevent_Cmd),"dhcp_server_%d_leasetime", l_iPool);
-                                        ERR_CHK(safec_rc);
-
+                                        if(safec_rc < EOK)
+                                        {
+                                                ERR_CHK(safec_rc);
+                                        }
                                 sysevent_get(g_iSyseventfd, g_tSysevent_token,
                                              l_cSysevent_Cmd, l_cDhcp_Lease_Time, sizeof(l_cDhcp_Lease_Time));
 
                                         safec_rc = sprintf_s(l_cSysevent_Cmd, sizeof(l_cSysevent_Cmd),"ipv4_%d-ifname", l_iIpv4Inst);
-                                        ERR_CHK(safec_rc);
-
+                                        if(safec_rc < EOK)
+                                        {
+                                                ERR_CHK(safec_rc);
+                                        }
                                  sysevent_get(g_iSyseventfd, g_tSysevent_token,
                                              l_cSysevent_Cmd, l_cIfName, sizeof(l_cIfName));
 
@@ -900,7 +916,10 @@ int prepare_dhcp_conf (char *input)
                  errno_t safec_rc = -1;
 
         safec_rc = sprintf_s(l_cLocalDhcpConf, sizeof(l_cLocalDhcpConf),"/tmp/dnsmasq.conf%d", getpid());
-        ERR_CHK(safec_rc);
+        if(safec_rc < EOK)
+        {
+                ERR_CHK(safec_rc);
+        }
 
         l_fLocal_Dhcp_ConfFile = fopen(l_cLocalDhcpConf, "a+"); //It will create a file and open
     if(NULL == l_fLocal_Dhcp_ConfFile)
