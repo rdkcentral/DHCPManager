@@ -535,8 +535,8 @@ int set_wan_sysevents()
         char lease_date[64];
         char lease_exp[128];
         char buf[128];
-        sysevent_set(sysevent_fd, sysevent_token, "wan_lease_time", lease, 0);        
-        result = read_cmd_output("date +\"\%Y.\%m.\%d-\%T\"",lease_date,sizeof(lease_date));
+        sysevent_set(sysevent_fd, sysevent_token, "wan_lease_time", lease, 0); 
+        result = read_cmd_output("date +\"%Y.%m.%d-%T\"",lease_date,sizeof(lease_date));
         if (0 == result)
         {
             snprintf(buf,sizeof(buf),"date -d\"%s:%s\" +\"%%Y.%%m.%%d-%%T %%Z\"",lease_date,lease);
@@ -554,7 +554,7 @@ int set_wan_sysevents()
         char lease_renew[128];
         char buf[128];
         sysevent_set(sysevent_fd, sysevent_token, "wan_renew_time", opt58, 0);        
-        result = read_cmd_output("date +\"\%Y.\%m.\%d-\%T\"",lease_date,sizeof(lease_date));
+        result = read_cmd_output("date +\"%Y.%m.%d-%T\"",lease_date,sizeof(lease_date));
         if (0 == result)
         {
             snprintf(buf,sizeof(buf),"date -d\"%s:0x%s\" +\"%%Y.%%m.%%d-%%T %%Z\"",lease_date,opt58);
@@ -572,7 +572,7 @@ int set_wan_sysevents()
         char lease_bind[128];
         char buf[128];
         sysevent_set(sysevent_fd, sysevent_token, "wan_rebind_time", opt59, 0);        
-        result = read_cmd_output("date +\"\%Y.\%m.\%d-\%T\"",lease_date,sizeof(lease_date));
+        result = read_cmd_output("date +\"%Y.%m.%d-%T\"",lease_date,sizeof(lease_date));
         if (0 == result)
         {
             snprintf(buf,sizeof(buf),"date -d\"%s:0x%s\" +\"%%Y.%%m.%%d-%%T %%Z\"",lease_date,opt59);
