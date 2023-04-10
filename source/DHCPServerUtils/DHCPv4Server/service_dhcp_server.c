@@ -713,7 +713,7 @@ int dhcp_server_start (char *input)
         copy_command_output(l_cCommand, l_cBuf, sizeof(l_cBuf));
         l_cBuf[strlen(l_cBuf)] = '\0';
 
-        if ('\0' == l_cBuf[0] || 0 == l_cBuf[0])
+        if (l_cBuf[0] == 0)
         {
             l_bRestart = TRUE;
         }
