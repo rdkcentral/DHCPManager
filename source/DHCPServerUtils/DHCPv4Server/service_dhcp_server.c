@@ -482,10 +482,14 @@ BOOL IsDhcpConfHasInterface(void)
         if (interface)
         printf ("\ninterface search res : %s\n",interface);
         if (interface)
-            return TRUE;
+        {
+        fclose(fp);
+        return TRUE;
+        }
     }
 
     DHCPMGR_LOG_INFO("dnsmasq.conf does not have any interfaces");
+    fclose(fp);
     return FALSE;
 }
 
