@@ -1047,6 +1047,7 @@ void resync_to_nonvol(char *RemPools)
         NV_INST_cnt=get_Pool_cnt(NV_INST,pipe);
         v_secure_pclose(pipe);
     }
+    errno_t safec_rc = -1;
     if(CURRENT_POOLS_cnt != -1 || NV_INST_cnt != -1)
     {
         memcpy(REM_POOLS,CURRENT_POOLS,sizeof(CURRENT_POOLS[0][0])*15*2);
@@ -1075,7 +1076,9 @@ void resync_to_nonvol(char *RemPools)
         }
         if (match_found == 0)
         {
-            strncpy(tmp_buff[tmp_cnt++],REM_POOLS[iter],2);
+            safec_rc=strcpy_s(tmp_buff[tmp_cnt],sizeof(tmp_buff[tmp_cnt]),REM_POOLS[iter]);
+            ERR_CHK(safec_rc);
+            tmp_cnt++;
         }
     }
     memset(REM_POOLS,0,sizeof(REM_POOLS[0][0])*15*2);
