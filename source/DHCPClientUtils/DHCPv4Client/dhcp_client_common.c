@@ -458,17 +458,20 @@ pid_t start_exe(char * exe, char * args)
     int32_t pid = 0;
     char **argv = NULL;
     int ret = SUCCESS;
-    if ((exe == NULL) && (args == NULL))
+    if ((exe == NULL) || (args == NULL))
     {
         DBG_PRINT("%s %d: Invalid arguments..\n", __FUNCTION__, __LINE__);
         return pid;
     }
+  
     DBG_PRINT("%s %d:exe:%s buff %s\n", __FUNCTION__, __LINE__, exe, args);
+  
     if ((ret = parseArgs(exe, args, &argv)) != SUCCESS)
     {
         DBG_PRINT("Failed to parse arguments %d\n",ret);
         return pid;
     }
+  
     pid = fork();
     if (pid == 0)
     {
