@@ -730,10 +730,6 @@ void compare_and_delete_old_dns(udhcpc_script_t *pinfo)
       }
    }
 
-   if(dns_server_list != NULL)
-   {
-      free(dns_server_list);
-   }
       fclose(fptr);
       fclose(ftmp);
       buffer = NULL;
@@ -762,7 +758,14 @@ void compare_and_delete_old_dns(udhcpc_script_t *pinfo)
 
       fclose(fout);
       fclose(fIN);
-      remove(RESOLV_CONF_TMP);
+      if(remove(RESOLV_CONF_TMP) != 0)
+      {
+        OnboardLog("%s: Unable to delete a file.",__FUNCTION__);
+      }
+   }
+   if(dns_server_list != NULL)
+   {
+      free(dns_server_list);
    }
 }
 
