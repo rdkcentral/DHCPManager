@@ -532,6 +532,7 @@ void prepare_whitelist_urls(FILE *fp_local_dhcp_conf)
         char l_cErouter0_Ipv4Addr[16] = {0}, l_cNsServer4[16] = {0}, l_cLine[255] = {0};
         FILE *l_fStatic_Urls = NULL, *l_fResolv_Conf = NULL;
     char *l_cRemoveHttp = NULL;
+        errno_t safec_rc = -1;
 
     // Redirection URL can be get from DML
     syscfg_get(NULL, "redirection_url", l_cRedirect_Url, sizeof(l_cRedirect_Url));
@@ -565,7 +566,8 @@ void prepare_whitelist_urls(FILE *fp_local_dhcp_conf)
             if (NULL != (l_cRemoveHttp = strstr(l_cCloud_Personal_Url, "http://")))
             {
             l_cRemoveHttp = l_cRemoveHttp + strlen("http://");
-                strncpy(l_cCloud_Personal_Url, l_cRemoveHttp, sizeof(l_cCloud_Personal_Url));
+                safec_rc=strcpy_s(l_cCloud_Personal_Url, sizeof(l_cCloud_Personal_Url),l_cRemoveHttp);
+                ERR_CHK(safec_rc);
        }
                 else if (NULL != (l_cRemoveHttp = strstr(l_cCloud_Personal_Url, "https://")))
                 {
