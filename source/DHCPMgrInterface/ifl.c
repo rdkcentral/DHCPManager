@@ -301,7 +301,8 @@ static void *_task_manager_thrd(void * value)
 
                 q_data_t* qData = (q_data_t*)malloc(sizeof(q_data_t));
                 qData->cb = evtToHdlMap[evtID].handler[idx].cb;
-                strcpy_s(qData->eValue, BUFLEN_64, eValue);
+                int rc = strcpy_s(qData->eValue, BUFLEN_64, eValue);
+                ERR_CHK(rc);
                 ctxID = evtToHdlMap[evtID].handler[idx].ctxID;
 
                 /* spin lock for thread flag - Try */
