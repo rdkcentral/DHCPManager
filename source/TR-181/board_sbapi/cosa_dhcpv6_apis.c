@@ -2241,8 +2241,8 @@ CosaDmlDhcpv6cGetEntry
     rc = strcpy_s((char*)pEntry->Cfg.Interface, sizeof(pEntry->Cfg.Interface), COSA_DML_DHCPV6_CLIENT_IFNAME);
     ERR_CHK(rc);
 
-    sprintf_s((char*)pEntry->Cfg.Alias, sizeof(pEntry->Cfg.Alias), "cpe-%s", pEntry->Cfg.Interface);
-    
+    rc = sprintf_s((char*)pEntry->Cfg.Alias, sizeof(pEntry->Cfg.Alias), "cpe-%s", pEntry->Cfg.Interface);
+    ERR_CHK(rc);
     rc = strcpy_s(buf, sizeof(buf), SYSCFG_FORMAT_DHCP6C"_requested_options");
     ERR_CHK(rc);
     memset(pEntry->Cfg.RequestedOptions, 0, sizeof(pEntry->Cfg.RequestedOptions));
