@@ -1839,8 +1839,11 @@ void* restoreAllDBs(void* arg)
 
                 // grab URL from string
                 urlPtr = strstr(buf, "=");
-                urlPtr++;
-                break;
+                if (urlPtr != NULL)
+                {
+                    urlPtr++;
+                    break;
+                }
             }
         }
 
@@ -4745,8 +4748,11 @@ int CheckAndGetDevicePropertiesEntry( char *pOutput, int size, char *sDeviceProp
 
             // grab content from string(entry)
             urlPtr = strstr( buf, "=" );
-            urlPtr++;
-
+            if ( urlPtr != NULL )
+            {
+            	 urlPtr++;
+            }
+          
             strncpy( pOutput, urlPtr, size );
 
             ret=0;
