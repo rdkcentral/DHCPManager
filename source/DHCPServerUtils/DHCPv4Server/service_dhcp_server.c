@@ -843,7 +843,7 @@ int dhcp_server_start (char *input)
     }
     l_cBuf[strlen(l_cBuf)] = '\0';
 
-    if ('\0' != l_cBuf[0] && 0 != l_cBuf[0])
+    if ('\0' != l_cBuf[0])
     {
         DHCPMGR_LOG_INFO("kill dnsmasq with SIGKILL if its still running ");
         v_secure_system("kill -KILL `pidof dnsmasq`");
