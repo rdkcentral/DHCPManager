@@ -140,10 +140,13 @@ static int getValueFromDevicePropsFile(char *str, char **value)
             {
                 buf[strcspn( buf, "\r\n" )] = 0; // Strip off any carriage returns
                 tempStr = strstr( buf, "=" );
-                tempStr++;
-                *value = tempStr;
-                ret = 0;
-                break;
+                if(tempStr != NULL)
+                {
+                    tempStr++;
+                    *value = tempStr;
+                    ret = 0;
+                    break;
+                }
             }
         }
         if( NULL == *value)
