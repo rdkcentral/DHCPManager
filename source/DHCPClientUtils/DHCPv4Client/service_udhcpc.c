@@ -192,8 +192,11 @@ char* GetDeviceProperties(char *param)
             out_val[strcspn(out_val, "\r\n")] = 0; // Strip off any carriage returns
 
             valPtr = strstr(out_val, "=");
-            valPtr++;
-            break;
+            if (valPtr != NULL)
+            {
+               valPtr++;
+               break;
+            }
         }
     }
     fclose(fp1);
