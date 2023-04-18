@@ -545,19 +545,20 @@ pid_t start_exe2(char * exe, char * args)
     char **argv = NULL;
     int ret     = SUCCESS;
 
-    if ((exe == NULL) && (args == NULL))
+    if ((exe == NULL) || (args == NULL))
     {
         DBG_PRINT("%s %d: Invalid arguments..\n", __FUNCTION__, __LINE__);
         return pid;
     }
 
     DBG_PRINT("%s %d:exe:%s buff %s\n", __FUNCTION__, __LINE__, exe, args);
-
+   
     if ((ret = parseArgs(exe, args, &argv)) != SUCCESS)
     {
         DBG_PRINT("Failed to parse arguments %d\n",ret);
         return pid;
     }
+    
 
     /* The parent process (the caller of start_exe()) blocks SIGCHLD
      * and ignore SIGINT and SIGQUIT while the child is executing.
