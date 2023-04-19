@@ -151,9 +151,7 @@ void dhcpv6_client_service_start ()
     {
         if (access(DHCP6C_PROGRESS_FILE, F_OK) != 0)
         {
-            FILE *fp;
-            fp  = fopen (DHCP6C_PROGRESS_FILE, "w");
-            fclose(fp);
+            creat(DHCP6C_PROGRESS_FILE,S_IWUSR | S_IWGRP | S_IWOTH);
             CcspTraceInfo(("SERVICE_DHCP6C : Starting DHCPv6 Client from service_dhcpv6_client binary\n"));
 #if defined(_COSA_INTEL_XB3_ARM_) || defined(INTEL_PUMA7)
             if (strncmp(l_cDibblerEnable, "true", 4))
