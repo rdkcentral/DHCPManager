@@ -680,6 +680,7 @@ ANSC_STATUS UpdateJsonParamLegacy
                 if(chk_ret <=0){
                  CcspTraceWarning(("%s-%d : Failed to read the data from file \n", __FUNCTION__, __LINE__));
                  fclose( fileRead );
+                 free(data);
                  return ANSC_STATUS_FAILURE;
                 }
          }
