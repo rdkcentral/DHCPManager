@@ -4087,6 +4087,7 @@ CosaDhcpInitJournal
         ULONG size = PARTNER_ID_LEN - 1;
         int len;
         errno_t rc = -1;
+        int check_ret;
         if (!pPoolCfg)
         {
                 CcspTraceWarning(("%s-%d : NULL param\n" , __FUNCTION__, __LINE__ ));
@@ -4118,7 +4119,13 @@ CosaDhcpInitJournal
          if (data != NULL)
          {
                 memset( data, 0, ( sizeof(char) * (len + 1) ));
-                fread( data, 1, len, fileRead );
+                check_ret = fread( data, 1, len, fileRead );
+           if (check_ret <= 0)
+            {
+                 CcspTraceWarning(("%s-%d : Failed to read data from file \n", __FUNCTION__, __LINE__));
+                 fclose( fileRead );
+                 return ANSC_STATUS_FAILURE;
+            }
          }
          else
          {
