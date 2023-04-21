@@ -608,6 +608,7 @@ void dhcpv4_client_service_release
     if ((fp = fopen(DHCPC_PID_FILE, "rb")) == NULL)
     {
         CcspTraceError(("Fopen failure \n"));
+        return;
     }
 
     if (fgets(pid, sizeof(pid), fp) != NULL && atoi(pid) > 0)
@@ -615,7 +616,6 @@ void dhcpv4_client_service_release
         CcspTraceInfo(("Trigger DHCP release \n"));
         kill(atoi(pid), SIGUSR2); // triger DHCP release
     }
-
     fclose(fp);
 
     vsystem("ip -4 addr flush dev %s", sd->ifname);
