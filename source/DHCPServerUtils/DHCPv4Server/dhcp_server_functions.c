@@ -1278,8 +1278,11 @@ int prepare_dhcp_conf (char *input)
     }
     else
         {
-        fscanf(l_fNetRes,"%s", l_cNetwork_Res);
-               fclose(l_fNetRes);
+                errno_t ret_chk = -1;
+                ret_chk = fscanf(l_fNetRes,"%7s", l_cNetwork_Res);
+                if (ret_chk == -1)
+                    ERR_CHK(ret_chk);
+                fclose(l_fNetRes);
         }
 
 
