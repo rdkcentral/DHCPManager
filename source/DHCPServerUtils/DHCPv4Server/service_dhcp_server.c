@@ -1628,7 +1628,7 @@ void get_device_props()
     if (NULL != l_fFp)
     {
         char props[255] = {""};
-        while(fscanf(l_fFp,"%s", props) != EOF )
+        while(fscanf(l_fFp,"%254s", props) != EOF )
         {
             char *property = NULL;
             if(NULL != (property = strstr(props, "BOX_TYPE=")))
