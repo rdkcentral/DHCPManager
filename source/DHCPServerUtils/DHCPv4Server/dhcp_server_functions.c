@@ -300,7 +300,7 @@ void calculate_dhcp_range (FILE *local_dhcpconf_file, char *prefix)
                 l_iStartAddr_Last_Oct = l_iLastOct;
 
                 subnet(l_cDhcp_Start, l_cLanNetMask, l_cIpSubnet);
-                if ((l_iStartAddr_Last_Oct < 2 && l_iStartAddr_Last_Oct > 254) &&
+                if ((l_iStartAddr_Last_Oct < 2 || l_iStartAddr_Last_Oct > 254) &&
             (strncmp(l_cIpSubnet, l_cLanSubnet, sizeof(l_cIpSubnet))))
                 {
                         DHCPMGR_LOG_INFO("Last Octet of DHCP Start Address:%d is not in range", l_iStartAddr_Last_Oct);
