@@ -598,7 +598,6 @@ CosaDhcpv6BackendGetDhcpv6Info
                   ERR_CHK(rc);
                   AnscFreeMemory(pSentOption);
                   AnscFreeMemory(pCxtLink);
-                  returnStatus = ANSC_STATUS_FAILURE;
                   break;
                 }
         
@@ -842,7 +841,6 @@ CosaDhcpv6BackendGetDhcpv6Info
                   ERR_CHK(rc);
                   AnscFreeMemory(pPoolOption);
                   AnscFreeMemory(pCxtLink);
-                  returnStatus = ANSC_STATUS_FAILURE;
                   break;
                 }
         
