@@ -3721,7 +3721,7 @@ ULONG
 CosaDmlLanMngm_GetNumberOfEntries(void)
 {
     UtopiaContext utctx = {0};
-    int num = -1;
+    int num = 0;
     if (Utopia_Init(&utctx))
     {
         Utopia_GetLanMngmCount(&utctx, &num);
