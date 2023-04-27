@@ -201,7 +201,8 @@ static int check_proc_entry_for_pid (char * name, char * args)
     FILE *fp;
     struct dirent *dent;
     bool found=false;
-    int pid, rc, p, i,chk_ret;
+    int rc, p, i,chk_ret;
+    int64_t pid;
     int rval = 0;
     char processName[BUFLEN_256];
     char cmdline[512] = {0};
@@ -217,9 +218,9 @@ static int check_proc_entry_for_pid (char * name, char * args)
     while (!found && (dent = readdir(dir)) != NULL)
     {
         if ((dent->d_type == DT_DIR) &&
-                (SUCCESS == strtol64(dent->d_name, NULL, 10, (int64_t*)&pid)))
+                (SUCCESS == strtol64(dent->d_name, NULL, 10, &pid)))
         {
-            snprintf(filename, sizeof(filename), "/proc/%d/stat", pid);
+            snprintf(filename, sizeof(filename), "/proc/%lld/stat", pid);
             fp = fopen(filename, "r");
             if (fp == NULL)
             {
@@ -246,8 +247,8 @@ static int check_proc_entry_for_pid (char * name, char * args)
                     if (args != NULL)
                     {
                         // argument to be verified before returning pid
-                        DBG_PRINT("%s %d: %s running in pid %d.. checking for cmdline param %s\n", __FUNCTION__, __LINE__, name, pid, args);
-                        snprintf(filename, sizeof(filename), "/proc/%d/cmdline", pid);
+                        DBG_PRINT("%s %d: %s running in pid %lld.. checking for cmdline param %s\n", __FUNCTION__, __LINE__, name, pid, args);
+                        snprintf(filename, sizeof(filename), "/proc/%lld/cmdline", pid);
                         fp = fopen(filename, "r");
                         if (fp == NULL)
                         {
