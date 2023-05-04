@@ -2480,8 +2480,10 @@ EXIT1:
     if ( pPoamIrepFoSntOpt)
         pPoamIrepFoSntOpt->Remove((ANSC_HANDLE)pPoamIrepFoSntOpt);
 
-    if ( pPoamIrepFoEnumSntOpt)
-        pPoamIrepFoEnumSntOpt->Remove((ANSC_HANDLE)pPoamIrepFoEnumSntOpt);
+   
+      /*CID 62577 Logically dead code -
+      goto EXIT only hit in NULL Case*/
+
 #endif
     if ( pPoamIrepFoPool)
         pPoamIrepFoPool->Remove((ANSC_HANDLE)pPoamIrepFoPool);
