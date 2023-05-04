@@ -3421,8 +3421,8 @@ EXIT1:
     /* Logically dead code -
       goto EXIT only hit in NULL Case*/
 
-    if ( pPoamIrepFoEnumSndOpt)
-        pPoamIrepFoEnumSndOpt->Remove((ANSC_HANDLE)pPoamIrepFoEnumSndOpt);
+    /*CID 58572 Logically dead code -
+      goto EXIT only hit in NULL Case*/
 #endif
 
     if ( pPoamIrepFoPool)
@@ -3432,10 +3432,9 @@ EXIT1:
         pPoamIrepFoEnumPool->Remove((ANSC_HANDLE)pPoamIrepFoEnumPool);
 
 
-    if ( pPoamIrepFoEnumStaticAddress)
-        pPoamIrepFoEnumStaticAddress->Remove((ANSC_HANDLE)pPoamIrepFoEnumStaticAddress);
-
-
+    /*CID 73009 Logically dead code -
+      goto EXIT only hit in NULL Case*/
+      
     pPoamIrepFoDhcpv4->EnableFileSync((ANSC_HANDLE)pPoamIrepFoDhcpv4, TRUE);
 
     return returnStatus;
