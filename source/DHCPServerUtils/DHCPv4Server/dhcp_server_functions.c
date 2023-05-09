@@ -37,6 +37,7 @@
 #include <ccsp_memory.h>
 
 #include "safec_lib_common.h"
+#include "secure_wrapper.h"
 #include "ccsp_trace.h"
 
 
@@ -91,6 +92,12 @@ extern void remove_file(char *);
 extern unsigned int mask2cidr(char *subnetMask);
 
 static unsigned int isValidSubnetMask(char *subnetMask);
+
+enum interface{
+    ExistWithSameRange,
+    ExistWithDifferentRange,
+    NotExists
+};
 
 /*
  * A subnet mask should only have continuous 1s starting from MSB (Most Significant Bit).
@@ -532,7 +539,6 @@ void prepare_whitelist_urls(FILE *fp_local_dhcp_conf)
         char l_cErouter0_Ipv4Addr[16] = {0}, l_cNsServer4[16] = {0}, l_cLine[255] = {0};
         FILE *l_fStatic_Urls = NULL, *l_fResolv_Conf = NULL;
     char *l_cRemoveHttp = NULL;
-        errno_t safec_rc = -1;
 
     // Redirection URL can be get from DML
     syscfg_get(NULL, "redirection_url", l_cRedirect_Url, sizeof(l_cRedirect_Url));
@@ -566,8 +572,7 @@ void prepare_whitelist_urls(FILE *fp_local_dhcp_conf)
             if (NULL != (l_cRemoveHttp = strstr(l_cCloud_Personal_Url, "http://")))
             {
             l_cRemoveHttp = l_cRemoveHttp + strlen("http://");
-                safec_rc=strcpy_s(l_cCloud_Personal_Url, sizeof(l_cCloud_Personal_Url),l_cRemoveHttp);
-                ERR_CHK(safec_rc);
+                strncpy(l_cCloud_Personal_Url, l_cRemoveHttp, sizeof(l_cCloud_Personal_Url));
        }
                 else if (NULL != (l_cRemoveHttp = strstr(l_cCloud_Personal_Url, "https://")))
                 {
@@ -808,7 +813,7 @@ void UpdateConfigListintoConfFile(FILE *l_fLocal_Dhcp_ConfFile)
 
 }
 
-void UpdateConfList(char *confToken)
+void AddConfList(char *confToken)
 {
     char count[12];
     int dhcp_dyn_cnfig_counter=0;
@@ -824,30 +829,59 @@ void UpdateConfList(char *confToken)
     sysevent_set(g_iSyseventfd, g_tSysevent_token, "dhcp_conf_change_counter", count, 0);
 }
 
-bool IsEventExist(char *confToken)
+void UpdateConfList(char *confTok, int ct)
+{
+
+    char conf[256]={'\0'};
+    char dhcp_dyn_conf_change[1024] = {0};
+    strncpy(conf, confTok, sizeof(conf)-1);
+    snprintf(dhcp_dyn_conf_change, sizeof(conf), "dhcp_dyn_conf_change_%d",ct);
+    printf("sysevent set dhcp_dyn_conf_change_%d: %s\n",ct,conf);
+    sysevent_set(g_iSyseventfd, g_tSysevent_token, dhcp_dyn_conf_change , conf, 0);
+}
+
+enum interface IsInterfaceExists(char *confTok, char * confInf, int* inst)
 {
     char count[12];
     int dhcp_dyn_cnfig_counter=0;
     char dhcp_dyn_conf_change[1024] = {0};
     char conf[256]={'\0'};
-    strncpy(conf, confToken, sizeof(conf)-1);
+    char infc[32]={'\0'};
+    strncpy(conf, confTok, sizeof(conf)-1);
+    strncpy(infc, confInf, sizeof(infc)-1);
+
     sysevent_get(g_iSyseventfd, g_tSysevent_token, "dhcp_conf_change_counter", count,sizeof(count));
     dhcp_dyn_cnfig_counter = atoi(count);
     if(dhcp_dyn_cnfig_counter ==0)
     {
-        return false;
+        return NotExists;
     }
     else
     {
-        printf("event exist else aprt\n");
         for(int i=1; i<= dhcp_dyn_cnfig_counter; i++)
         {
             char dynConfChange[256]  = {0};
+            char dynConfChag[256]  = {0};
             snprintf(dhcp_dyn_conf_change,sizeof(dynConfChange), "dhcp_dyn_conf_change_%d",i);
             sysevent_get(g_iSyseventfd, g_tSysevent_token, dhcp_dyn_conf_change, dynConfChange, sizeof(dynConfChange));
-            if(strcmp(dynConfChange,conf)==0)
+            strncpy(dynConfChag, dynConfChange, sizeof(dynConfChag)-1);
+            char dynInf[32] = {0};
+            if(dynConfChag[0] != '\0' )
             {
-                return true;
+                char * tokenInf = strtok(dynConfChag, "|");
+                strncpy(dynInf,tokenInf,(sizeof(dynInf)-1));
+            }
+            if (strcmp(infc,dynInf)==0)
+            {
+                if (strcmp(conf,dynConfChange)==0)
+                {
+                    return ExistWithSameRange;
+                }
+                else
+                {
+                    *inst =i;
+                    return ExistWithDifferentRange;
+                }
             }
             else
             {
@@ -855,19 +889,39 @@ bool IsEventExist(char *confToken)
             }
         }
     }
-    return false;
+    return NotExists;
 
 }
 
 void UpdateDhcpConfChangeBasedOnEvent()
 {
     char confToken[256]  = {0};
+    char confTok[256] = {0};
+    enum interface inf;
+    char confInface[32] = {0};
+    int instance;
     sysevent_get(g_iSyseventfd, g_tSysevent_token, "dhcp_conf_change", confToken, sizeof(confToken));
-    if(IsEventExist(confToken) == false)
+    strncpy(confTok, confToken, sizeof(confTok)-1);
+    if(confTok[0] != '\0' )
     {
-        UpdateConfList(confToken);
+        char * token = strtok(confTok, "|");
+        strncpy(confInface,token,(sizeof(confInface)-1));
     }
-
+    inf= IsInterfaceExists(confToken,confInface,&instance);
+    switch(inf)
+    {
+        case ExistWithSameRange:
+            printf("No change\n");
+            break;
+        case ExistWithDifferentRange:
+            printf("upadte the list\n");
+            UpdateConfList(confToken,instance);
+            break;
+        case NotExists:
+            printf("add to list\n");
+            AddConfList(confToken);
+            break;
+    }
 }
 
 //Input to this function
@@ -941,7 +995,6 @@ int prepare_dhcp_conf (char *input)
          */
 
         // set IP to interface to which dnsmasq should listen
-        memset(buff, 0, sizeof(buff));
         int ret_val;
         char *psmStrValue = NULL;
         char mesh_wan_ifname[16] = {0};
@@ -956,8 +1009,7 @@ int prepare_dhcp_conf (char *input)
                 Ansc_FreeMemory_Callback(psmStrValue);
                 psmStrValue = NULL;
         }
-        snprintf(buff, sizeof(buff), "ip addr add %s/24 dev %s", GRE_VLAN_IFACE_IP, mesh_wan_ifname);
-        system(buff);
+        v_secure_system("ip addr add "GRE_VLAN_IFACE_IP"/24 dev %s", mesh_wan_ifname);
 
         // edit the config file
 
@@ -1745,7 +1797,7 @@ int prepare_dhcp_conf (char *input)
         }
 #endif
 
-#if defined (_XB7_PRODUCT_REQ_) || defined(_WNXL11BWL_PRODUCT_REQ_)
+#if defined (_XB7_PRODUCT_REQ_)
         fprintf(l_fLocal_Dhcp_ConfFile, "interface=brlan112\n");
         fprintf(l_fLocal_Dhcp_ConfFile, "dhcp-range=169.254.0.5,169.254.0.253,255.255.255.0,infinite\n");
 

@@ -540,8 +540,8 @@ EvtDispterHandleEventAsync(void)
 
 int executeCmd(char *cmd)
 {
-        int l_iSystem_Res;
-        l_iSystem_Res = system(cmd);
+    int l_iSystem_Res;
+    l_iSystem_Res = system(cmd);
     if (0 != l_iSystem_Res && ECHILD != errno)
     {
         CcspTraceError(("%s: %s command didnt execute successfully\n", __FUNCTION__,cmd));

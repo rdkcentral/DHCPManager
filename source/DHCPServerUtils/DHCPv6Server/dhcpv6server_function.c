@@ -143,6 +143,9 @@ int CosaDmlDHCPv6sGetDNS(char* Dns, char* output, int outputLen);
 char * CosaDmlDhcpv6sGetStringFromHex(char * hexString);
 char * CosaDmlDhcpv6sGetAddressFromString(char * address);
 
+void dibbler_server_start();
+void dibbler_server_stop();
+
 enum {
     DHCPV6_SERVER_TYPE_STATEFUL  =1,
     DHCPV6_SERVER_TYPE_STATELESS
@@ -311,7 +314,7 @@ int _dibbler_server_operation(char * arg)
     //char* Parg;
     //Parg = (char*)arg;
 
-    char cmd[256] = {0};
+    //char cmd[256] = {0};
     ULONG Index  = 0;
     int fd = 0;
 
@@ -330,8 +333,7 @@ int _dibbler_server_operation(char * arg)
             //dibbler stop seems to be hanging intermittently with v_secure_system
             //replacing with system call
             //v_secure_system(SERVER_BIN " stop >/dev/null");
-            snprintf(cmd,sizeof(cmd), "%s stop >/dev/null", SERVER_BIN);
-            executeCmd(cmd);
+            dibbler_server_stop();
             close(fd);
         }else{
             //this should not happen.
@@ -379,8 +381,7 @@ int _dibbler_server_operation(char * arg)
             #endif
 
             //v_secure_system(SERVER_BIN " start");
-            snprintf(cmd,sizeof(cmd), "%s start", SERVER_BIN);
-            executeCmd(cmd);
+            dibbler_server_start();
         }
     }
     else if (!strncmp(arg, "restart", 7))
@@ -492,7 +493,8 @@ void CosaDmlDhcpv6sRebootServer()
 #else
     FILE *fp = NULL;
     int fd = 0;
-    if (g_dhcpv6s_restart_count) {
+    if (g_dhcpv6s_restart_count) 
+    {
         g_dhcpv6s_restart_count=0;
 
         //when need stop, it's supposed the configuration file need to be updated.
@@ -539,7 +541,8 @@ void CosaDmlDhcpv6sRebootServer()
     }
 #endif
     // refresh lan if we were asked to
-    if (g_dhcpv6s_refresh_count) {
+    if (g_dhcpv6s_refresh_count) 
+    {
         g_dhcpv6s_refresh_count = 0;
         v_secure_system("gw_lan_refresh");
     }

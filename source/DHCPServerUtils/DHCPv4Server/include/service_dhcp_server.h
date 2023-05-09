@@ -36,6 +36,14 @@ struct serv_ipv6 {
     enum tp_mod tpmod;
 };
 
+#ifdef RDKB_EXTENDER_ENABLED
+typedef enum {
+    ROUTER =0,
+    EXTENDER_MODE,
+} Dev_Mode;
+
+unsigned int Get_Device_Mode();
+#endif
 
 void dhcp_server_stop();
 int dhcp_server_start(char *);

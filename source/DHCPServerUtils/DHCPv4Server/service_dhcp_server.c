@@ -89,7 +89,7 @@ const char* const g_cComponent_id = "ccsp.servicedhcp";
 
 static char dnsOption[8] = "";
 
-extern void copy_command_output(char *, char *, int);
+extern void copy_command_output(FILE *, char *, int);
 extern void print_with_uptime(const char*);
 extern BOOL compare_files(char *, char *);
 extern void wait_till_end_state (char *);
@@ -107,6 +107,23 @@ extern char g_cBox_Type[8];
 extern char g_cXdns_Enabled[8];
 #endif
 extern char g_cAtom_Arping_IP[16];
+
+#ifdef RDKB_EXTENDER_ENABLED
+unsigned int Get_Device_Mode()
+{
+    char dev_type[16] = {0};
+    syscfg_get(NULL, "Device_Mode", dev_type, sizeof(dev_type));
+    unsigned int dev_mode = atoi(dev_type);
+    Dev_Mode mode;
+    if(dev_mode==1)
+    {
+        mode = EXTENDER_MODE;
+    }
+    else
+        mode = ROUTER;
+    return mode;
+}
+#endif
 
 #if !defined(_COSA_INTEL_USG_ARM_) || defined(INTEL_PUMA7) || defined(_COSA_BCM_ARM_) || defined(_PLATFORM_IPQ_)
 static int getValueFromDevicePropsFile(char *str, char **value)
@@ -148,15 +165,14 @@ static int getValueFromDevicePropsFile(char *str, char **value)
 }
 #endif
 
-int get_Pool_cnt(char arr[15][2],char *cmd)
+int get_Pool_cnt(char arr[15][2],FILE *pipe)
 {
-    DHCPMGR_LOG_INFO("Inside- with arg=%s",cmd);
+    DHCPMGR_LOG_INFO("Inside -");
     int iter=0;
     char sg_buff[2]={0};
-    FILE *pipe=popen(cmd, "r");
     if (NULL == pipe)
     {
-        DHCPMGR_LOG_INFO("\n Unable to open pipe for get_Pool_cnt cmd=%s",cmd);
+        DHCPMGR_LOG_INFO("\n Unable to open pipe for get_Pool_cnt pipe");
         return -1;
     }
     while(fgets(sg_buff, sizeof(sg_buff), pipe) != NULL )
@@ -168,7 +184,6 @@ int get_Pool_cnt(char arr[15][2],char *cmd)
             iter++;
         }
     }
-    pclose(pipe);
     DHCPMGR_LOG_INFO("\n ENDS ..... with Pool_Count=%d",iter);
     return iter;
 }
@@ -297,7 +312,7 @@ int dnsmasq_server_start()
          {
              if(!strncmp(l_cXdnsRefacCodeEnable, "1", 1))
              {
-                 safec_rc = sprintf_s(l_cSystemCmd, sizeof(l_cSystemCmd),"-q --clear-on-reload --bind-dynamic --add-mac --add-cpe-id=abcdefgh -P 4096 -C %s %s --dhcp-authoritative --proxy-dnssec --cache-size=0 --xdns-refac-code --stop-dns-rebind --log-facility=/rdklogs/logs/dnsmasq.log", DHCP_CONF,dnsOption);
+                 safec_rc = sprintf_s(l_cSystemCmd, sizeof(l_cSystemCmd),"-q --clear-on-reload --bind-dynamic --add-mac --add-cpe-id=abcdefgh -P 4096 -C %s %s --dhcp-authoritative --proxy-dnssec --cache-size=0 --xdns-refac-code", DHCP_CONF,dnsOption);
                  if(safec_rc < EOK)
                  {
                      ERR_CHK(safec_rc);
@@ -392,6 +407,22 @@ void dhcp_server_stop()
             DHCPMGR_LOG_INFO("DHCP SERVER is already stopped not doing anything");
             return;
     }
+
+#ifdef RDKB_EXTENDER_ENABLED
+    if (Get_Device_Mode() == EXTENDER_MODE)
+    {
+        // Device is extender, check if ipv4 and mesh link are ready
+        char l_cMeshWanLinkStatus[16] = {0};
+
+        sysevent_get(g_iSyseventfd, g_tSysevent_token, "mesh_wan_linkstatus", l_cMeshWanLinkStatus, sizeof(l_cMeshWanLinkStatus));
+
+        if ( strncmp(l_cMeshWanLinkStatus, "up", 2) != 0 )
+        {
+            fprintf(stderr, "mesh_wan_linkstatus and ipv4_connection_state is not up\n");
+            return;
+        }
+    }
+#endif
 
     //dns is always running
     prepare_hostname();
@@ -524,10 +555,19 @@ int syslog_restart_request()
         }
         else
         {
-            char l_cCommand[128] = {0}, l_cBuf[128] = {0};
+            char l_cBuf[128] = {0};
             char *l_cToken = NULL;
-            sprintf(l_cCommand, "pidof dnsmasq");
-            copy_command_output(l_cCommand, l_cBuf, sizeof(l_cBuf));
+            FILE *fp1 = NULL;
+            fp1 = v_secure_popen("r","pidof dnsmasq");
+            if(!fp1)
+            {
+                DHCPMGR_LOG_ERROR("Failed in opening pipe");
+            }
+            else
+            {
+                copy_command_output(fp1, l_cBuf, sizeof(l_cBuf));
+                v_secure_pclose(fp1);
+            }
             l_cBuf[strlen(l_cBuf)] = '\0';
 
             if ('\0' == l_cBuf[0] || 0 == l_cBuf[0])
@@ -607,7 +647,7 @@ int dhcp_server_start (char *input)
     char l_cSystemCmd[255] = {0}, l_cPsm_Mode[8] = {0}, l_cStart_Misc[8] = {0};
     char l_cDhcp_Tmp_Conf[32] = {0};
     char l_cCurrent_PID[8] = {0}, l_cRpc_Cmd[64] = {0};
-    char l_cCommand[128] = {0}, l_cBuf[128] = {0};
+    char l_cBuf[128] = {0};
     char l_cBridge_Mode[8] = {0};
     char l_cDhcp_Server_Prog[16] = {0};
     int dhcp_server_progress_count = 0;
@@ -615,6 +655,7 @@ int dhcp_server_start (char *input)
     BOOL l_bRestart = FALSE, l_bFiles_Diff = FALSE, l_bPid_Present = FALSE;
     FILE *l_fFp = NULL;
     int l_iSystem_Res;
+    FILE *fptr = NULL;
     //int fd = 0;
 
     char *l_cToken = NULL;
@@ -639,6 +680,22 @@ int dhcp_server_start (char *input)
                                  "dhcp_server-errinfo", "dhcp server is disabled by configuration", 0);
         return 0;
     }
+
+#ifdef RDKB_EXTENDER_ENABLED
+    if (Get_Device_Mode() == EXTENDER_MODE)
+    {
+        // Device is extender, check if ipv4 and mesh link are ready
+        char l_cMeshWanLinkStatus[16] = {0};
+
+        sysevent_get(g_iSyseventfd, g_tSysevent_token, "mesh_wan_linkstatus", l_cMeshWanLinkStatus, sizeof(l_cMeshWanLinkStatus));	
+    
+        if ( strncmp(l_cMeshWanLinkStatus, "up", 2) != 0 )
+        {
+            fprintf(stderr, "mesh_wan_linkstatus and ipv4_connection_state is not up\n");
+            return 1;
+        }
+    }
+#endif
 
     //LAN Status DHCP
     sysevent_get(g_iSyseventfd, g_tSysevent_token, "lan_status-dhcp", l_cLanStatusDhcp, sizeof(l_cLanStatusDhcp));
@@ -708,9 +765,16 @@ int dhcp_server_start (char *input)
         }
         else
         {
-        safec_rc = strcpy_s(l_cCommand, sizeof(l_cCommand),"pidof dnsmasq");
-        ERR_CHK(safec_rc);
-        copy_command_output(l_cCommand, l_cBuf, sizeof(l_cBuf));
+        fptr = v_secure_popen("r","pidof dnsmasq");
+        if(!fptr)
+        {
+            DHCPMGR_LOG_ERROR("Error in opening pipe");
+        }
+        else
+        {
+            copy_command_output(fptr, l_cBuf, sizeof(l_cBuf));
+            v_secure_pclose(fptr);
+        }
         l_cBuf[strlen(l_cBuf)] = '\0';
 
         if (l_cBuf[0] == 0)
@@ -764,10 +828,17 @@ int dhcp_server_start (char *input)
     }
 
     /* Kill dnsmasq if its not stopped properly */
-    safec_rc = strcpy_s(l_cCommand, sizeof(l_cCommand),"pidof dnsmasq");
-    ERR_CHK(safec_rc);
+    fptr = v_secure_popen("r","pidof dnsmasq");
     memset (l_cBuf, '\0',  sizeof(l_cBuf));
-    copy_command_output(l_cCommand, l_cBuf, sizeof(l_cBuf));
+    if(!fptr)
+    {
+        DHCPMGR_LOG_ERROR("Error in opening pipe");
+    }
+    else
+    {
+        copy_command_output(fptr, l_cBuf, sizeof(l_cBuf));
+        v_secure_pclose(fptr);
+    }
     l_cBuf[strlen(l_cBuf)] = '\0';
 
     if ('\0' != l_cBuf[0] && 0 != l_cBuf[0])
@@ -945,9 +1016,28 @@ void resync_to_nonvol(char *RemPools)
     char CUR_IPV4[16]={0},sg_buff[100]={0};
     char asyn[100]={0};
     char l_sAsyncString[120];
+    FILE *pipe =NULL;
 
-    CURRENT_POOLS_cnt=get_Pool_cnt(CURRENT_POOLS,"sysevent get dhcp_server_current_pools");
-    NV_INST_cnt=get_Pool_cnt(NV_INST,"psmcli getallinst dmsb.dhcpv4.server.pool.");
+    pipe = v_secure_popen("r","sysevent get dhcp_server_current_pools");
+    if(!pipe)
+    {
+        DHCPMGR_LOG_ERROR("Failed in opening pipe");
+    }
+    else
+    {
+        CURRENT_POOLS_cnt=get_Pool_cnt(CURRENT_POOLS,pipe);
+        v_secure_pclose(pipe);
+    }
+    pipe = v_secure_popen("r","psmcli getallinst dmsb.dhcpv4.server.pool.");
+    if(!pipe)
+    {
+        DHCPMGR_LOG_ERROR("Failed in opening pipe");
+    }
+    else
+    {
+        NV_INST_cnt=get_Pool_cnt(NV_INST,pipe);
+        v_secure_pclose(pipe);
+    }
     if(CURRENT_POOLS_cnt != -1 || NV_INST_cnt != -1)
     {
         memcpy(REM_POOLS,CURRENT_POOLS,sizeof(CURRENT_POOLS[0][0])*15*2);
@@ -1327,6 +1417,22 @@ int service_dhcp_init()
 
 void lan_status_change(char *input)
 {
+#ifdef RDKB_EXTENDER_ENABLED
+    if (Get_Device_Mode() == EXTENDER_MODE)
+    {
+        // Device is extender, check if ipv4 and mesh link are ready
+        char l_cMeshWanLinkStatus[16] = {0};
+
+        sysevent_get(g_iSyseventfd, g_tSysevent_token, "mesh_wan_linkstatus",
+                     l_cMeshWanLinkStatus, sizeof(l_cMeshWanLinkStatus));
+
+        if ( strncmp(l_cMeshWanLinkStatus, "up", 2) != 0 )
+        {
+            fprintf(stderr, "mesh_wan_linkstatus and ipv4_connection_state is not up\n");
+            return;
+        }
+    }
+#endif
         char l_cLan_Status[16] = {0}, l_cDhcp_Server_Enabled[8] = {0};
         int l_iSystem_Res;
 
@@ -1596,21 +1702,18 @@ void print_file(char *to_print_file)
     }
 }
 
-void copy_command_output(char *cmd, char *out, int len)
+void copy_command_output(FILE *fp, char *out, int len)
 {
-    FILE *l_fFp = NULL;
-    char l_cBuf[256];
     char *l_cP = NULL;
-    l_fFp = popen(cmd, "r");
-    if (l_fFp)
+    if (fp)
     {
-        fgets(l_cBuf, sizeof(l_cBuf), l_fFp);
+        fgets(out, len, fp);
 
         /*we need to remove the \n char in buf*/
-        if ((l_cP = strchr(l_cBuf, '\n'))) *l_cP = 0;
-
-        strncpy(out, l_cBuf, len-1);
-        pclose(l_fFp);
+        if ((l_cP = strchr(out, '\n')))
+        {
+            *l_cP = 0;
+        }
     }
 }
 
@@ -1723,10 +1826,6 @@ int sysevent_syscfg_init()
         return ERROR;
     }
 
-    if (syscfg_init() != 0) {
-        DHCPMGR_LOG_ERROR("fail to init syscfg");
-        return ERROR;
-    }
       /* dbus init based on bus handle value */
     if(g_vBus_handle ==  NULL)
         dbusInit();

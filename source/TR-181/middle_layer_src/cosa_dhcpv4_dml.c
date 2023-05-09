@@ -5893,7 +5893,6 @@ Pool_GetParamStringValue
     PUCHAR                          pString           = NULL;
     COSA_DML_DHCPS_POOL_CFG tmpCfg;
     BOOL bValidDomainName;
-    errno_t  rc  =   -1;
 
     /* check the parameter name and return the corresponding value */
     if( AnscEqualString(ParamName, "Alias", TRUE))
@@ -5924,59 +5923,41 @@ Pool_GetParamStringValue
                 AnscFreeMemory(pString);
                 return ret;
             }
-            else
-            {
-                return 0;
-            }
+            *pValue = 0;
+            return 0;
         }
         else
         {
             //pPool->Cfg.Interface is instance number for other pool
             //_ansc_sprintf(pValue,"Device.IP.Interface.%s", pPool->Cfg.Interface);
             // pPool->Cfg.Interface is full path name
-            rc = strcpy_s(pValue, *pUlSize, pPool->Cfg.Interface);
-            if(rc != EOK)
-            {
-                ERR_CHK(rc);
-                return -1;
-            }
-            return 0;
+            return update_pValue(pValue, pUlSize, pPool->Cfg.Interface);
         }
 
     }
 
+#if 0
     if( AnscEqualString(ParamName, "VendorClassID", TRUE))
     {
         /* collect value */
-#if 0
         return  update_pValue(pValue,pUlSize, pPool->Cfg.VendorClassID);
-#endif
-        pValue[0] = '\0'; /* Not Supported */
     }
 
     if( AnscEqualString(ParamName, "ClientID", TRUE))
     {
         /* collect value */
-#if 0
         return  update_pValue(pValue,pUlSize, pPool->Cfg.ClientID);
-#endif
-        pValue[0] = '\0'; /* Not Supported */
     }
 
     if( AnscEqualString(ParamName, "UserClassID", TRUE))
     {
         /* collect value */
-#if 0
         return  update_pValue(pValue,pUlSize, pPool->Cfg.UserClassID);
-#endif
-        pValue[0] = '\0'; /* Not Supported */
     }
 
     if( AnscEqualString(ParamName, "Chaddr", TRUE))
     {
-        /* collect value */
-#if 0
-        if ( AnscSizeOfString(pPool->Cfg.Chaddr) < *pUlSize)
+        if (*pUlSize < 18)
         {
             _ansc_sprintf
                 (
@@ -5994,18 +5975,14 @@ Pool_GetParamStringValue
         }
         else
         {
-            *pUlSize = AnscSizeOfString(pPool->Cfg.Chaddr)+1;
+             *pUlSize = 18;
             return 1;
         }
-#endif
-        pValue[0] = '\0'; /* Not Supported */
     }
 
     if( AnscEqualString(ParamName, "ChaddrMask", TRUE))
     {
-        /* collect value */
-#if 0
-        if ( AnscSizeOfString(pPool->Cfg.ChaddrMask) < *pUlSize)
+        if (*pUlSize < 18)
         {
             _ansc_sprintf
                 (
@@ -6023,17 +6000,14 @@ Pool_GetParamStringValue
         }
         else
         {
-            *pUlSize = AnscSizeOfString(pPool->Cfg.ChaddrMask)+1;
+            *pUlSize = 18;
             return 1;
         }
-#endif
-        pValue[0] = '\0'; /* Not Supported */
     }
 
     if( AnscEqualString(ParamName, "ReservedAddresses", TRUE))
     {
         /* collect value */
-#if 0
         if ( CosaDmlGetIpaddrString(pValue, pUlSize, &pPool->Cfg.ReservedAddresses[0], COSA_DML_DHCP_MAX_RESERVED_ADDRESSES ) )
         {
             return 0;
@@ -6042,9 +6016,8 @@ Pool_GetParamStringValue
         {
             return 1;
         }
-#endif
-        pValue[0] = '\0'; /* Not Supported */
     }
+ #endif
 
     if( AnscEqualString(ParamName, "DNSServers", TRUE))
     {
@@ -6169,6 +6142,7 @@ Pool_SetParamBoolValue
         return TRUE;
     }
 
+#if 0
     if( AnscEqualString(ParamName, "VendorClassIDExclude", TRUE))
     {
         /* save update to backup */
@@ -6196,6 +6170,7 @@ Pool_SetParamBoolValue
         return FALSE; /* Not supported */
         /* Structurally dead code*/
     }
+#endif
 
     /* check the parameter name and set the corresponding value */
     if( AnscEqualString(ParamName, "DNSServersEnabled", TRUE))
@@ -6733,6 +6708,7 @@ Pool_SetParamStringValue
         return TRUE;
     }
 
+#if 0
     if( AnscEqualString(ParamName, "VendorClassID", TRUE))
     {
         /* save update to backup */
@@ -6774,11 +6750,20 @@ Pool_SetParamStringValue
         return FALSE; /* Not supported */
         /* Structurally dead code*/
     }
+#endif
 
     if( AnscEqualString(ParamName, "DNSServers", TRUE))
     {
         /* save update to backup */
-        return CosaDmlSetIpaddr((PULONG)&pPool->Cfg.DNSServers[0].Value, pString, COSA_DML_DHCP_MAX_ENTRIES);
+        /* CID 125079 fix */
+        BOOL ret = FALSE;
+        ULONG DNSServersIP[COSA_DML_DHCP_MAX_ENTRIES] = {0};
+        ret = CosaDmlSetIpaddr( DNSServersIP, pString, COSA_DML_DHCP_MAX_ENTRIES);
+        for(ULONG cnt=0;cnt < COSA_DML_DHCP_MAX_ENTRIES; cnt++)
+        {
+            pPool->Cfg.DNSServers[cnt].Value = (uint32_t)DNSServersIP[cnt];
+        }
+        return ret;
     }
 
     if( AnscEqualString(ParamName, "DomainName", TRUE))
@@ -6804,7 +6789,14 @@ Pool_SetParamStringValue
         }
 
         /* save update to backup */
-        ret = CosaDmlSetIpaddr((PULONG)&pPool->Cfg.IPRouters[0].Value, pString, COSA_DML_DHCP_MAX_ENTRIES);
+        /* CID 125357 fix */
+        ULONG IPRoutersVal[COSA_DML_DHCP_MAX_ENTRIES] = {0};
+        ret = CosaDmlSetIpaddr(IPRoutersVal, pString, COSA_DML_DHCP_MAX_ENTRIES);
+        for(ULONG cnt=0;cnt < COSA_DML_DHCP_MAX_ENTRIES; cnt++)
+        {
+            pPool->Cfg.IPRouters[cnt].Value = (uint32_t)IPRoutersVal[cnt];
+        }
+
         Dhcpv4_Lan_MutexUnLock();
         return ret;
     }
