@@ -570,7 +570,7 @@ int syslog_restart_request()
             }
             l_cBuf[strlen(l_cBuf)] = '\0';
 
-            if ('\0' == l_cBuf[0] || 0 == l_cBuf[0])
+            if (0 == l_cBuf[0])
             {
                 l_crestart = 1;
             }
