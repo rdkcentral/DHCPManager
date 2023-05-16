@@ -322,6 +322,7 @@ static void *_task_manager_thrd(void * value)
                     else
                     {
                         //IFL_LOG_ERROR("[%d] Skip handling event %s", ctxID, event);
+                        free(qData);
                         continue;
                     }
                 }
