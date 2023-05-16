@@ -2135,12 +2135,17 @@ CosaDmlDcSetFactoryReset
         unsigned int dbValue = 0;
         FILE *pdbFile = NULL;
         char buf[128]={0};
+        int ret_value;
 #define FACTORY_RESET_COUNT_FILE "/nvram/.factory_reset_count"
         pdbFile = fopen(FACTORY_RESET_COUNT_FILE, "r");
         if(pdbFile != NULL){
-            fread(buf,sizeof(buf),1,pdbFile);
+            
+            ret_value=fread(buf,sizeof(buf),1,pdbFile);
             fclose(pdbFile);
+        if(ret_value > 0)
+         {
             dbValue = atoi(buf);
+         }
         }
         dbValue++;
         pdbFile = fopen(FACTORY_RESET_COUNT_FILE, "w+");
