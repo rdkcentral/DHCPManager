@@ -260,6 +260,7 @@ static int check_proc_entry_for_pid (char * name, char * args)
                         chk_ret = fread(cmdline, 1, sizeof(cmdline), fp);
                         if (chk_ret > 0)
                         {
+                            cmdline[sizeof(cmdline)-1]='\0';
                             DBG_PRINT("%s %d: comparing cmdline from proc:%s with %s\n", __FUNCTION__, __LINE__, cmdline, args);
                             if (find_strstr(cmdline, sizeof(cmdline), args, strlen(args)) == SUCCESS)
                             {
