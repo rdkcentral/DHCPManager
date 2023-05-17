@@ -409,7 +409,7 @@ static int parseArgs(const char *cmd, const char *args, char ***argv)
     }
     else
     {
-        strcpy(array[argIndex], cmdStr);
+        strncpy(array[argIndex], cmdStr,sizeof(array[argIndex])-1);
         argIndex++;
     }
     inSpace = TRUE;
