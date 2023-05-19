@@ -183,8 +183,10 @@ ifl_ret ifl_register_event_handler (char* event, ifl_event_type eType, char* cal
         IFL_LOG_ERROR("Maximum caller context(%d) registered!", IFL_MAX_CONTEXT);
         return ret;
     }
-
-    if ((evtID = _get_evt_id(event, 1)) == IFL_MAX_EVENT_HANDLER_MAP)
+    
+    evtID = _get_evt_id(event, 1);
+  
+    if (evtID == IFL_MAX_EVENT_HANDLER_MAP)
     {
         IFL_LOG_ERROR("Maximum events(%d) registered!", evtID);
         return ret;
@@ -287,7 +289,9 @@ static void *_task_manager_thrd(void * value)
             uint8 idx   = 0;
 
             /* _get_evt_id is not thread safe */
-            if ((evtID = _get_evt_id(event, 0)) == IFL_MAX_EVENT_HANDLER_MAP)
+            evtID = _get_evt_id(event, 0);
+          
+            if (evtID == IFL_MAX_EVENT_HANDLER_MAP)
             {
                 IFL_LOG_ERROR("Event(%s) not found in registered list! Ambiguous!", event);
                 continue;
