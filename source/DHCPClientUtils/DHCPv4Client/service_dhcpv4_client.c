@@ -539,7 +539,7 @@ void dhcpv4_client_service_renew
 {
     UNREFERENCED_PARAMETER(arg);
     CcspTraceInfo(("%s: BEGIN \n", __FUNCTION__));
-    FILE *fp;
+    FILE *fp = NULL;
     char pid[BUFF_LEN_16];
     char line[BUFF_LEN_64], *cp;
 
@@ -551,29 +551,36 @@ void dhcpv4_client_service_renew
         {
             CcspTraceError(("Error in starting Dhcpv4 client\n"));
         }
+        
+    }    
+    else
+    { 
+        if (fgets(pid, sizeof(pid), fp) != NULL && atoi(pid) > 0)
+       {
+          kill(atoi(pid), SIGUSR1); // triger DHCP release
+       }
+      fclose(fp);
     }
 
-    if (fgets(pid, sizeof(pid), fp) != NULL && atoi(pid) > 0)
-    {
-        kill(atoi(pid), SIGUSR1); // triger DHCP release
-    }
-
-    fclose(fp);
     sysevent_set(sd->sefd, sd->setok, "current_wan_state", "up", 0);
-
+    fp = NULL;
+    
     if ((fp = fopen("/proc/uptime", "rb")) == NULL)
     {
         CcspTraceError(("Error in opening /proc/uptime\n"));
+    }     
+    else
+    {
+      if (fgets(line, sizeof(line), fp) != NULL)
+      {
+          if ((cp = strchr(line, '.')) != NULL)
+          {
+              *cp = '\0';
+          }
+          sysevent_set(sd->sefd, sd->setok, "wan_start_time", line, 0);
+      }
+      fclose(fp);
     }
-    if (fgets(line, sizeof(line), fp) != NULL)
-	{
-        if ((cp = strchr(line, '.')) != NULL)
-        {
-            *cp = '\0';
-        }
-        sysevent_set(sd->sefd, sd->setok, "wan_start_time", line, 0);
-    }
-    fclose(fp);
 }
 
 /**********************************************************************
