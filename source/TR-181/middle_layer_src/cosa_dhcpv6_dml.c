@@ -7532,16 +7532,18 @@ Option4_DelEntry
         ANSC_HANDLE                 hInstance
     )
 {
+#ifndef MULTILAN_FEATURE
+    /* We just have two option:DNS, domain. Not permit to add/delete. */
+    UNREFERENCED_PARAMETER(hInsContext);
+    UNREFERENCED_PARAMETER(hInstance);
+    return ANSC_STATUS_FAILURE;
+#else
+    PCOSA_DATAMODEL_DHCPV6            pDhcpv6              = (PCOSA_DATAMODEL_DHCPV6)g_Dhcpv6Object;
+    PCOSA_DML_DHCPSV6_POOL_OPTION     pDhcpOption          = (PCOSA_DML_DHCPSV6_POOL_OPTION)pCxtLink->hContext;
+    PCOSA_DML_DHCPSV6_POOL_FULL       pDhcpPool           = (PCOSA_DML_DHCPSV6_POOL_FULL)pCxtPoolLink->hContext;
     ANSC_STATUS                       returnStatus         = ANSC_STATUS_SUCCESS;
     PCOSA_CONTEXT_POOLV6_LINK_OBJECT  pCxtPoolLink         = (PCOSA_CONTEXT_POOLV6_LINK_OBJECT)hInsContext;
-    PCOSA_DML_DHCPSV6_POOL_FULL       pDhcpPool           = (PCOSA_DML_DHCPSV6_POOL_FULL)pCxtPoolLink->hContext;
     PCOSA_CONTEXT_LINK_OBJECT         pCxtLink             = (PCOSA_CONTEXT_LINK_OBJECT)hInstance;
-    PCOSA_DML_DHCPSV6_POOL_OPTION     pDhcpOption          = (PCOSA_DML_DHCPSV6_POOL_OPTION)pCxtLink->hContext;
-    PCOSA_DATAMODEL_DHCPV6            pDhcpv6              = (PCOSA_DATAMODEL_DHCPV6)g_Dhcpv6Object;
-#ifndef MULTILAN_FEATURE
-        /* We just have two option:DNS, domain. Not permit to add/delete. */
-        return ANSC_STATUS_FAILURE;
-#endif
     if ( !pCxtLink->bNew )
     {
         returnStatus = CosaDmlDhcpv6sDelOption( NULL, pDhcpPool->Cfg.InstanceNumber, pDhcpOption->InstanceNumber );
@@ -7560,7 +7562,7 @@ Option4_DelEntry
     }
 
     return returnStatus;
-
+#endif
 }
 
 /**********************************************************************
