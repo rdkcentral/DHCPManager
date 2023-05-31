@@ -1026,6 +1026,7 @@ void resync_to_nonvol(char *RemPools)
     char asyn[100]={0};
     char l_sAsyncString[120];
     FILE *pipe =NULL;
+    errno_t rc = -1;
 
     pipe = v_secure_popen("r","sysevent get dhcp_server_current_pools");
     if(!pipe)
@@ -1216,7 +1217,9 @@ void resync_to_nonvol(char *RemPools)
 	    }
 	    if (match_found == 0)
 	    {
-	        strncpy(tmp_buff[tmp_cnt++],CURRENT_POOLS[iter],2);
+	        rc = strcpy_s(tmp_buff[tmp_cnt],sizeof(tmp_buff[tmp_cnt]),CURRENT_POOLS[iter]);
+                ERR_CHK(rc);
+                tmp_cnt++;
 	    }
     }
     memset(CURRENT_POOLS,0,sizeof(CURRENT_POOLS[0][0])*15*2);
@@ -1236,7 +1239,9 @@ void resync_to_nonvol(char *RemPools)
 	    }
 	    if (match_found == 0)
 	    {
-	        strncpy(tmp_buff[tmp_cnt++],CURRENT_POOLS[iter],2);
+	        rc = strcpy_s(tmp_buff[tmp_cnt],sizeof(tmp_buff[tmp_cnt]),CURRENT_POOLS[iter]);
+                ERR_CHK(rc);
+                tmp_cnt++;
 	    }
     }
 
