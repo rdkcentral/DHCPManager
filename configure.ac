@@ -218,6 +218,15 @@ AC_ARG_ENABLE([dhcpv6_client_support],
 esac],[dhcpv6_client_support=true])
 AM_CONDITIONAL(DHCPV6_CLIENT_SUPPORT, test x"$dhcpv6_client_support" = x"true")
 
+# Checks for BCI support
+AC_ARG_ENABLE([bci_support],
+[  --enable-bci_support=val Turn on bci, val=true or false],
+[case "${enableval}" in
+  yes) bci_support=true ;;
+  no)  bci_support=false ;;
+  *) AC_MSG_ERROR([bad value ${enableval} for --enable-bci_support]) ;;
+esac],[bci_support=false])
+AM_CONDITIONAL(BCI_SUPPORT, test x"$bci_support" = x"true")
 
 # Checks for header files.
 AC_CHECK_HEADERS([stdlib.h string.h unistd.h])

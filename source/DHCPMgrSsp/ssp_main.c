@@ -593,6 +593,9 @@ CcspTraceWarning(("\nAfter Cdm_Init\n"));
 CcspTraceInfo(("\n Before ssp_cancel() \n"));
         ssp_cancel();
         //exit_rbus_service();
+#if defined(_CBR_PRODUCT_REQ_) && !defined(_CBR2_PRODUCT_REQ_)
+	serv_ipv6_term();
+#endif
 CcspTraceInfo(("\nExiting the main function\n"));
     return 0;
 }

@@ -183,6 +183,13 @@ struct DHCP_TAG tagList[] =
 
 extern COSA_DML_DHCPCV6_RECV * g_recv_options;
 
+#if defined(_CBR_PRODUCT_REQ_) && !defined(_CBR2_PRODUCT_REQ_)
+int serv_ipv6_init();
+int serv_ipv6_start(void *args);
+int serv_ipv6_stop(void *args);
+int serv_ipv6_restart(void *args);
+#endif
+
 void dhcpv6_server_init();
 
 #define DIBBLER_SERVER_OPERATION         "dibbler_server_operation"
@@ -202,6 +209,12 @@ void dhcpv6_server_init()
 
   //ifl_register_event_handler(DHCPV6S_REBOOT_SERVER, 1, DHCPV6S_CALLER_CTX, CosaDmlDhcpv6sRebootServer);
   //ifl_register_event_handler(DHCPV6S_REFRESH_CONFIG, 1, DHCPV6S_CALLER_CTX, _cosa_dhcpsv6_refresh_config);
+#if defined(_CBR_PRODUCT_REQ_) && !defined(_CBR2_PRODUCT_REQ_)
+  serv_ipv6_init();
+  ifl_register_event_handler("dhcpv6_server-start", IFL_EVENT_NOTIFY_TRUE, DHCPV6S_CALLER_CTX, serv_ipv6_start);
+  ifl_register_event_handler("dhcpv6_server-stop", IFL_EVENT_NOTIFY_TRUE, DHCPV6S_CALLER_CTX, serv_ipv6_stop);
+  ifl_register_event_handler("dhcpv6_server-restart", IFL_EVENT_NOTIFY_TRUE, DHCPV6S_CALLER_CTX, serv_ipv6_restart);
+#endif
   CcspTraceInfo(("SERVICE_DHCP6S : Server event registration completed\n"));
 
 }
@@ -350,6 +363,7 @@ int _dibbler_server_operation(char * arg)
         CcspTraceInfo(("Dibbler Server Start %s Line (%d)\n", __FUNCTION__, __LINE__));
         if ( !g_dhcpv6_server )
         {
+            CcspTraceInfo(("%s Line (%d) g_dhcpv6_server %d \n", __FUNCTION__, __LINE__, g_dhcpv6_server));
             goto EXIT;
         }
 
@@ -361,6 +375,7 @@ int _dibbler_server_operation(char * arg)
         }
         if ( Index < uDhcpv6ServerPoolNum )
         {
+            CcspTraceInfo(("Index %lu \n", Index));
             goto EXIT;
         }
 #ifdef FEATURE_RDKB_WAN_MANAGER

@@ -35,6 +35,9 @@ libCcspDhcpMgr_Dhcpv6Server_la_CPPFLAGS = -I${PKG_CONFIG_SYSROOT_DIR}$(includedi
 					  -I$(top_srcdir)/source/DHCPMgrInterface/include
 
 libCcspDhcpMgr_Dhcpv6Server_la_SOURCES = dhcpv6server_function.c
+if BCI_SUPPORT
+libCcspDhcpMgr_Dhcpv6Server_la_SOURCES += service_ipv6.c
+endif
 
 libCcspDhcpMgr_Dhcpv6Server_la_LIBADD = -lccsp_common -ltelemetry_msgsender -lulog -lsyscfg -lsysevent -ltime_conversion -lprint_uptime
 
