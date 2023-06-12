@@ -37,6 +37,8 @@
 #include <libnet.h>
 #include "ifl.h"
 
+#define PROG_NAME               "DHCPV6_CLIENT"
+
 #define EROUTER_MODE_UPDATED    "erouter_mode-updated"
 #define PHYLINK_WAN_STATE       "phylink_wan_state"
 #define CURR_WAN_IFNAME         "current_wan_ifname"
@@ -87,9 +89,24 @@ static inline void remove_file(char *tb_removed_file)
 
 }
 
+void deinit_dhcpv6_client ()
+{
+    CcspTraceInfo(("SERVICE_DHCP6C : Client deinit started\n"));
+    sysevent_close(g_iSyseventfd, g_tSysevent_token);
+}
+
 void init_dhcpv6_client ()
 {
     CcspTraceInfo(("SERVICE_DHCP6C : Cleint event registration started\n"));
+
+    if ((g_iSyseventfd = sysevent_open(SE_SERV, SE_SERVER_WELL_KNOWN_PORT, SE_VERSION,
+                                    PROG_NAME, &g_tSysevent_token)) < 0)
+    {
+        CcspTraceError(("Failed to open sysevent, Call deinit_dhcpv6_client\n"));
+        deinit_dhcpv6_client ();
+    }
+    CcspTraceInfo(("DHCPv6_Client sysevent opened FD: %d (%p)", g_iSyseventfd, &g_iSyseventfd));
+
     ifl_register_event_handler( EROUTER_MODE_UPDATED, IFL_EVENT_NOTIFY_TRUE, DHCPV6C_CALLER_CTX, dhcpv6_client_service_update);
     ifl_register_event_handler( PHYLINK_WAN_STATE, IFL_EVENT_NOTIFY_TRUE, DHCPV6C_CALLER_CTX, dhcpv6_client_service_update);
     ifl_register_event_handler( CURR_WAN_IFNAME, IFL_EVENT_NOTIFY_TRUE, DHCPV6C_CALLER_CTX, dhcpv6_client_service_update);
@@ -249,7 +266,7 @@ void dhcpv6_client_service_stop ()
             }
         }
     }
-#endif
+#else
     ret = v_secure_system("%s stop",DHCPV6_BINARY);
     CcspTraceInfo(("SERVICE_DHCP6C : Stopping dhcpv6 client\n"));
     if(ret !=0)
@@ -257,6 +274,7 @@ void dhcpv6_client_service_stop ()
         CcspTraceError(("Failure in executing command via v_secure_system. ret val: %d \n", ret));
     }
     remove_file(DHCPV6_PID_FILE);
+#endif
 }
 
 void dhcpv6_client_service_update()
