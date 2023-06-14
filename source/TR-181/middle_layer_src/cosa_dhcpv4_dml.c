@@ -71,7 +71,6 @@
 #include "cosa_dhcpv4_apis.h"
 #include "cosa_dhcpv4_internal.h"
 #include "plugin_main_apis.h"
-
 #include "ccsp_base_api.h"
 #include "messagebus_interface_helper.h"
 #include "ansc_string_util.h"
@@ -734,6 +733,15 @@ Client_GetParamBoolValue
         /* collect value */
         *pBool   = pDhcpc->Cfg.bEnabled;
 
+        if (dhcpv4_client_enabled == 0)
+        {
+            *pBool   = FALSE;
+        }
+        else
+        {
+            *pBool   = TRUE;
+        }
+
         return TRUE;
     }
 
@@ -1126,9 +1134,16 @@ Client_SetParamBoolValue
         pDhcpc->Cfg.bEnabled = bValue;
 
 #ifdef DHCPV4_CLIENT_SUPPORT
-        //serv_dhcp_init();
-        dhcpv4_client_service_start(sd);
-        dhcpv4_client_enabled = 1;
+        if (bValue == TRUE)
+        {
+            dhcpv4_client_service_start(sd);
+            dhcpv4_client_enabled = 1;
+        }
+        else
+        {
+            dhcpv4_client_service_stop(sd);
+            dhcpv4_client_enabled = 0;
+        }
 #endif
 
         return  TRUE;
