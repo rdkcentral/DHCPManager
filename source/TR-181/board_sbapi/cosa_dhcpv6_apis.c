@@ -8596,10 +8596,13 @@ dhcpv6c_dbg_thrd(void * in)
                             ERR_CHK(rc);
                         }else{
                                                                char lanrestart[8] = {0};
-                                                        commonSyseventGet("lan_restarted",lanrestart, sizeof(lanrestart));
+                                                        commonSyseventGet("lan_restart_required",lanrestart, sizeof(lanrestart));
                                                                DHCPMGR_LOG_INFO("lan restart staus is %s ",lanrestart);
                                                         if (strcmp("true",lanrestart) == 0)
-                                                               bRestartLan = TRUE;
+                                                        {
+                                                            bRestartLan = TRUE;
+                                                            commonSyseventSet("lan_restart_required","false");
+                                                        }
                                                         else
                                                 bRestartLan = FALSE;
                                                 }
@@ -8842,10 +8845,13 @@ dhcpv6c_dbg_thrd(void * in)
                             ERR_CHK(rc);
                         }else{
 								char lanrestart[8] = {0};
-		    					commonSyseventGet("lan_restarted",lanrestart, sizeof(lanrestart));
+		    					commonSyseventGet("lan_restart_required",lanrestart, sizeof(lanrestart));
 								DHCPMGR_LOG_INFO("lan restart staus is %s ",lanrestart);
    			       				if (strcmp("true",lanrestart) == 0)
-							    	bRestartLan = TRUE;
+                                                        {
+                                                            bRestartLan = TRUE;
+                                                            commonSyseventSet("lan_restart_required","false");
+                                                        }
 								else
                             		bRestartLan = FALSE;
 						}
