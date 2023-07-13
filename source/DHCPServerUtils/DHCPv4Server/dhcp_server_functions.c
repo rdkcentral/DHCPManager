@@ -1559,7 +1559,7 @@ int prepare_dhcp_conf (char *input)
             while ( memset(nmSrv,   0, sizeof(nmSrv)),
                     memset(dnsIP,   0, sizeof(dnsIP)),
                     memset(leftOut, 0, sizeof(leftOut)),
-                    fscanf(fp1, "%31s %63s%[^\n]s\n", nmSrv, dnsIP, leftOut) != EOF)
+                    fscanf(fp1, "%s %s%[^\n]s\n", nmSrv, dnsIP, leftOut) != EOF)
             {
                 ret = strcmp_s(nmSrv, sizeof(nmSrv), "nameserver", &resComp);
                 ERR_CHK(ret);
