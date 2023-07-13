@@ -184,7 +184,7 @@ int prepare_hostname()
         FILE *l_fHosts_Name_File = NULL;
         int l_iRes = 0;
 
-    syscfg_get(NULL, "hostname", l_cHostName, sizeof(l_cHostName));
+        syscfg_get(NULL, "hostname", l_cHostName, sizeof(l_cHostName));
         sysevent_get(g_iSyseventV4fd, g_tSyseventV4_token, "current_lan_ipaddr", l_cCurLanIP, sizeof(l_cCurLanIP));
         syscfg_get(NULL, "SecureWebUI_LocalFqdn", l_clocFqdn, sizeof(l_clocFqdn));
         syscfg_get(NULL, "SecureWebUI_Enable", l_cSecWebUI_Enabled, sizeof(l_cSecWebUI_Enabled));
@@ -232,7 +232,7 @@ int prepare_hostname()
         {
                 fprintf(l_fHosts_File, "127.0.0.1       localhost\n");
                 fprintf(l_fHosts_File, "::1             localhost\n");
-                if (NULL != l_clocFqdn)
+                if (strlen(l_clocFqdn)!=0)
                 {
                         if (!strncmp(l_cSecWebUI_Enabled, "true", 4))
                         {
