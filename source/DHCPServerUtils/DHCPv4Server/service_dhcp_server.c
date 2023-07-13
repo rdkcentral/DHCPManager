@@ -1250,7 +1250,7 @@ void resync_to_nonvol(char *RemPools)
     memset(tmp_buff,0,sizeof(tmp_buff[0][0])*15*2);
     CURRENT_POOLS_cnt=tmp_cnt;        //Remove LOAD_POOLS and REM_POOLS from CURRENT_POOLS ENDS
 
-    char psm_tmp_buff[2];
+    char psm_tmp_buff[16];
     char *l_cParam[1] = {0};
 	for(iter=0;iter<NV_INST_cnt;iter++)
 	{
