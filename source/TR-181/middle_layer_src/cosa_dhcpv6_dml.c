@@ -4239,15 +4239,17 @@ Pool1_AddEntry
     )
 {
     UNREFERENCED_PARAMETER(hInsContext);
+    
+#ifndef MULTILAN_FEATURE
+        /* We just have one Pool. Not permit to add/delete. */
+        UNREFERENCED_PARAMETER(pInsNumber);
+        return NULL;
+
+#else
     PCOSA_DATAMODEL_DHCPV6            pDhcpv6           = (PCOSA_DATAMODEL_DHCPV6)g_Dhcpv6Object;
     PCOSA_CONTEXT_POOLV6_LINK_OBJECT  pCxtLink          = NULL;
     PCOSA_DML_DHCPSV6_POOL_FULL       pPool             = NULL;
     errno_t                           rc                = -1;
-#ifndef MULTILAN_FEATURE
-        /* We just have one Pool. Not permit to add/delete. */
-        return NULL;
-#endif
-
     pPool  = (PCOSA_DML_DHCPSV6_POOL_FULL)AnscAllocateMemory( sizeof(COSA_DML_DHCPSV6_POOL_FULL) );
     if ( !pPool )
     {
@@ -4300,6 +4302,7 @@ EXIT1:
 EXIT2:
 
     return NULL; /* return the handle */
+#endif   
 }
 
 /**********************************************************************
@@ -4335,18 +4338,19 @@ Pool1_DelEntry
         ANSC_HANDLE                 hInstance
     )
 {
+    
+        UNREFERENCED_PARAMETER(hInsContext);
+#ifndef MULTILAN_FEATURE
+        /* We just have one Pool. Not permit to add/delete. */
+        UNREFERENCED_PARAMETER(hInstance);
+        return ANSC_STATUS_FAILURE;
+
+#else
     ANSC_STATUS                       returnStatus      = ANSC_STATUS_SUCCESS;
     PCOSA_DATAMODEL_DHCPV6            pDhcpv6           = (PCOSA_DATAMODEL_DHCPV6)g_Dhcpv6Object;
     PCOSA_CONTEXT_POOLV6_LINK_OBJECT  pCxtLink          = (PCOSA_CONTEXT_POOLV6_LINK_OBJECT)hInstance;
     PCOSA_DML_DHCPSV6_POOL_FULL       pPool             = (PCOSA_DML_DHCPSV6_POOL_FULL)pCxtLink->hContext;
-
-    UNREFERENCED_PARAMETER(hInsContext);
-
-#ifndef MULTILAN_FEATURE
-        /* We just have one Pool. Not permit to add/delete. */
-        return ANSC_STATUS_FAILURE;
-#endif
-
+   
     /* Normally, two sublinks are empty because our framework will firstly
               call delEntry for them before coming here. We needn't care them.
            */
@@ -4368,6 +4372,7 @@ Pool1_DelEntry
     }
 
     return returnStatus;
+#endif
 }
 
 /**********************************************************************
@@ -7446,16 +7451,19 @@ Option4_AddEntry
         ULONG*                      pInsNumber
     )
 {
+   
+#ifndef MULTILAN_FEATURE
+        /* We just have two option:DNS, domain. Not permit to add/delete. */
+    UNREFERENCED_PARAMETER(hInsContext);
+    UNREFERENCED_PARAMETER(pInsNumber);
+    return NULL;
+#else
+    /* We need ask from backend */
     PCOSA_CONTEXT_POOLV6_LINK_OBJECT  pCxtPoolLink         = (PCOSA_CONTEXT_POOLV6_LINK_OBJECT)hInsContext;
     PCOSA_CONTEXT_LINK_OBJECT         pCxtLink             = NULL;
     PCOSA_DML_DHCPSV6_POOL_OPTION     pDhcpOption          = NULL;
     PCOSA_DATAMODEL_DHCPV6            pDhcpv6              = (PCOSA_DATAMODEL_DHCPV6)g_Dhcpv6Object;
     errno_t                           rc                   = -1;
-#ifndef MULTILAN_FEATURE
-        /* We just have two option:DNS, domain. Not permit to add/delete. */
-        return NULL;
-#endif
-    /* We need ask from backend */
     pDhcpOption  = (PCOSA_DML_DHCPSV6_POOL_OPTION)AnscAllocateMemory( sizeof(COSA_DML_DHCPSV6_POOL_OPTION) );
     if ( !pDhcpOption )
     {
@@ -7505,6 +7513,7 @@ EXIT1:
 EXIT2:
 
     return NULL;
+#endif
 }
 
 /**********************************************************************
