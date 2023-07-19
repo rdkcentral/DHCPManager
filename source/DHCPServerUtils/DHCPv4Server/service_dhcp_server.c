@@ -705,10 +705,14 @@ int dhcp_server_start (char *input)
     }
 #endif
 
+    sysevent_get(g_iSyseventV4fd, g_tSyseventV4_token,
+                         "bridge_mode", l_cBridge_Mode,
+                         sizeof(l_cBridge_Mode));
+
     //LAN Status DHCP
     ret_se = sysevent_get(g_iSyseventV4fd, g_tSyseventV4_token, "lan_status-dhcp", l_cLanStatusDhcp, sizeof(l_cLanStatusDhcp));
     DHCPMGR_LOG_INFO("SERVICE DHCP: FD: %d (%p) | value: %s | ret: %d", g_iSyseventV4fd, &g_iSyseventV4fd, l_cLanStatusDhcp, ret_se);
-    if (strncmp(l_cLanStatusDhcp, "started", 7))
+    if (strncmp(l_cLanStatusDhcp, "started", 7) && ( 0 == atoi(l_cBridge_Mode) ) )
     {
         DHCPMGR_LOG_INFO("lan_status-dhcp is not started return without starting DHCP server");
         remove_file("/var/tmp/lan_not_restart");
@@ -855,9 +859,6 @@ int dhcp_server_start (char *input)
         DHCPMGR_LOG_INFO("kill dnsmasq with SIGKILL if its still running ");
         v_secure_system("kill -KILL `pidof dnsmasq`");
     }
-    sysevent_get(g_iSyseventV4fd, g_tSyseventV4_token,
-                         "bridge_mode", l_cBridge_Mode,
-                         sizeof(l_cBridge_Mode));
 
     // TCCBR:4710- In Bridge mode, Dont run dnsmasq when there is no interface in dnsmasq.conf
     if ((strncmp(l_cBridge_Mode, "0", 1)) && (FALSE == IsDhcpConfHasInterface()))
@@ -928,13 +929,41 @@ int dhcp_server_start (char *input)
     sysevent_get(g_iSyseventV4fd, g_tSyseventV4_token, "start-misc", l_cStart_Misc, sizeof(l_cStart_Misc));
     if (strcmp(l_cPsm_Mode, "1")) //PSM Mode is Not 1
     {
+        if (access("/var/tmp/.refreshlan", F_OK) == 0 )
+        {
+
+        #ifdef RDKB_EXTENDER_ENABLED
+                if (Get_Device_Mode() == ROUTER)
+                {
+                    DHCPMGR_LOG_ERROR("refreshlan : Call gw_lan_refresh_from_dhcpscript:!\n");
+                    print_with_uptime("RDKB_SYSTEM_BOOT_UP_LOG : Call gw_lan_refresh_from_dhcpscript:");
+                    v_secure_system("gw_lan_refresh &");
+                    remove_file("/var/tmp/.refreshlan");
+                }
+        #else
+            {
+                DHCPMGR_LOG_ERROR("refreshlan : Call gw_lan_refresh_from_dhcpscript:!\n");
+                print_with_uptime("RDKB_SYSTEM_BOOT_UP_LOG : Call gw_lan_refresh_from_dhcpscript:");
+                v_secure_system("gw_lan_refresh &");
+                remove_file("/var/tmp/.refreshlan");
+            }
+        #endif    
+        }
+
         if ((access("/var/tmp/lan_not_restart", F_OK) == -1 && errno == ENOENT) &&
             ((NULL == input) || (NULL != input && strncmp(input, "lan_not_restart", 15))))
         {
             if (!strncmp(l_cStart_Misc, "ready", 5))
             {
                 print_with_uptime("RDKB_SYSTEM_BOOT_UP_LOG : Call gw_lan_refresh_from_dhcpscript:");
+                #ifdef RDKB_EXTENDER_ENABLED
+                if (Get_Device_Mode() == ROUTER)
+                {
+                    v_secure_system("gw_lan_refresh &");
+                }
+                #else
                 v_secure_system("gw_lan_refresh &");
+                #endif
             }
         }
         else
@@ -959,7 +988,11 @@ int dhcp_server_start (char *input)
         }
         print_uptime("boot_to_ETH_uptime",NULL, NULL);
         print_with_uptime("LAN initization is complete notify SSID broadcast");
+        #if (defined _COSA_INTEL_XB3_ARM_)
         snprintf(l_cRpc_Cmd, sizeof(l_cRpc_Cmd), "rpcclient %s \"/bin/touch /tmp/.advertise_ssids\"", g_cAtom_Arping_IP);
+        #else
+        snprintf(l_cRpc_Cmd, sizeof(l_cRpc_Cmd), "touch /tmp/.advertise_ssids");
+        #endif
         executeCmd(l_cRpc_Cmd);
     }
     else

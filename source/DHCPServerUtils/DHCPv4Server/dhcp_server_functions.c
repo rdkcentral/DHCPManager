@@ -1017,7 +1017,7 @@ int prepare_dhcp_conf (char *input)
         memset (buff, 0, sizeof(buff));
         snprintf(buff, sizeof(buff), "resolv-file=%s\n\n", TMP_RESOLVE_CONF);
         fprintf(l_fLocal_Dhcp_ConfFile, buff);
-
+        fprintf(l_fLocal_Dhcp_ConfFile, "dhcp-leasefile=%s\n", DHCP_LEASE_FILE); 
         fprintf(l_fLocal_Dhcp_ConfFile, "#We want dnsmasq to listen for DHCP and DNS requests only on specified interfaces\n");
         memset (buff, 0, sizeof(buff));
         snprintf(buff, sizeof(buff), "interface=%s\n\n", mesh_wan_ifname);
@@ -1533,6 +1533,7 @@ int prepare_dhcp_conf (char *input)
         fprintf(l_fLocal_Dhcp_ConfFile, "dhcp-option=vendor:HIXE12AWR,43,tag=123\n");
         fprintf(l_fLocal_Dhcp_ConfFile, "dhcp-option=vendor:WNXE12AWR,43,tag=123\n");
         fprintf(l_fLocal_Dhcp_ConfFile, "dhcp-option=vendor:SE401,43,tag=123\n");
+        fprintf(l_fLocal_Dhcp_ConfFile, "dhcp-option=vendor:WNXL11BWL,43,tag=123\n");
 #endif
         if ((NULL == input) ||
                ((NULL != input) && (strncmp(input, "dns_only", 8)))) //not dns_only case
@@ -1870,6 +1871,46 @@ int prepare_dhcp_conf (char *input)
         copy_file(l_cLocalDhcpConf, DHCP_CONF);
         remove_file(l_cLocalDhcpConf);
         DHCPMGR_LOG_INFO("DHCP SERVER : Completed preparing DHCP configuration");
+#if defined (WAN_FAILOVER_SUPPORTED)
+    #if !defined (RDKB_EXTENDER_ENABLED)
+        char lan_ipaddr[20]={'\0'};
+        char l_cLine[255] = {0};
+        FILE *l_fResolv_Conf = NULL;
+        int Flag=0;
+        l_fResolv_Conf = fopen(RESOLV_CONF, "r");
+        if (NULL != l_fResolv_Conf)
+        {
+            while(fgets(l_cLine, 80, l_fResolv_Conf) != NULL )
+            {
+                char *property = NULL;
+                if (NULL != (property = strstr(l_cLine, "127.0.0.1")))
+                {
+                    Flag=1;
+                    break;
+                }
+            }
+            fclose(l_fResolv_Conf);
+            if(Flag==1)
+            {
+                l_fResolv_Conf = fopen(RESOLV_CONF, "w");
+                if (NULL != l_fResolv_Conf)
+                {
+                    syscfg_get(NULL, "lan_ipaddr", lan_ipaddr, sizeof(lan_ipaddr));
+                    //fprintf(g_fArmConsoleLog, "strlen of lan_ipaddr:%d\n",strlen(lan_ipaddr));
+                    if(strlen(lan_ipaddr)>0)
+                    {
+                        fprintf(l_fResolv_Conf,"nameserver %s\n",lan_ipaddr);
+                    }
+                    fclose(l_fResolv_Conf);
+                }
+            }
+        }
+        else
+        {
+            DHCPMGR_LOG_INFO("opening of %s file failed with error:%d\n", RESOLV_CONF, errno);
+        }
+    #endif//RDKB_EXTENDER_ENABLED
+#endif //WAN_FAILOVER_SUPPORTED
         return 0;
 }
 
@@ -1923,10 +1964,45 @@ void get_dhcp_option_for_brlan0( char *pDhcpNs_OptionString )
         }
 
         char l_cSecWebUI_Enabled[8] = {0};
+        FILE *l_fResolv_Conf = NULL;
+        char l_cLine[255] = {0};
         syscfg_get(NULL, "SecureWebUI_Enable", l_cSecWebUI_Enabled, sizeof(l_cSecWebUI_Enabled));
         if (!strncmp(l_cSecWebUI_Enabled, "true", 4))
         {
                 check_and_get_wan_dhcp_dns( l_cWan_Dhcp_Dns );
+                //Read the nameserver addresses from reslov.conf
+                if ( !(l_cWan_Dhcp_Dns[0]) )
+                {
+                    l_fResolv_Conf = fopen(RESOLV_CONF, "r");
+                    if (NULL != l_fResolv_Conf)
+                    {
+                        while(fgets(l_cLine, 80, l_fResolv_Conf) != NULL )
+                        {
+                            char *property = NULL;
+                            if (NULL != (property = strstr(l_cLine, "nameserver ")))
+                            {
+                                property = property + strlen("nameserver ");
+                                if (strstr(property, "."))
+                                {
+                                    strncat(l_cWan_Dhcp_Dns, property, (strlen(property) - 1));
+                                    //Add , to separate dns addresses
+                                    l_cWan_Dhcp_Dns[strlen(l_cWan_Dhcp_Dns)]=',';
+                                }
+                            }
+                        }
+                        // Adding NULL at the end of dhcp options addresses
+                        if(strlen(l_cWan_Dhcp_Dns) != 0)
+                        {
+                            l_cWan_Dhcp_Dns[strlen(l_cWan_Dhcp_Dns)-1]='\0';
+                        }
+                        fclose(l_fResolv_Conf);
+                    }
+                    else
+                    {
+                        DHCPMGR_LOG_INFO("DHCP SERVER : get_dhcp_option_for_brlan0 :opening file %s failed\n", RESOLV_CONF );
+                    }
+                }
+                DHCPMGR_LOG_INFO("DHCP SERVER : get_dhcp_option_for_brlan0:%s\n", l_cWan_Dhcp_Dns);
                 memset(l_cDhcpNs_OptionString_new, 0 ,sizeof(l_cDhcpNs_OptionString_new));
                 if ( '\0' != l_cWan_Dhcp_Dns[ 0 ] )
                 {

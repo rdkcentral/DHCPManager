@@ -132,7 +132,7 @@ void dhcpv6_client_service_start ()
     }
 
     syscfg_get(NULL, "last_erouter_mode", l_cLastErouterMode, sizeof(l_cLastErouterMode));
-    syscfg_get(NULL, "dibbler_client_enable", l_cDibblerEnable, sizeof(l_cDibblerEnable));
+    syscfg_get(NULL, "dibbler_client_enable_v2", l_cDibblerEnable, sizeof(l_cDibblerEnable));
     sysevent_get(g_iSyseventfd, g_tSysevent_token, "current_ipv4_link_state", l_cPhylinkWanState, sizeof(l_cPhylinkWanState));
     sysevent_get(g_iSyseventfd, g_tSysevent_token, "wan_ifname", l_cWanIfname, sizeof(l_cWanIfname));
     sysevent_get(g_iSyseventfd, g_tSysevent_token, "phylink_wan_state", l_cWanLinkStatus, sizeof(l_cWanLinkStatus));
@@ -180,6 +180,16 @@ void dhcpv6_client_service_start ()
                     CcspTraceError(("Failure in executing command via v_secure_system. ret val: %d \n", ret));
                 }
             }
+            else
+            {
+                if(0 != mkdir(DIBBLER_INFO_DIR, 0777))
+                {
+                    fprintf(stderr, "SERVICE_DHCP6C : Failed to create %s Directory\n",DIBBLER_INFO_DIR);
+                }
+                fprintf(stderr, "SERVICE_DHCP6C : Starting dibbler client\n");
+                v_secure_system("sh /lib/rdk/dibbler-init.sh");
+                v_secure_system("%s start","dibbler-client");
+            }
 #else
             if(0 != mkdir(DIBBLER_INFO_DIR, 0777))
             {
@@ -215,7 +225,7 @@ void dhcpv6_client_service_stop ()
     char l_cDibblerEnable[BUFF_LEN_8] = {0}, l_cDSLiteEnable[BUFF_LEN_8] = {0};
     int ret = 0;
 
-    syscfg_get(NULL, "dibbler_client_enable", l_cDibblerEnable, sizeof(l_cDibblerEnable));
+    syscfg_get(NULL, "dibbler_client_enable_v2", l_cDibblerEnable, sizeof(l_cDibblerEnable));
     syscfg_get(NULL, "dslite_enable", l_cDSLiteEnable, sizeof(l_cDSLiteEnable));
 
 #if defined(_COSA_INTEL_XB3_ARM_) || defined(INTEL_PUMA7)
@@ -251,7 +261,8 @@ void dhcpv6_client_service_stop ()
             }
             CcspTraceInfo(("SERVICE_DHCP6C : Sending SIGTERM to %s\n",DHCPV6_PID_FILE));
 
-            while (0 < (pid = pid_of(DHCPV6_BINARY, NULL)))
+            pid = pid_of(DHCPV6_BINARY, NULL);
+            if (pid > 0)
             {
                 fprintf(stderr, "SERVICE_DHCP6C : Terminating ti_dhcp6c process with pid %d\n",pid);
                 kill(pid, SIGTERM);
@@ -265,6 +276,12 @@ void dhcpv6_client_service_stop ()
                 sysevent_set(g_iSyseventfd, g_tSysevent_token, "tr_erouter0_dhcpv6_client_v6addr", "", 0);
             }
         }
+    }
+    else
+    {
+        fprintf(stderr, "SERVICE_DHCP6C : Stopping dhcpv6 client\n");
+        v_secure_system("%s stop","dibbler-client");
+        remove_file("/tmp/dibbler/client.pid");
     }
 #else
     ret = v_secure_system("%s stop",DHCPV6_BINARY);
