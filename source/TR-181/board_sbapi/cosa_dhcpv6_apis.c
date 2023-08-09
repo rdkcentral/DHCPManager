@@ -291,7 +291,6 @@ COSA_DML_DHCPSV6_POOL_OPTION g_dhcpv6_server_pool_option[] =
     }
 };
 
-
 ANSC_STATUS
 CosaDmlDhcpv6Init
     (
@@ -1928,6 +1927,49 @@ CosaDmlDhcpv6SMsgHandler
     return 0;
 }
 
+/* CheckAndGetDevicePropertiesEntry() */
+int CheckAndGetDevicePropertiesEntry( char *pOutput, int size, char *sDevicePropContent )
+{
+    FILE *fp1 = NULL;
+    char buf[ 1024 ] = { 0 },
+         *urlPtr = NULL;
+    int ret = -1;
+
+    // Read the device.properties file
+    fp1 = fopen( "/etc/device.properties", "r" );
+
+    if ( NULL == fp1 )
+    {
+        CcspTraceError(("Error opening properties file! \n"));
+        return -1;
+    }
+
+    while ( fgets( buf, sizeof( buf ), fp1 ) != NULL )
+    {
+        // Look for Device Properties Passed Content
+        if ( strstr( buf, sDevicePropContent ) != NULL )
+        {
+            buf[strcspn( buf, "\r\n" )] = 0; // Strip off any carriage returns
+
+            // grab content from string(entry)
+            urlPtr = strstr( buf, "=" );
+            if ( urlPtr != NULL )
+            {
+                 urlPtr++;
+            }
+
+            strncpy( pOutput, urlPtr, size );
+
+            ret=0;
+
+            break;
+        }
+    }
+
+    fclose( fp1 );
+    return ret;
+}
+
 int CosaDmlDhcpv6sRestartOnLanStarted(void * arg)
 {
     UNREFERENCED_PARAMETER(arg);
@@ -2722,11 +2764,11 @@ CosaDmlDhcpv6cGetEnabled
 #if defined(_COSA_INTEL_XB3_ARM_) || defined(INTEL_PUMA7)
         char buf[8];
         BOOL dibblerEnabled = FALSE;
-        if(( syscfg_get( NULL, "dibbler_client_enable", buf, sizeof(buf))==0) && (strcmp(buf, "true") == 0))
+        if(( syscfg_get( NULL, "dibbler_client_enable_v2", buf, sizeof(buf))==0) && (strcmp(buf, "true") == 0))
         {
              dibblerEnabled = TRUE;
         }
-        CcspTraceWarning(("dibbler_client_enable %d\n", dibblerEnabled));
+        CcspTraceWarning(("dibbler_client_enable_v2 %d\n", dibblerEnabled));
 
 #endif
 
@@ -2845,7 +2887,6 @@ CosaDmlDhcpv6cGetServerCfg
 
         /*we only support one entry of ServerCfg*/
         *ppCfg = (PCOSA_DML_DHCPCV6_SVR)AnscAllocateMemory( sizeof(COSA_DML_DHCPCV6_SVR) );
-        memset(*ppCfg, 0, sizeof(COSA_DML_DHCPCV6_SVR));
 
         /*InformationRefreshTime not supported*/
         rc = strcpy_s((char*)(*ppCfg)->InformationRefreshTime, sizeof((*ppCfg)->InformationRefreshTime), "0001-01-01T00:00:00Z");
@@ -3172,14 +3213,21 @@ CosaDmlDhcpv6cAddSentOption
     UNREFERENCED_PARAMETER(hContext);
     UtopiaContext utctx = {0};
     char out[16];
+    struct _COSA_DML_DHCPCV6_SENT *realloc_tmp;
 
     /*we only have one client*/
     if (ulClientInstanceNumber != g_dhcpv6_client.Cfg.InstanceNumber)
         return ANSC_STATUS_FAILURE;
 
-    g_sent_options = realloc(g_sent_options, (++g_sent_option_num)* sizeof(COSA_DML_DHCPCV6_SENT));
-    if (!g_sent_options)
+    realloc_tmp = realloc(g_sent_options, (++g_sent_option_num)* sizeof(COSA_DML_DHCPCV6_SENT));
+    if (!realloc_tmp)
+    {
         return ANSC_STATUS_FAILURE;
+    }
+    else
+    {
+        g_sent_options = realloc_tmp;
+    }
 
     _syscfg_add_sent_option(pEntry, g_sent_option_num);
 
@@ -3389,7 +3437,6 @@ CosaDmlDhcpv6cGetReceivedOptionCfg
             char * p = NULL;
 
             p_rcv = (COSA_DML_DHCPCV6_RECV * )AnscAllocateMemory(sizeof(*p_rcv));
-            memset(p_rcv, 0, sizeof(*p_rcv));
             if (!p_rcv)
                 break;
 
@@ -7336,6 +7383,21 @@ int append_interface(char* Inf_name)
         syscfg_set_commit(NULL, "IPv6_Interface",OutBuff);
         return 0;
 }
+
+int Get_Device_Mode()
+{
+    int deviceMode = 0;
+    char buf[8]= {0};
+    memset(buf,0,sizeof(buf));
+    if ( 0 == syscfg_get(NULL, "Device_Mode", buf, sizeof(buf)))
+    {
+        if (buf[0] != '\0' && strlen(buf) != 0 )
+            deviceMode = atoi(buf);
+    }
+    return deviceMode;
+
+}
+
 /* This thread is added to handle the LnF interface IPv6 rule, because LnF is coming up late in XB6 devices.
 This thread can be generic to handle the operations depending on the interfaces. Other interface and their events can be register here later based on requirement */
 #if defined(CISCO_CONFIG_DHCPV6_PREFIX_DELEGATION) && defined(_CBR_PRODUCT_REQ_)
@@ -7851,22 +7913,6 @@ void UnSetV6RouteFromTable(char* ifname , char* route_addr,int metric_val, int t
 
 #endif
 
-#if defined(RDKB_EXTENDER_ENABLED) || defined(WAN_FAILOVER_SUPPORTED)
-int Get_Device_Mode()
-{
-    int deviceMode = 0;
-    char buf[8]= {0};
-    memset(buf,0,sizeof(buf));
-    if ( 0 == syscfg_get(NULL, "Device_Mode", buf, sizeof(buf)))
-    {
-        if (buf[0] != '\0' && strlen(buf) != 0 )
-            deviceMode = atoi(buf);
-    }
-    return deviceMode;
-
-}
-#endif
-
 #ifdef WAN_FAILOVER_SUPPORTED
 
 #define MESH_WAN_IFNAME "dmsb.Mesh.WAN.Interface.Name"
@@ -7890,25 +7936,6 @@ void getMeshWanIfName(char *mesh_wan_ifname,int size)
     return;
 }
 
-void delRemoteWanIpv6Route()
-{
-    if (DEVICE_MODE_ROUTER == Get_Device_Mode())
-    {
-        char mesh_wan_ifname[32] = {0};
-        char ipv6_address[128] = {0};
-        getMeshWanIfName(mesh_wan_ifname,sizeof(mesh_wan_ifname));
-        if (mesh_wan_ifname[0] != '\0')
-        {
-            memset(ipv6_address,0,sizeof(ipv6_address));
-                commonSyseventGet(MESH_WAN_WAN_IPV6ADDR, ipv6_address, sizeof(ipv6_address));
-                if( '\0' != ipv6_address[0] )
-                {
-                    UnSetV6Route(mesh_wan_ifname,strtok(ipv6_address,"/"),1025);
-                    commonSyseventSet("remotewan_routeset", "false");
-                }
-        }
-    }
-}
 void addRemoteWanIpv6Route()
 {
     if (DEVICE_MODE_ROUTER == Get_Device_Mode())
@@ -8054,6 +8081,93 @@ void configureLTEIpv6(char* v6addr)
 }
 #endif
 
+/*******************************************************
+* Function Name : isDropbearRunningWithIpv6 (char *pIpv6Addr)
+*      It will verify, dropbear process is running with provided IPv6 address or not
+*      if dropbear process itself not running then it will restart the sshd-service
+*      if dropbear process is running with different IPv6 address other than provided
+*      pIpv6Addr then it will restart the sshd-service
+*
+* Parameter[in] : pIpv6Addr
+*      New IPv6Address of erouter0 interface
+*
+* @retval : void
+*
+*******************************************************/
+static void isDropbearRunningWithIpv6(char * pIpv6Addr)
+{
+#define LINE_LENGTH 1024
+#define DROPBEAR_PIDS 3
+    char extractDropbearPids[LINE_LENGTH] = {0};
+    char pathToCmdline[LINE_LENGTH] = {0};
+    char cmdLineArguments[LINE_LENGTH] = {0};
+    char *pDropbearPid = NULL;
+    int dropbearPidIndex=0, indexOfCmdLineArgument=0, indexOfeRouterIpv6String = 0, noOfDropbearPidsWithIpv6 = 0;
+    int dropbearPidNo[DROPBEAR_PIDS] = {0};
+
+    FILE *filePointerToDropbearPids = popen("pidof dropbear","r");
+
+    if (NULL == filePointerToDropbearPids)
+    {
+        CcspTraceWarning(("%s -- Failed to open the pipe of 'pidof dropbear' file: %s", __FUNCTION__, strerror(errno)));
+        return;
+    }
+
+    if (NULL != fgets(extractDropbearPids,LINE_LENGTH,filePointerToDropbearPids))
+    {
+        pDropbearPid = strtok (extractDropbearPids," ");
+
+        while(pDropbearPid != NULL)
+        {
+            dropbearPidNo[dropbearPidIndex] = atoi(pDropbearPid);
+            sprintf(pathToCmdline,"/proc/%d/cmdline",dropbearPidNo[dropbearPidIndex]);
+            int fileDescriptor = open (pathToCmdline, O_RDONLY);
+            if (-1 != fileDescriptor)
+            {
+                int noOfBytesRead = read(fileDescriptor, cmdLineArguments, LINE_LENGTH);
+                close(fileDescriptor);
+                for (indexOfCmdLineArgument = 0, indexOfeRouterIpv6String = 0; indexOfCmdLineArgument < noOfBytesRead; indexOfCmdLineArgument++)
+                {
+                    if (pIpv6Addr[indexOfeRouterIpv6String] == cmdLineArguments[indexOfCmdLineArgument])
+                    {
+                        indexOfeRouterIpv6String++;
+                        if (pIpv6Addr[indexOfeRouterIpv6String] == '\0')
+                        {
+                            noOfDropbearPidsWithIpv6++;
+                            break;
+                        }
+                    }
+                    else
+                    {
+                        indexOfeRouterIpv6String=0;
+                    }
+
+                }
+            }
+            memset(pathToCmdline, 0, LINE_LENGTH);
+            memset(cmdLineArguments,0, LINE_LENGTH);
+            pDropbearPid = strtok (NULL , " ");
+            dropbearPidIndex++;
+        }
+        if (1 > noOfDropbearPidsWithIpv6)
+        {
+            CcspTraceInfo(("%s --one or zero Dropbear(%d) process is running with sshd , Hence restart the dropbear process\n",__FUNCTION__, noOfDropbearPidsWithIpv6));
+            v_secure_system("/etc/utopia/service.d/service_sshd.sh sshd-restart");
+        }
+        else
+        {
+            CcspTraceInfo (("%s - %d Dropbear process is running with eRouter0Ipv6\n", __FUNCTION__,noOfDropbearPidsWithIpv6));
+        }
+
+    }
+    else
+    {
+        CcspTraceInfo(("%s --Dropbear process is NOT running, restart the dropbear process\n",__FUNCTION__));
+        v_secure_system("/etc/utopia/service.d/service_sshd.sh sshd-restart");
+    }
+    pclose(filePointerToDropbearPids);
+}
+
 static void *
 dhcpv6c_dbg_thrd(void * in)
 {
@@ -8151,6 +8265,9 @@ dhcpv6c_dbg_thrd(void * in)
             char iapd_vldtm[32] = {0};
 
             char action[64] = {0};
+#if defined(FEATURE_RDKB_CONFIGURABLE_WAN_INTERFACE)
+            char IfaceName[64] = {0};
+#endif
             char * pString = NULL;
             char objName[128] = {0};
             errno_t rc = -1;
@@ -8190,7 +8307,7 @@ dhcpv6c_dbg_thrd(void * in)
 #if defined (FEATURE_SUPPORT_MAPT_NAT46)
             unsigned char  opt95_dBuf[BUFLEN_256] = {0};
             char  pdV6pref[BUFLEN_64] = {0};
-            unsigned char  argLen = 0;
+            //unsigned char  argLen = 0;
 #endif
             /*the format is :
              add 2000::ba7a:1ed4:99ea:cd9f :: 0 t1
@@ -8204,6 +8321,18 @@ dhcpv6c_dbg_thrd(void * in)
             DHCPMGR_LOG_INFO("-- %d !!! get event from v6 client: %s ", __LINE__,p);
 
 #if defined(FEATURE_MAPT) && defined(FEATURE_RDKB_WAN_MANAGER)
+#if defined(FEATURE_RDKB_CONFIGURABLE_WAN_INTERFACE)
+            dataLen = sscanf(p, "%63s %63s %63s %s %s %s %s %s %63s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s",
+                       action, IfaceName, v6addr,    iana_iaid, iana_t1, iana_t2, iana_pretm, iana_vldtm,
+                       v6pref, preflen, iapd_iaid, iapd_t1, iapd_t2, iapd_pretm, iapd_vldtm,
+                       mapAssigned, ruleIPv6Prefix, ruleIPv4Prefix, brIPv6Prefix, v6Len, isFMR, eaLen, v4Len,
+                       psidOffset, psidLen, psid );
+
+            /* dataLen = 25 : MAPT 16:1
+             * dataLen = 22 : MAPT 1:1
+             * dataLen = 14 : NON-MAPT */
+            if((dataLen == 26) || (dataLen == 23) || (dataLen == 15))
+#else
             dataLen = sscanf(p, "%63s %63s %s %s %s %s %s %63s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s",
                        action, v6addr,    iana_iaid, iana_t1, iana_t2, iana_pretm, iana_vldtm,
                        v6pref, preflen, iapd_iaid, iapd_t1, iapd_t2, iapd_pretm, iapd_vldtm,
@@ -8214,15 +8343,29 @@ dhcpv6c_dbg_thrd(void * in)
              * dataLen = 22 : MAPT 1:1
              * dataLen = 14 : NON-MAPT */
             if((dataLen == 25) || (dataLen == 22) || (dataLen == 14))
+#endif
 #elif defined (FEATURE_SUPPORT_MAPT_NAT46)
-            if ((argLen = sscanf(p, "%63s %63s %s %s %s %s %s %63s %d %s %s %s %s %s %s",
+#if defined(FEATURE_RDKB_CONFIGURABLE_WAN_INTERFACE)
+            if (sscanf(p, "%63s %63s %63s %s %s %s %s %s %63s %d %s %s %s %s %s %s",
+                       action, IfaceName, v6addr,    iana_iaid, iana_t1, iana_t2, iana_pretm, iana_vldtm,
+                       v6pref, &pref_len, iapd_iaid, iapd_t1, iapd_t2, iapd_pretm, iapd_vldtm,
+                       opt95_dBuf ) == 16)
+#else
+            if (sscanf(p, "%63s %63s %s %s %s %s %s %63s %d %s %s %s %s %s %s",
                        action, v6addr,    iana_iaid, iana_t1, iana_t2, iana_pretm, iana_vldtm,
                        v6pref, &pref_len, iapd_iaid, iapd_t1, iapd_t2, iapd_pretm, iapd_vldtm,
-                       opt95_dBuf)), argLen == 15 || argLen == 14)
+                       opt95_dBuf ) == 15)
+#endif
 #else // FEATURE_MAPT
+#if defined(FEATURE_RDKB_CONFIGURABLE_WAN_INTERFACE)
+            if (sscanf(p, "%63s %63s %63s %s %s %s %s %s %63s %d %s %s %s %s %s", 
+                       action, IfaceName, v6addr,    iana_iaid, iana_t1, iana_t2, iana_pretm, iana_vldtm,
+                       v6pref, &pref_len, iapd_iaid, iapd_t1, iapd_t2, iapd_pretm, iapd_vldtm ) == 15)
+#else
             if (sscanf(p, "%63s %63s %s %s %s %s %s %63s %d %s %s %s %s %s", 
                        action, v6addr,    iana_iaid, iana_t1, iana_t2, iana_pretm, iana_vldtm,
                        v6pref, &pref_len, iapd_iaid, iapd_t1, iapd_t2, iapd_pretm, iapd_vldtm ) == 14)
+#endif
 #endif
             {
                 pString = (char*)CosaUtilGetFullPathNameByKeyword
@@ -8251,7 +8394,181 @@ dhcpv6c_dbg_thrd(void * in)
 
                                 sleep(5);
                          }
+#if defined(FEATURE_RDKB_CONFIGURABLE_WAN_INTERFACE)
+            /*Move IPv6 handle to WanManager*/
+#if defined(FEATURE_RDKB_WAN_MANAGER)
+            /*
+             * Send data to wanmanager.
+             */
 
+            char dns_server[256] = {'\0'};
+            char sysEventName[256];
+            remove_single_quote(iapd_pretm);
+            remove_single_quote(iapd_vldtm);
+            sscanf(iapd_pretm, "%d", &hub4_preferred_lft);
+            sscanf(iapd_vldtm, "%d", &hub4_valid_lft);
+            ipc_dhcpv6_data_t dhcpv6_data;
+            memset(&dhcpv6_data, 0, sizeof(ipc_dhcpv6_data_t));
+
+            strncpy(dhcpv6_data.ifname, IfaceName, sizeof(dhcpv6_data.ifname));
+            if(strlen(v6pref) == 0) {
+                dhcpv6_data.isExpired = TRUE;
+            } else {
+                dhcpv6_data.isExpired = FALSE;
+                dhcpv6_data.prefixAssigned = TRUE;
+#if defined(FEATURE_MAPT)
+                    remove_single_quote(v6pref);
+                    strcpy(pdIPv6Prefix, v6pref);
+                    remove_single_quote(preflen);
+                    pref_len=atoi(preflen);
+#endif
+                rc = sprintf_s(dhcpv6_data.sitePrefix, sizeof(dhcpv6_data.sitePrefix), "%s/%d", v6pref, pref_len);
+                if(rc < EOK)
+                {
+                    ERR_CHK(rc);
+                }
+                memset( sysEventName, 0, sizeof(sysEventName));
+                snprintf(sysEventName, sizeof(sysEventName), COSA_DML_WANIface_PREF_SYSEVENT_NAME, IfaceName);
+                commonSyseventSet(sysEventName,  dhcpv6_data.sitePrefix);
+
+                strncpy(dhcpv6_data.pdIfAddress, "", sizeof(dhcpv6_data.pdIfAddress));
+                /** DNS servers. **/
+                commonSyseventGet(SYSEVENT_FIELD_IPV6_DNS_SERVER, dns_server, sizeof(dns_server));
+                if (strlen(dns_server) != 0)
+                {
+                    dhcpv6_data.dnsAssigned = TRUE;
+                    sscanf (dns_server, "%s %s", dhcpv6_data.nameserver, dhcpv6_data.nameserver1);
+                }
+                dhcpv6_data.prefixPltime = hub4_preferred_lft;
+                dhcpv6_data.prefixVltime = hub4_valid_lft;
+                dhcpv6_data.maptAssigned = FALSE;
+                dhcpv6_data.mapeAssigned = FALSE;
+                dhcpv6_data.prefixCmd = 0;
+            }
+#ifdef FEATURE_MAPT
+            remove_single_quote(brIPv6Prefix);
+            remove_single_quote(ruleIPv4Prefix);
+            remove_single_quote(ruleIPv6Prefix);
+            remove_single_quote(mapAssigned);
+            remove_single_quote(v4Len);
+            remove_single_quote(v6Len);
+            remove_single_quote(eaLen);
+            remove_single_quote(psidOffset);
+            remove_single_quote(psidLen);
+            remove_single_quote(psid);
+            remove_single_quote(isFMR);
+
+            if(!strncmp(mapAssigned, "MAPT", 4))
+                dhcpv6_data.maptAssigned = TRUE;
+            else if(!strncmp(mapAssigned, "MAPE", 4))
+                dhcpv6_data.mapeAssigned = TRUE;
+
+            if((dhcpv6_data.maptAssigned == TRUE) || (dhcpv6_data.mapeAssigned == TRUE))
+            {
+                strncpy(dhcpv6_data.mapt.pdIPv6Prefix, pdIPv6Prefix, sizeof(pdIPv6Prefix));
+
+                strncpy(dhcpv6_data.mapt.ruleIPv6Prefix, ruleIPv6Prefix, sizeof(ruleIPv6Prefix));
+                if(strlen(ruleIPv6Prefix) == 0) {
+                    CcspTraceError(("[%s-%d] MAPT Rule_V6_Prefix is Empty \n", __FUNCTION__, __LINE__));
+                }
+
+                strncpy(dhcpv6_data.mapt.brIPv6Prefix, brIPv6Prefix, sizeof(brIPv6Prefix));
+                if(strlen(brIPv6Prefix) == 0) {
+                    CcspTraceError(("[%s-%d] MAPT Br_V6_Prefix is Empty \n", __FUNCTION__, __LINE__));
+                }
+
+                strncpy(dhcpv6_data.mapt.ruleIPv4Prefix, ruleIPv4Prefix, sizeof(ruleIPv4Prefix));
+                if(strlen(ruleIPv4Prefix) == 0) {
+                    CcspTraceError(("[%s-%d] MAPT Rule_V4_Prefix is Empty \n", __FUNCTION__, __LINE__));
+                }
+
+                dhcpv6_data.mapt.iapdPrefixLen = pref_len;
+                dhcpv6_data.mapt.v6Len = atoi(v6Len);
+                dhcpv6_data.mapt.isFMR = atoi(isFMR);
+                dhcpv6_data.mapt.eaLen = atoi(eaLen);
+                dhcpv6_data.mapt.v4Len = atoi(v4Len);
+                dhcpv6_data.mapt.psidOffset = atoi(psidOffset);
+                dhcpv6_data.mapt.psidLen = atoi(psidLen);
+                dhcpv6_data.mapt.psid = atoi(psid);
+                dhcpv6_data.mapt.ratio = 1 << (dhcpv6_data.mapt.eaLen - (32 - dhcpv6_data.mapt.v4Len));
+            }
+
+#endif //FEATURE_MAPT
+            if (send_dhcp_data_to_wanmanager(&dhcpv6_data) != ANSC_STATUS_SUCCESS) {
+                CcspTraceError(("[%s-%d] Failed to send dhcpv6 data to wanmanager!!! \n", __FUNCTION__, __LINE__));
+            }
+            g_dhcpv6_server_prefix_ready = TRUE;
+
+            /* Set Interface specific sysevnts. This is used for Ip interface DM */
+            if (iana_iaid[0] != '\0') {
+                remove_single_quote(iana_iaid);
+                memset( sysEventName, 0, sizeof(sysEventName));
+                snprintf(sysEventName, sizeof(sysEventName), COSA_DML_WANIface_ADDR_IAID_SYSEVENT_NAME, IfaceName);
+                commonSyseventSet(sysEventName,  iana_iaid);
+            }
+            if (iana_t1[0] != '\0') {
+                remove_single_quote(iana_t1);
+                memset( sysEventName, 0, sizeof(sysEventName));
+                snprintf(sysEventName, sizeof(sysEventName), COSA_DML_WANIface_ADDR_T1_SYSEVENT_NAME, IfaceName);
+                commonSyseventSet(sysEventName,    iana_t1);
+            }
+            if (iana_t2[0] != '\0') {
+                remove_single_quote(iana_t2);
+                memset( sysEventName, 0, sizeof(sysEventName));
+                snprintf(sysEventName, sizeof(sysEventName), COSA_DML_WANIface_ADDR_T2_SYSEVENT_NAME, IfaceName);
+                commonSyseventSet(sysEventName,    iana_t2);
+            }
+            if (iana_pretm[0] != '\0') {
+                remove_single_quote(iana_pretm);
+                memset( sysEventName, 0, sizeof(sysEventName));
+                snprintf(sysEventName, sizeof(sysEventName), COSA_DML_WANIface_ADDR_PRETM_SYSEVENT_NAME, IfaceName);
+                commonSyseventSet(sysEventName, iana_pretm);
+            }
+            if (iana_vldtm[0] != '\0') {
+                remove_single_quote(iana_vldtm);
+                memset( sysEventName, 0, sizeof(sysEventName));
+                snprintf(sysEventName, sizeof(sysEventName), COSA_DML_WANIface_ADDR_VLDTM_SYSEVENT_NAME, IfaceName);
+                commonSyseventSet(sysEventName, iana_vldtm);
+            }
+
+            if (iapd_iaid[0] != '\0') {
+                remove_single_quote(iapd_iaid);
+                memset( sysEventName, 0, sizeof(sysEventName));
+                snprintf(sysEventName, sizeof(sysEventName), COSA_DML_WANIface_PREF_IAID_SYSEVENT_NAME, IfaceName);
+                commonSyseventSet(sysEventName,  iapd_iaid);
+            }
+            if (iapd_t1[0] != '\0') {
+                remove_single_quote(iapd_t1);
+                memset( sysEventName, 0, sizeof(sysEventName));
+                snprintf(sysEventName, sizeof(sysEventName), COSA_DML_WANIface_PREF_T1_SYSEVENT_NAME, IfaceName);
+                commonSyseventSet(sysEventName,    iapd_t1);
+            }
+            if (iapd_t2[0] != '\0') {
+                remove_single_quote(iapd_t2);
+                memset( sysEventName, 0, sizeof(sysEventName));
+                snprintf(sysEventName, sizeof(sysEventName), COSA_DML_WANIface_PREF_T2_SYSEVENT_NAME, IfaceName);
+                commonSyseventSet(sysEventName,    iapd_t2);
+            }
+            if (iapd_pretm[0] != '\0') {
+                remove_single_quote(iapd_pretm);
+                memset( sysEventName, 0, sizeof(sysEventName));
+                snprintf(sysEventName, sizeof(sysEventName), COSA_DML_WANIface_PREF_PRETM_SYSEVENT_NAME, IfaceName);
+                commonSyseventSet(sysEventName, iapd_pretm);
+            }
+            if (iapd_vldtm[0] != '\0') {
+                remove_single_quote(iapd_vldtm);
+                memset( sysEventName, 0, sizeof(sysEventName));
+                snprintf(sysEventName, sizeof(sysEventName), COSA_DML_WANIface_PREF_VLDTM_SYSEVENT_NAME, IfaceName);
+                commonSyseventSet(sysEventName, iapd_vldtm);
+            }
+
+            continue;  
+            /* 
+             * Sysevent and Interface configuration will be done by WanManager. 
+             * Skiping below code. 
+             */
+#endif
+#endif
                     /*for now we only support one address, one prefix notify, if need multiple addr/prefix, must modify dibbler-client code*/
                     if (strncmp(v6addr, "::", 2) != 0)
                     {
@@ -8261,12 +8578,23 @@ dhcpv6c_dbg_thrd(void * in)
                         }
                         else
                         {
+                             #define STRING_LENGTH 64
+                             char dropbearInterface[STRING_LENGTH] = {0};
                              CcspTraceInfo(("%s: v6addr is %s ,pref_len is %d\n", __func__,v6addr,pref_len));
 
+                             remove_single_quote(v6addr);
                              commonSyseventSet(COSA_DML_DHCPV6C_ADDR_SYSEVENT_NAME,v6addr);
+                             if ((0 == CheckAndGetDevicePropertiesEntry(dropbearInterface, STRING_LENGTH, "DROPBEAR_INTERFACE")) && (0 == strncmp(dropbearInterface, "erouter0", strlen(dropbearInterface))))
+                             {
+                                 CcspTraceInfo(("%s: Dropbear interface is erouter0 \n", __func__));
+                                 isDropbearRunningWithIpv6(v6addr);
+                             }
+                             else
+                             {
+                                 CcspTraceInfo(("%s: Dropbear interface is NOT eRouter0\n", __func__));
+                             }
 
                              #ifdef RDKB_EXTENDER_ENABLED
-                                remove_single_quote(v6addr);
 
                                 if(pref_len >= 64)
                                     commonSyseventSet("ula_ipv6_enabled","1");
@@ -8538,7 +8866,11 @@ dhcpv6c_dbg_thrd(void * in)
                             ipc_dhcpv6_data_t dhcpv6_data;
                             memset(&dhcpv6_data, 0, sizeof(ipc_dhcpv6_data_t));
 
+#if defined(FEATURE_RDKB_CONFIGURABLE_WAN_INTERFACE)
+                            strncpy(dhcpv6_data.ifname, IfaceName, sizeof(dhcpv6_data.ifname));
+#else
                             strncpy(dhcpv6_data.ifname, CFG_TR181_DHCPv6_CLIENT_IfName, sizeof(dhcpv6_data.ifname));
+#endif
                             if(strlen(v6pref) == 0) {
                                 dhcpv6_data.isExpired = TRUE;
                             } else {
@@ -8592,21 +8924,33 @@ dhcpv6c_dbg_thrd(void * in)
                             if ( globalIP2[0] )
                                commonSyseventSet("lan_ipaddr_v6_prev", globalIP2);
 
+                            // Making sure gw_lan_refresh doesn't get called 1st time
+                            if (strlen(globalIP2) != 0 )
+                            {
+                                g_dhcpv6s_refresh_count = bRestartLan;
+                                CcspTraceWarning(("%s: g_dhcpv6s_refresh_count %ld, globalIP2 is %s, strlen is %d\n", __func__, g_dhcpv6s_refresh_count,globalIP2,strlen(globalIP2)));
+
+                            }
                             rc = strcpy_s(globalIP2, sizeof(globalIP2), globalIP);
                             ERR_CHK(rc);
-                        }else{
-                                                               char lanrestart[8] = {0};
-                                                        commonSyseventGet("lan_restart_required",lanrestart, sizeof(lanrestart));
-                                                               DHCPMGR_LOG_INFO("lan restart staus is %s ",lanrestart);
-                                                        if (strcmp("true",lanrestart) == 0)
-                                                        {
-                                                            bRestartLan = TRUE;
-                                                            commonSyseventSet("lan_restart_required","false");
-                                                        }
-                                                        else
-                                                bRestartLan = FALSE;
-                                                }
-                        g_dhcpv6s_refresh_count = bRestartLan;
+                        }
+                        else
+                        {
+                            char lanrestart[8] = {0};
+                            commonSyseventGet("lan_restart_required",lanrestart, sizeof(lanrestart));
+                                              DHCPMGR_LOG_INFO("lan restart staus is %s ",lanrestart);
+                            if (strcmp("true",lanrestart) == 0)
+                            {
+                                bRestartLan = TRUE;
+                                commonSyseventSet("lan_restart_required","false");
+                            }
+                            else
+                            {
+                                bRestartLan = FALSE;
+                            }
+
+                            g_dhcpv6s_refresh_count = bRestartLan;
+                        }
                         CcspTraceWarning(("%s: bRestartLan %d\n", __func__, bRestartLan));
 
                         DHCPMGR_LOG_INFO("%s -- %d !!! ret:%d bRestartLan:%d %s %s ", __LINE__,ret,  bRestartLan,  globalIP, globalIP2);
@@ -8635,6 +8979,7 @@ dhcpv6c_dbg_thrd(void * in)
 #endif
 #else
 #if defined(FEATURE_RDKB_WAN_MANAGER)
+#if !defined(FEATURE_RDKB_CONFIGURABLE_WAN_INTERFACE)
                        /*
                         * Send data to wanmanager.
                         */
@@ -8647,7 +8992,11 @@ dhcpv6c_dbg_thrd(void * in)
                         ipc_dhcpv6_data_t dhcpv6_data;
                         memset(&dhcpv6_data, 0, sizeof(ipc_dhcpv6_data_t));
 
+#if defined(FEATURE_RDKB_CONFIGURABLE_WAN_INTERFACE)
+                        strncpy(dhcpv6_data.ifname, IfaceName, sizeof(dhcpv6_data.ifname));
+#else
                         strncpy(dhcpv6_data.ifname, CFG_TR181_DHCPv6_CLIENT_IfName, sizeof(dhcpv6_data.ifname));
+#endif
                         if(strlen(v6pref) == 0) {
                             dhcpv6_data.isExpired = TRUE;
                         } else {
@@ -8770,6 +9119,7 @@ dhcpv6c_dbg_thrd(void * in)
                             commonSyseventSet("lan_prefix_set", globalIP);
 #endif
                         }
+#endif
 #else
 #if defined(_HUB4_PRODUCT_REQ_)
                     commonSyseventGet(SYSEVENT_FIELD_IPV6_PREFIXVLTIME,
@@ -8815,10 +9165,11 @@ dhcpv6c_dbg_thrd(void * in)
 #endif
                         g_dhcpv6_server_prefix_ready = TRUE;
 
-                        #ifdef DHCPV6_SERVER_SUPPORT
+#if !defined (_SKY_HUB_COMMON_PRODUCT_REQ_)
+#ifdef DHCPV6_SERVER_SUPPORT
                         CosaDmlDHCPv6sTriggerRestart(FALSE);
-                        //sysevent_set(sysevent_fd_server, sysevent_token_server, "dhcpv6s_trigger_restart", "0", 0);
-                        #endif
+#endif
+#endif
 
                         /*We need get a global ip addres */
 #if defined(_COSA_BCM_ARM_) || defined(INTEL_PUMA7)
@@ -8841,21 +9192,34 @@ dhcpv6c_dbg_thrd(void * in)
                             if ( globalIP2[0] )
                                commonSyseventSet("lan_ipaddr_v6_prev", globalIP2);
 
+                            // Making sure gw_lan_refresh doesn't get called 1st time
+                            if (strlen(globalIP2) != 0 )
+                            {
+                                g_dhcpv6s_refresh_count = bRestartLan;
+                                CcspTraceWarning(("%s: g_dhcpv6s_refresh_count %ld, globalIP2 is %s, strlen is %d\n", __func__, g_dhcpv6s_refresh_count,globalIP2,strlen(globalIP2)));
+                            }
+
                             rc = strcpy_s(globalIP2, sizeof(globalIP2), globalIP);
                             ERR_CHK(rc);
-                        }else{
-								char lanrestart[8] = {0};
-		    					commonSyseventGet("lan_restart_required",lanrestart, sizeof(lanrestart));
-								DHCPMGR_LOG_INFO("lan restart staus is %s ",lanrestart);
-   			       				if (strcmp("true",lanrestart) == 0)
-                                                        {
-                                                            bRestartLan = TRUE;
-                                                            commonSyseventSet("lan_restart_required","false");
-                                                        }
-								else
-                            		bRestartLan = FALSE;
+                        }
+                        else
+                        {
+                            char lanrestart[8] = {0};
+                            commonSyseventGet("lan_restart_required",lanrestart, sizeof(lanrestart));
+                            DHCPMGR_LOG_INFO("lan restart staus is %s ",lanrestart);
+
+                            if (strcmp("true",lanrestart) == 0)
+                            {
+                                bRestartLan = TRUE;
+                                commonSyseventSet("lan_restart_required","false");
+                            }
+                            else
+                            {
+                                bRestartLan = FALSE;
+                            }
+
+                            g_dhcpv6s_refresh_count = bRestartLan;
 						}
-                        g_dhcpv6s_refresh_count = bRestartLan;
                         CcspTraceWarning(("%s: bRestartLan %d\n", __func__, bRestartLan));
 
                         DHCPMGR_LOG_INFO("-- %d !!! ret:%d bRestartLan:%d %s %s ", __LINE__,ret,  bRestartLan,  globalIP, globalIP2);
@@ -8878,8 +9242,13 @@ dhcpv6c_dbg_thrd(void * in)
                             }
                             commonSyseventSet("lan_prefix_v6", cmd);
 
-			    CcspTraceWarning(("%s: setting lan-restart\n", __FUNCTION__));
+                            CcspTraceWarning(("%s: setting lan-restart\n", __FUNCTION__));
                             commonSyseventSet("lan-restart", "1");
+#if !defined (_SKY_HUB_COMMON_PRODUCT_REQ_)
+#ifdef DHCPV6_SERVER_SUPPORT
+                            CosaDmlDHCPv6sTriggerRestart(FALSE);
+#endif
+#endif
                         }
 #endif
 
@@ -9043,7 +9412,13 @@ void Switch_ipv6_mode(char *ifname, int length)
     commonSyseventGet("wan_ifname", default_wan_ifname, sizeof(default_wan_ifname));
     if (ifname)
     {
+#ifdef FEATURE_RDKB_CONFIGURABLE_WAN_INTERFACE
+        char mesh_wan_ifname[32] = {0};
+        getMeshWanIfName(mesh_wan_ifname,sizeof(mesh_wan_ifname));
+        if(strncmp(ifname, mesh_wan_ifname,length ) == 0)
+#else
         if(strncmp(ifname,default_wan_ifname,length) != 0)
+#endif
         {
             SwitchToULAIpv6(); //Secondary Wan
         }
@@ -9070,8 +9445,6 @@ void *Ipv6ModeHandler_thrd(void *data)
     sysevent_setnotification(sysevent_fd, sysevent_token, "current_wan_ifname",  &async_id_wanfailover[0]);
     sysevent_set_options(sysevent_fd, sysevent_token, "mesh_wan_linkstatus", TUPLE_FLAG_EVENT);
     sysevent_setnotification(sysevent_fd, sysevent_token, "mesh_wan_linkstatus",  &async_id_wanfailover[1]);
-    sysevent_set_options(sysevent_fd, sysevent_token, "phylink_wan_state", TUPLE_FLAG_EVENT);
-    sysevent_setnotification(sysevent_fd, sysevent_token, "phylink_wan_state",  &async_id_wanfailover[2]);
     while(1)
     {
         async_id_t getnotification_asyncid;
@@ -9103,20 +9476,16 @@ void *Ipv6ModeHandler_thrd(void *data)
                     delIpv6toRemoteWan();
                 }
             }
-            else if(!strcmp(name, "phylink_wan_state"))
-            {
-                if (!strncmp(val, "up", 2))
-                {
-                    sysevent_get(sysevent_fd, sysevent_token, "remotewan_routeset", tmpBuf, sizeof(tmpBuf));
-                    if (strcmp(tmpBuf,"true") == 0 )
-                        delRemoteWanIpv6Route();
-                }
-            }
             else if(!strcmp(name, "current_wan_ifname"))
             {
                 memset(tmpBuf,0,sizeof(tmpBuf));
+#ifdef FEATURE_RDKB_CONFIGURABLE_WAN_INTERFACE
+                getMeshWanIfName(tmpBuf,sizeof(tmpBuf));
+                if (strcmp(val,tmpBuf) == 0 )
+#else
                 sysevent_get(sysevent_fd, sysevent_token, "wan_ifname", tmpBuf, sizeof(tmpBuf));
                 if (strcmp(val,tmpBuf) != 0 )
+#endif
                 {
                     #ifdef DHCPV6_SERVER_SUPPORT
                     _dibbler_server_operation("stop");

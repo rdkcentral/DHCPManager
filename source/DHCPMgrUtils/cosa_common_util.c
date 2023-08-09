@@ -421,10 +421,17 @@ EvtDispterEventListen(void)
 
             if(!strcmp(name_str, "lan-status"))
             {
-                if (!strncmp(value_str, "started", 7)) 
+                if (!strncmp(value_str, "started", 7))
+                {
+                    #if defined (_XB7_PRODUCT_REQ_) && !defined (_COSA_BCM_ARM_)
+                        vsystem("/usr/sbin/brlan0_uuid.sh");
+                    #endif
                     ret = EVENT_LAN_STARTED;
-                else if (!strncmp(value_str, "stopped", 7)) 
+                }
+                else if (!strncmp(value_str, "stopped", 7))
+                {
                     ret = EVENT_LAN_STOPPED;
+                }
             }
         } else {
             CcspTraceWarning(("Received msg that is not a SE_MSG_NOTIFICATION (%d)\n", msg_type));

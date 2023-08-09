@@ -493,7 +493,9 @@ void CosaDmlDhcpv6sRebootServer()
 #else
     FILE *fp = NULL;
     int fd = 0;
+#if !defined(FEATURE_RDKB_CONFIGURABLE_WAN_INTERFACE)
     if (g_dhcpv6s_restart_count) 
+#endif
     {
         g_dhcpv6s_restart_count=0;
 
@@ -541,9 +543,12 @@ void CosaDmlDhcpv6sRebootServer()
     }
 #endif
     // refresh lan if we were asked to
-    if (g_dhcpv6s_refresh_count) 
+#if !defined(FEATURE_RDKB_CONFIGURABLE_WAN_INTERFACE)
+    if (g_dhcpv6s_refresh_count)
+#endif
     {
         g_dhcpv6s_refresh_count = 0;
+        CcspTraceWarning(("%s: DBG calling  gw_lan_refresh\n", __func__));
         v_secure_system("gw_lan_refresh");
     }
 
@@ -756,8 +761,39 @@ void __cosa_dhcpsv6_refresh_config()
                                 char s_iapd_pretm[32] = {0};
                                 char s_iapd_vldtm[32] = {0};
                                 ULONG  iapd_pretm, iapd_vldtm =0;
+#if defined(FEATURE_RDKB_CONFIGURABLE_WAN_INTERFACE)
+                                /* This pTmp1 is IP.Interface.{i}.IPv6Prefix.{i}., Fetch Interface Name from it*/
+                                int index, prefixIndex;
+                                char dmName[256] ={0};
+                                char dmValue[64] ={0};
+                                char sysEventName[256] ={0};
+
+                                sscanf (pTmp1,"Device.IP.Interface.%d.IPv6Prefix.%d.", &index, &prefixIndex);
+
+                                rc = sprintf_s((char*)dmName, sizeof(dmName), "Device.IP.Interface.%d.Name",index);
+                                if(rc < EOK)
+                                {
+                                    ERR_CHK(rc);
+                                }
+
+                                uSize = sizeof(dmValue);
+                                returnValue = g_GetParamValueString(g_pDslhDmlAgent, dmName, dmValue, &uSize);
+                                if ( returnValue != 0 )
+                                {
+                                    CcspTraceWarning(("_cosa_dhcpsv6_refresh_config -- g_GetParamValueString for iana:%d\n", returnValue));
+                                }
+
+                                memset( sysEventName, 0, sizeof(sysEventName));
+                                snprintf(sysEventName, sizeof(sysEventName), COSA_DML_WANIface_PREF_PRETM_SYSEVENT_NAME, dmValue);
+                                commonSyseventGet(sysEventName, s_iapd_pretm, sizeof(s_iapd_pretm));
+
+                                memset( sysEventName, 0, sizeof(sysEventName));
+                                snprintf(sysEventName, sizeof(sysEventName), COSA_DML_WANIface_PREF_VLDTM_SYSEVENT_NAME, dmValue);
+                                commonSyseventGet(sysEventName, s_iapd_vldtm, sizeof(s_iapd_vldtm));
+#else
                                 commonSyseventGet(COSA_DML_DHCPV6C_PREF_PRETM_SYSEVENT_NAME, s_iapd_pretm, sizeof(s_iapd_pretm));
                                 commonSyseventGet(COSA_DML_DHCPV6C_PREF_VLDTM_SYSEVENT_NAME, s_iapd_vldtm, sizeof(s_iapd_vldtm));
+#endif
                                 sscanf(s_iapd_pretm, "%lu", &iapd_pretm);
                                 sscanf(s_iapd_vldtm, "%lu", &iapd_vldtm);
                                 if (sDhcpv6ServerPool[Index].Cfg.LeaseTime <= -1 ) {

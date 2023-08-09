@@ -337,8 +337,8 @@ CosaDmlSetIpaddr
 BOOL
 CosaDmlGetIpaddrString
     (
-        PUCHAR pString,
-        PULONG pulStrLength,
+        char *pString,
+        ULONG *pulStrLength,
         uint32_t *pIPAddr,
         ULONG  MaxNumber
     );

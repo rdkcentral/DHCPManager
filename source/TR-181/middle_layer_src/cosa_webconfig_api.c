@@ -19,7 +19,7 @@
 #include <syscfg/syscfg.h>
 #include "cosa_webconfig_api.h"
 #include "webconfig_framework.h"
-#include "base64.h"
+#include <trower-base64/base64.h>
 #include "safec_lib_common.h"
 
 void initMultiCompMaster(void);
@@ -174,9 +174,17 @@ int setBlobVersion(char* subdoc,uint32_t version)
     {
         char cmd[256] = {0};
         memset(cmd,0,sizeof(cmd));
-        snprintf(cmd,sizeof(cmd),"mv /tmp/.%s%s %s",subdoc,subdoc_ver,HOTSPOT_BLOB_FILE);
-        CcspTraceInfo(("%s : cmd to move filename is %s\n",__FUNCTION__,cmd));
 
+        if (version == 0)
+        {
+            snprintf(cmd,sizeof(cmd),"rm %s",HOTSPOT_BLOB_FILE);
+            CcspTraceInfo(("%s : cmd to remove filename is %s\n",__FUNCTION__,cmd));
+        }
+        else
+        {
+            snprintf(cmd,sizeof(cmd),"mv /tmp/.%s%s %s",subdoc,subdoc_ver,HOTSPOT_BLOB_FILE);
+            CcspTraceInfo(("%s : cmd to move filename is %s\n",__FUNCTION__,cmd));
+        }
         system(cmd);
 
     }

@@ -6036,8 +6036,7 @@ Pool_GetParamStringValue
 
     if( AnscEqualString(ParamName, "DNSServers", TRUE))
     {
-        /* collect value */
-        if ( CosaDmlGetIpaddrString((PUCHAR)pValue, pUlSize, &pPool->Cfg.DNSServers[0].Value, COSA_DML_DHCP_MAX_ENTRIES ) )
+        if ( CosaDmlGetIpaddrString(pValue, pUlSize, &pPool->Cfg.DNSServers[0].Value, COSA_DML_DHCP_MAX_ENTRIES ) )
         {
             return 0;
         }
@@ -6079,8 +6078,7 @@ Pool_GetParamStringValue
         else
             pTmpAddr = &pPool->Cfg.IPRouters[0].Value;
 
-        /* collect value */
-        if ( CosaDmlGetIpaddrString((PUCHAR)pValue, pUlSize, pTmpAddr, COSA_DML_DHCP_MAX_ENTRIES ) )
+        if ( CosaDmlGetIpaddrString(pValue, pUlSize, pTmpAddr, COSA_DML_DHCP_MAX_ENTRIES ) )
         {
             return 0;
         }
@@ -7874,14 +7872,14 @@ StaticAddress_SetParamStringValue
     /* check the parameter name and set the corresponding value */
     if( AnscEqualString(ParamName, "Alias", TRUE))
     {
-        safec_rc = STRCPY_S_NOCLOBBER(pPoolLink->AliasOfStaAddr, sizeof(pPoolLink->AliasOfStaAddr), pDhcpStaticAddress->Alias);
+        safec_rc = STRCPY_S_NOCLOBBER(pDhcpStaticAddress->Alias, sizeof(pDhcpStaticAddress->Alias), pString);
         if(safec_rc != EOK)
         {
             ERR_CHK(safec_rc);
             return FALSE;
         }
 
-        safec_rc = STRCPY_S_NOCLOBBER(pDhcpStaticAddress->Alias, sizeof(pDhcpStaticAddress->Alias), pString);
+        safec_rc = STRCPY_S_NOCLOBBER(pPoolLink->AliasOfStaAddr, sizeof(pPoolLink->AliasOfStaAddr), pDhcpStaticAddress->Alias);
         if(safec_rc != EOK)
         {
             ERR_CHK(safec_rc);

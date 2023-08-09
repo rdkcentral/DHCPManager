@@ -65,12 +65,7 @@
 #include "safec_lib_common.h"
 #include "cosa_common_util.h"
 
-#include "cosa_dns_dml.h"
-#include "cosa_dns_internal.h"
-#include "cosa_dml_api_dns.h"
-
 #include "cosa_webconfig_api.h"
-#include "cosa_x_cisco_com_devicecontrol_internal.h"
 
 #define THIS_PLUGIN_VERSION                         1
 
@@ -432,38 +427,6 @@ COSA_Init
     pPlugInfo->RegisterFunction(pPlugInfo->hContext, "Option4_Commit", Option4_Commit);
     pPlugInfo->RegisterFunction(pPlugInfo->hContext, "Option4_Rollback", Option4_Rollback);
 
-
-
-    pPlugInfo->RegisterFunction(pPlugInfo->hContext, "Client1_GetParamBoolValue", Client1_GetParamBoolValue);
-    pPlugInfo->RegisterFunction(pPlugInfo->hContext, "Client1_GetParamIntValue", Client1_GetParamIntValue);
-    pPlugInfo->RegisterFunction(pPlugInfo->hContext, "Client1_GetParamUlongValue", Client1_GetParamUlongValue);
-    pPlugInfo->RegisterFunction(pPlugInfo->hContext, "Client1_GetParamStringValue", Client1_GetParamStringValue);
-    pPlugInfo->RegisterFunction(pPlugInfo->hContext, "Client1_SetParamBoolValue", Client1_SetParamBoolValue);
-    pPlugInfo->RegisterFunction(pPlugInfo->hContext, "Client1_SetParamIntValue", Client1_SetParamIntValue);
-    pPlugInfo->RegisterFunction(pPlugInfo->hContext, "Client1_SetParamUlongValue", Client1_SetParamUlongValue);
-    pPlugInfo->RegisterFunction(pPlugInfo->hContext, "Client1_SetParamStringValue", Client1_SetParamStringValue);
-    pPlugInfo->RegisterFunction(pPlugInfo->hContext, "Client1_Validate", Client1_Validate);
-    pPlugInfo->RegisterFunction(pPlugInfo->hContext, "Client1_Commit", Client1_Commit);
-    pPlugInfo->RegisterFunction(pPlugInfo->hContext, "Client1_Rollback", Client1_Rollback);
-
-    pPlugInfo->RegisterFunction(pPlugInfo->hContext, "Server1_GetEntryCount", Server1_GetEntryCount);
-    pPlugInfo->RegisterFunction(pPlugInfo->hContext, "Server1_GetEntry", Server1_GetEntry);
-    pPlugInfo->RegisterFunction(pPlugInfo->hContext, "Server1_AddEntry", Server1_AddEntry);
-    pPlugInfo->RegisterFunction(pPlugInfo->hContext, "Server1_DelEntry", Server1_DelEntry);
-    pPlugInfo->RegisterFunction(pPlugInfo->hContext, "Server1_IsUpdated", Server1_IsUpdated);
-    pPlugInfo->RegisterFunction(pPlugInfo->hContext, "Server1_Synchronize", Server1_Synchronize);
-    pPlugInfo->RegisterFunction(pPlugInfo->hContext, "Server1_GetParamBoolValue", Server1_GetParamBoolValue);
-    pPlugInfo->RegisterFunction(pPlugInfo->hContext, "Server1_GetParamIntValue", Server1_GetParamIntValue);
-    pPlugInfo->RegisterFunction(pPlugInfo->hContext, "Server1_GetParamUlongValue", Server1_GetParamUlongValue);
-    pPlugInfo->RegisterFunction(pPlugInfo->hContext, "Server1_GetParamStringValue", Server1_GetParamStringValue);
-    pPlugInfo->RegisterFunction(pPlugInfo->hContext, "Server1_SetParamBoolValue", Server1_SetParamBoolValue);
-    pPlugInfo->RegisterFunction(pPlugInfo->hContext, "Server1_SetParamIntValue", Server1_SetParamIntValue);
-    pPlugInfo->RegisterFunction(pPlugInfo->hContext, "Server1_SetParamUlongValue", Server1_SetParamUlongValue);
-    pPlugInfo->RegisterFunction(pPlugInfo->hContext, "Server1_SetParamStringValue", Server1_SetParamStringValue);
-    pPlugInfo->RegisterFunction(pPlugInfo->hContext, "Server1_Validate", Server1_Validate);
-    pPlugInfo->RegisterFunction(pPlugInfo->hContext, "Server1_Commit", Server1_Commit);
-    pPlugInfo->RegisterFunction(pPlugInfo->hContext, "Server1_Rollback", Server1_Rollback);
-
     g_pDslhDmlAgent                 = pPlugInfo->hDmlAgent;
     pGetParamValueByPathNameProc = (COSAGetParamValueByPathNameProc)pPlugInfo->AcquireFunction("COSAGetParamValueByPathName");
     if( pGetParamValueByPathNameProc != NULL)
@@ -674,11 +637,6 @@ COSA_Init
 
     g_Dhcpv4Object       = (ANSC_HANDLE)CosaDhcpv4Create();
     g_Dhcpv6Object       = (ANSC_HANDLE)CosaDhcpv6Create();
-
-#if 0
-    g_DnsObject          = (ANSC_HANDLE)CosaDNSCreate();
-#endif
-    g_DevCtlObject       = (ANSC_HANDLE)CosaDeviceControlCreate();
 
     EvtDispterHandleEventAsync();
     webConfigFrameworkInit();

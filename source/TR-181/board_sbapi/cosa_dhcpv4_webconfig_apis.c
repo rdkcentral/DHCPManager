@@ -23,8 +23,11 @@
 #include "webconfig_framework.h"
 #include "plugin_main_apis.h"
 #include "safec_lib_common.h"
-#include <syscfg/syscfg.h>
+#include "syscfg/syscfg.h"
 #include "cosa_webconfig_api.h"
+#include "utapi.h"
+#include "utapi_util.h"
+#include "ansc_wrapper_base.h"
 #define MACADDR_SZ          18
 #define MIN 60
 #define HOURS 3600
@@ -38,10 +41,141 @@ extern ANSC_HANDLE g_DevCtlObject;
 pthread_mutex_t staticClientsMutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t lanMutex = PTHREAD_MUTEX_INITIALIZER;
 
+#define _CALC_NETWORK(ip, mask) ((ULONG)(ip) & (ULONG)(mask))
+
 Dhcpv4_Cache_t g_dhcpv4bkup_cache[DHCPV4_CACHE_MAX_NUM_OF_PARAM];
 Dhcpv4_Cache_t cache_temp[DHCPV4_CACHE_MAX_NUM_OF_PARAM] = {};
 int g_numOfbkupCacheParam = 0;
 int g_numOfReceivedParam = 0;
+
+static void getLanMgmtUpnp(UtopiaContext *utctx, BOOLEAN *enable)
+{
+    int bEnabled;
+
+    if (utctx == NULL || enable == NULL)
+        return;
+
+    Utopia_GetBool(utctx, UtopiaValue_Mgmt_IGDEnabled, &bEnabled);
+
+    if (bEnabled){
+        *enable = TRUE;
+    }else{
+        *enable = FALSE;
+    }
+
+}
+
+static
+void _Get_LanMngm_Setting(UtopiaContext *utctx, ULONG index, PCOSA_DML_LAN_MANAGEMENT pLanMngm)
+{
+    UNREFERENCED_PARAMETER(index);
+    lanSetting_t lan;
+    ANSC_IPV4_ADDRESS network, netmask, ipaddr;
+    bridgeInfo_t bridge_info = {0}; /* initialize before use*/
+    int int_tmp;
+    napt_mode_t napt_mode;
+    /* Till now,just support only one lan interface */
+    /* ignor the index */
+    Utopia_GetLanMngmInsNum(utctx, &(pLanMngm->InstanceNumber));
+    Utopia_GetLanMngmAlias(utctx, pLanMngm->Alias, sizeof(pLanMngm->Alias));
+    Utopia_GetBridgeSettings(utctx, &bridge_info);
+
+    /*
+     * Configure Bridge Static Mode Configuration
+     * if COSA_DML_LanMode_BridgeStatic then BridgeStaticMode then "Advanced Bridge" 2
+     * if COSA_DML_LanMode_FullBridgeStatic then BridgeStaticMode then "Primary Bridge" 4
+     */
+
+    switch( bridge_info.mode )
+    {
+    case BRIDGE_MODE_STATIC:
+    {
+        pLanMngm->LanMode = COSA_DML_LanMode_BridgeStatic;
+    }
+    break; /* BRIDGE_MODE_STATIC */
+
+    case BRIDGE_MODE_FULL_STATIC:
+    {
+        pLanMngm->LanMode = COSA_DML_LanMode_FullBridgeStatic;
+    }
+    break; /* BRIDGE_MODE_FULL_STATIC */
+
+    case BRIDGE_MODE_OFF:
+    {
+        pLanMngm->LanMode = COSA_DML_LanMode_Router;
+    }
+    break; /* BRIDGE_MODE_OFF */
+
+    default:
+    {
+        pLanMngm->LanMode = COSA_DML_LanMode_Router;
+    }
+    break;
+    }
+
+    Utopia_GetLanSettings(utctx, &lan);
+    inet_pton(AF_INET, lan.ipaddr, &ipaddr);
+    memcpy(&(pLanMngm->LanIPAddress), &(ipaddr), sizeof(ANSC_IPV4_ADDRESS));
+    inet_pton(AF_INET, lan.netmask, &netmask);
+    memcpy(&(pLanMngm->LanSubnetMask), &(netmask), sizeof(ANSC_IPV4_ADDRESS));
+    network.Value = _CALC_NETWORK(ipaddr.Value, netmask.Value);
+    memcpy(&(pLanMngm->LanNetwork), &(network), sizeof(ANSC_IPV4_ADDRESS));
+
+    Utopia_GetLanMngmLanNetworksAllow(utctx, &int_tmp);
+    pLanMngm->LanNetworksAllow = (COSA_DML_LanNetworksAllow)int_tmp;
+
+    /* TO-DO */
+    /* LanDhcpServer; */
+    Utopia_GetLanMngmLanNapt(utctx, &napt_mode);
+    switch (napt_mode){
+    default:
+        pLanMngm->LanNaptEnable = TRUE;
+        pLanMngm->LanNaptType = 1;//COSA_DML_LanNapt_DHCP;
+        break;
+    case NAPT_MODE_DISABLE_STATIC:
+        pLanMngm->LanNaptEnable = FALSE;
+        pLanMngm->LanNaptType = 0;//COSA_DML_LanNapt_StaticIP;
+        break;
+    case NAPT_MODE_DISABLE_DHCP:
+        pLanMngm->LanNaptEnable = FALSE;
+        pLanMngm->LanNaptType = 1;//COSA_DML_LanNapt_DHCP;
+        break;
+    case NAPT_MODE_DHCP:
+        pLanMngm->LanNaptEnable = TRUE;
+        pLanMngm->LanNaptType = 1;//COSA_DML_LanNapt_DHCP;
+        break;
+    case NAPT_MODE_STATICIP:
+        pLanMngm->LanNaptEnable = TRUE;
+        pLanMngm->LanNaptType = 0;//COSA_DML_LanNapt_StaticIP;
+        break;
+    }
+
+    /* TO-DO */
+    /* LanTos;
+     */
+
+    getLanMgmtUpnp(utctx, &pLanMngm->LanUpnp);
+}
+
+ANSC_STATUS
+CosaDmlLanMngm_GetEntryByIndex(ULONG index, PCOSA_DML_LAN_MANAGEMENT pLanMngm)
+{
+
+    UtopiaContext utctx = {0};
+    int num = -1;
+    ANSC_STATUS ret = ANSC_STATUS_FAILURE;
+
+    if (Utopia_Init(&utctx))
+    {
+        Utopia_GetLanMngmCount(&utctx, &num);
+        if(index < (ULONG)num ){
+            _Get_LanMngm_Setting(&utctx, index, pLanMngm);
+            ret = ANSC_STATUS_SUCCESS;
+        }
+        Utopia_Free(&utctx, 0);
+    }
+    return ret;
+}
 
 int Dhcpv4_StaticClients_MutexLock()
 {
@@ -638,6 +772,33 @@ int Dhcpv4_StaticClients_Synchronize()
     return 0;
 }
 
+void Print_StaticClients_BlobInfo(macbindingdoc_t *pConf)
+{
+    ULONG index = 0;
+
+    if (!pConf)
+        return;
+    CcspTraceWarning((" %s enter\n",__FUNCTION__));
+    for (index = 0; index < pConf->entries_count; ++index)
+    {
+
+        CcspTraceWarning((" ip %s\n",pConf->entries[index].yiaddr));
+        CcspTraceWarning((" Mac %s\n",pConf->entries[index].chaddr));
+    }
+
+}
+
+void print_cache(Dhcpv4_Cache_t *pCache, int numOfCacheParam)
+{
+    int i = 0;
+        for(i = 0;i < numOfCacheParam ; i++)
+        {
+            CcspTraceWarning(("Cache[%d].cmd - %s \n",i,pCache[i].cmd));
+            CcspTraceWarning(("Cache[%d].val - %s \n",i,pCache[i].val));
+        }
+
+}
+
 /* CallBack API to execute StaticClients Blob request */
 pErr Process_StaticClients_WebConfigRequest(void *Data)
 {
@@ -1039,6 +1200,21 @@ int Dhcpv4_Lan_Synchronize()
     return 0;
 }
 
+void Print_Lan_BlobInfo(landoc_t *pConf)
+{
+
+    if (!pConf)
+        return;
+    CcspTraceWarning((" %s enter\n",__FUNCTION__));
+    {
+
+        CcspTraceWarning((" Lan ip %s\n",pConf->param->lan_ip_address));
+        CcspTraceWarning((" NetMask %s\n",pConf->param->lan_subnet_mask));
+        CcspTraceWarning((" MinAddress %s Max Address %s\n",pConf->param->dhcp_start_ip_address,pConf->param->dhcp_end_ip_address));
+        CcspTraceWarning((" Lease %u ServerEnabled %d \n",pConf->param->leasetime,pConf->param->dhcp_server_enable));
+    }
+
+}
 /* CallBack API to execute Lan Blob request */
 pErr Process_Lan_WebConfigRequest(void *Data)
 {

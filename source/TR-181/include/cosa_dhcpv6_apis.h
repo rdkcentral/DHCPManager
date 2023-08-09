@@ -768,5 +768,21 @@ int Get_Device_Mode();
 void configureIpv6Route(uint32_t DeviceMode);
 #endif
 
+#if defined(FEATURE_RDKB_CONFIGURABLE_WAN_INTERFACE)
+#define COSA_DML_WANIface_PREF_SYSEVENT_NAME           "tr_%s_dhcpv6_client_v6pref"
+#define COSA_DML_WANIface_PREF_IAID_SYSEVENT_NAME      "tr_%s_dhcpv6_client_pref_iaid"
+#define COSA_DML_WANIface_PREF_T1_SYSEVENT_NAME        "tr_%s_dhcpv6_client_pref_t1"
+#define COSA_DML_WANIface_PREF_T2_SYSEVENT_NAME        "tr_%s_dhcpv6_client_pref_t2"
+#define COSA_DML_WANIface_PREF_PRETM_SYSEVENT_NAME     "tr_%s_dhcpv6_client_pref_pretm"
+#define COSA_DML_WANIface_PREF_VLDTM_SYSEVENT_NAME     "tr_%s_dhcpv6_client_pref_vldtm"
+
+#define COSA_DML_WANIface_ADDR_SYSEVENT_NAME           "tr_%s_dhcpv6_client_v6addr"
+#define COSA_DML_WANIface_ADDR_IAID_SYSEVENT_NAME      "tr_%s_dhcpv6_client_addr_iaid"
+#define COSA_DML_WANIface_ADDR_T1_SYSEVENT_NAME        "tr_%s_dhcpv6_client_addr_t1"
+#define COSA_DML_WANIface_ADDR_T2_SYSEVENT_NAME        "tr_%s_dhcpv6_client_addr_t2"
+#define COSA_DML_WANIface_ADDR_PRETM_SYSEVENT_NAME     "tr_%s_dhcpv6_client_addr_pretm"
+#define COSA_DML_WANIface_ADDR_VLDTM_SYSEVENT_NAME     "tr_%s_dhcpv6_client_addr_vldtm"
+#endif
+
 #endif
 
