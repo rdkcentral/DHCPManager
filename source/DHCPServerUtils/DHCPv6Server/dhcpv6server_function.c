@@ -567,6 +567,29 @@ void _cosa_dhcpsv6_refresh_config()
     pthread_mutex_unlock(&mutex);
 }
 
+#ifdef _HUB4_PRODUCT_REQ_
+static int getLanUlaInfo(int *ula_enable)
+{
+    char  *pUla_enable=NULL;
+
+    if (PSM_Get_Record_Value2(bus_handle,g_Subsystem,"dmsb.lanmanagemententry.lanulaenable", NULL, &pUla_enable) != CCSP_SUCCESS )
+    {
+        return -1;
+    }
+
+    if ( strncmp(pUla_enable, "TRUE", 4 ) == 0) {
+        *ula_enable = 1;
+    }
+    else {
+        *ula_enable = 0;
+    }
+
+    ((CCSP_MESSAGE_BUS_INFO *)bus_handle)->freefunc(pUla_enable);
+
+    return 0;
+}
+#endif
+
 #ifdef _COSA_INTEL_USG_ARM_
 void __cosa_dhcpsv6_refresh_config()
 {
@@ -1003,10 +1026,21 @@ OPTIONS:
                  /* Static DNS Servers */
                 if ( sDhcpv6ServerPoolOption[Index][Index2].Tag == 23 ) {
                     char dnsServer[ 256 ] = { 0 };
+		    int ula_enable = 0;
+		    int result = 0;
+		    result = getLanUlaInfo(&ula_enable);
+		    if(result != 0) {
+			    fprintf(stderr, "getLanIpv6Info failed");
+			    return;
+		    }
                                             if( 1 == sDhcpv6ServerPool[Index].Cfg.X_RDKCENTRAL_COM_DNSServersEnabled ) {
                                             //CcspTraceWarning(("Cfg.X_RDKCENTRAL_COM_DNSServersEnabled is 1 \n"));
-                                            rc = strcpy_s( dnsServer, sizeof( dnsServer ), (const char * restrict)sDhcpv6ServerPool[Index].Cfg.X_RDKCENTRAL_COM_DNSServers );
-                                            ERR_CHK(rc);
+					     /* RDKB-50535 send ULA address as DNS address only when lan ULA is enabled */
+					    if (ula_enable)
+				            {
+                                                rc = strcpy_s( dnsServer, sizeof( dnsServer ), (const char * restrict)sDhcpv6ServerPool[Index].Cfg.X_RDKCENTRAL_COM_DNSServers );
+                                                ERR_CHK(rc);
+					    }
                                             CosaDmlDhcpv6s_format_DNSoption( dnsServer );
                                             char l_cSecWebUI_Enabled[8] = {0};
                                             syscfg_get(NULL, "SecureWebUI_Enable", l_cSecWebUI_Enabled, sizeof(l_cSecWebUI_Enabled));
@@ -1015,7 +1049,7 @@ OPTIONS:
                                             // Check device is in captive portal mode or not
                                             if( 1 == isInCaptivePortal )
                                             {
-                                                  if (!strncmp(l_cSecWebUI_Enabled, "true", 4))
+                                                  if (!strncmp(l_cSecWebUI_Enabled, "true", 4) && (!ula_enable))
                                                   {
                                                       if ( '\0' != dnsServer[ 0 ] )
                                                       {
@@ -1043,7 +1077,7 @@ OPTIONS:
                                             }
                                             else
                                             {
-                                                  if (!strncmp(l_cSecWebUI_Enabled, "true", 4))
+                                                  if (!strncmp(l_cSecWebUI_Enabled, "true", 4) && (!ula_enable))
                                                   {
                                                       if ( '\0' != dnsServer[ 0 ] )
                                                       {
