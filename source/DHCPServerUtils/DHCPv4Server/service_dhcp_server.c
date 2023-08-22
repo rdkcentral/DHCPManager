@@ -89,6 +89,8 @@ const char* const g_cComponent_id = "ccsp.servicedhcp";
 
 static char dnsOption[8] = "";
 
+static void CheckSyseventErrors (int, char* event, int);
+static int sysevent_syscfg_reinit (void);
 extern void copy_command_output(FILE *, char *, int);
 extern void print_with_uptime(const char*);
 extern BOOL compare_files(char *, char *);
@@ -107,6 +109,55 @@ extern char g_cBox_Type[8];
 extern char g_cXdns_Enabled[8];
 #endif
 extern char g_cAtom_Arping_IP[16];
+
+
+
+static void CheckSyseventErrors (int se_ret, char* event, int reset)
+{
+  static int se_ret_counter = 0;
+
+  DHCPMGR_LOG_INFO("SYSEVENT: %s - ERR CODE: %d", event, se_ret);
+
+  if (reset)
+  {
+      se_ret_counter = 0;
+      DHCPMGR_LOG_INFO("sysevent srv err counter reset to %d", se_ret_counter);
+  }
+  else
+  if (se_ret)
+  {
+      // ERR_SERVER_ERROR         -1254
+      // counting for all errors
+      {
+          se_ret_counter++;
+          DHCPMGR_LOG_INFO("sysevent err counter: %d", se_ret_counter);
+      }
+
+      if (se_ret_counter > 1)
+      {
+          if (access("/tmp/DHCPMgr_No_More_restart.txt", F_OK))
+          {
+              DHCPMGR_LOG_INFO("Restarting DHCP Mgr due to sysevent errors!");
+
+              if (access("/tmp/DHCPMgr_restarted.txt", F_OK))
+              {
+                 copy_file("/rdklogs/logs/DHCPMGRLog.txt.0", "/tmp/DHCPMgr_restarted.txt");
+              }
+              else
+              {
+                 copy_file("/rdklogs/logs/DHCPMGRLog.txt.0", "/tmp/DHCPMgr_No_More_restart.txt");
+              }
+
+              exit(0);
+          }
+          else
+          {
+              DHCPMGR_LOG_INFO("Skip restarting DHCP Manager...");
+          }
+      }
+  }
+}
+
 
 #ifdef RDKB_EXTENDER_ENABLED
 unsigned int Get_Device_Mode()
@@ -668,6 +719,7 @@ int dhcp_server_start (char *input)
     char *l_cToken = NULL;
     errno_t safec_rc = -1;
     int ret_se = 0;
+    int se_retry = 0;
 
     service_dhcp_init();
 
@@ -705,13 +757,32 @@ int dhcp_server_start (char *input)
     }
 #endif
 
-    sysevent_get(g_iSyseventV4fd, g_tSyseventV4_token,
+    do
+    {
+    ret_se = sysevent_get(g_iSyseventV4fd, g_tSyseventV4_token,
                          "bridge_mode", l_cBridge_Mode,
                          sizeof(l_cBridge_Mode));
+    DHCPMGR_LOG_INFO("SERVICE DHCP: FD: %d (%p) | value: %s | ret: %d", g_iSyseventV4fd, &g_iSyseventV4fd, l_cBridge_Mode, ret_se);
 
+    ret_se = 0;
     //LAN Status DHCP
     ret_se = sysevent_get(g_iSyseventV4fd, g_tSyseventV4_token, "lan_status-dhcp", l_cLanStatusDhcp, sizeof(l_cLanStatusDhcp));
     DHCPMGR_LOG_INFO("SERVICE DHCP: FD: %d (%p) | value: %s | ret: %d", g_iSyseventV4fd, &g_iSyseventV4fd, l_cLanStatusDhcp, ret_se);
+
+    // Tmp workaround to solve tcxb6-10786 - sysevent srv no reply error
+    if (ret_se || !l_cLanStatusDhcp[0])
+    {
+        CheckSyseventErrors (ret_se, "lan_status-dhcp:get", 0);
+        sysevent_syscfg_reinit();
+        se_retry++;
+    }
+    else if (se_retry)
+    {
+        CheckSyseventErrors (ret_se, "lan_status-dhcp:get:reset", 1);
+        se_retry = 0;
+    }
+    } while (se_retry && se_retry < 2);
+
     if (strncmp(l_cLanStatusDhcp, "started", 7) && ( 0 == atoi(l_cBridge_Mode) ) )
     {
         DHCPMGR_LOG_INFO("lan_status-dhcp is not started return without starting DHCP server");
@@ -1486,11 +1557,28 @@ void lan_status_change(char *input)
         char l_cLan_Status[16] = {0}, l_cDhcp_Server_Enabled[8] = {0};
         int l_iSystem_Res;
         int ret_se = 0;
+        int se_retry = 0;
 
-        ret_se = sysevent_get(g_iSyseventV4fd, g_tSyseventV4_token, "lan-status", l_cLan_Status, sizeof(l_cLan_Status));
-        DHCPMGR_LOG_INFO("SERVICE DHCP : sysevent FD: %d (%p) | Ret: %d", g_iSyseventV4fd, &g_iSyseventV4fd, ret_se);
-        DHCPMGR_LOG_INFO("SERVICE DHCP : Inside lan status change with lan-status:%s", l_cLan_Status);
-        DHCPMGR_LOG_INFO("SERVICE DHCP : Current lan status is:%s", l_cLan_Status);
+        // Tmp workaround to solve tcxb6-10786 - sysevent srv no reply error
+        do
+        {
+           ret_se = sysevent_get(g_iSyseventV4fd, g_tSyseventV4_token, "lan-status", l_cLan_Status, sizeof(l_cLan_Status));
+           DHCPMGR_LOG_INFO("SERVICE DHCP : sysevent FD: %d (%p) | Ret: %d", g_iSyseventV4fd, &g_iSyseventV4fd, ret_se);
+           DHCPMGR_LOG_INFO("SERVICE DHCP : Inside lan status change with lan-status:%s", l_cLan_Status);
+           DHCPMGR_LOG_INFO("SERVICE DHCP : Current lan status is:%s", l_cLan_Status);
+
+           if (ret_se)
+           {
+               CheckSyseventErrors (ret_se, "lan-status:get", 0);
+               sysevent_syscfg_reinit();
+               se_retry++;
+           }
+           else if (se_retry)
+           {
+               CheckSyseventErrors (ret_se, "lan-status:get:reset", 1);
+               se_retry = 0;
+           }
+        } while (se_retry && se_retry < 2);
 
         syscfg_get(NULL, "dhcp_server_enabled", l_cDhcp_Server_Enabled, sizeof(l_cDhcp_Server_Enabled));
         if (!strncmp(l_cDhcp_Server_Enabled, "0", 1))
@@ -1516,7 +1604,26 @@ void lan_status_change(char *input)
         }
     else
         {
-        ret_se = sysevent_set(g_iSyseventV4fd, g_tSyseventV4_token, "lan_status-dhcp", "started", 0);
+
+        // Tmp workaround to solve tcxb6-10786 - sysevent srv no reply error
+        se_retry = 0;
+        do
+        {
+           ret_se = sysevent_set(g_iSyseventV4fd, g_tSyseventV4_token, "lan_status-dhcp", "started", 0);
+
+           if (ret_se)
+           {
+               CheckSyseventErrors (ret_se, "lan_status-dhcp:set", 0);
+               sysevent_syscfg_reinit();
+               se_retry++;
+           }
+           else if (se_retry)
+           {
+               CheckSyseventErrors (ret_se, "lan_status-dhcp:set:reset", 1);
+               se_retry = 0;
+           }
+        } while (se_retry && se_retry < 2);
+
                 if (NULL == input)
                 {
                         DHCPMGR_LOG_INFO("SERVICE DHCP : (%d) Call start DHCP server from lan status change with NULL", ret_se);
@@ -1863,6 +1970,10 @@ int sysevent_syscfg_init()
                                                "dhcp_server_service", &g_tSyseventV4_token);
         DHCPMGR_LOG_INFO("DHCPv4_Server sysevent opened FD: %d (%p)", g_iSyseventV4fd, &g_iSyseventV4fd);
 
+        /*********************************************/
+        /* We are not using this anymore. Remove it? */
+        if (!g_fArmConsoleLog)
+        {
         g_fArmConsoleLog = freopen(ARM_CONSOLE_LOG_FILE, "a+", stderr);
         if (NULL == g_fArmConsoleLog) //In error case not returning as it is ok to continue
         {
@@ -1872,6 +1983,8 @@ int sysevent_syscfg_init()
         {
                 DHCPMGR_LOG_INFO("Successful in opening while opening Log file:%s", ARM_CONSOLE_LOG_FILE);
         }
+        }
+        /*********************************************/
 
     if (g_iSyseventV4fd < 0)
     {
@@ -1891,6 +2004,22 @@ int sysevent_syscfg_init()
      return SUCCESS;
 }
 
+int sysevent_syscfg_reinit (void)
+{
+  if (g_iSyseventV4fd && g_tSyseventV4_token)
+  {
+      DHCPMGR_LOG_INFO("old sysevent fd: %d", g_iSyseventV4fd);
+      if (sysevent_close(g_iSyseventV4fd, g_tSyseventV4_token))
+      {
+          DHCPMGR_LOG_ERROR ("Failed to close sysevent fd: %d", g_iSyseventV4fd);
+      }
+      g_iSyseventV4fd = 0; // we may leak an fd if above close fails.
+  }
+
+  sysevent_syscfg_init();
+
+  return 0;
+}
 
 int init_dhcp_server_service(void )
 {
