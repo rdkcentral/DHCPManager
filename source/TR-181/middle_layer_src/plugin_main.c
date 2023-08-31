@@ -64,7 +64,7 @@
 #include "cosa_dhcpv6_internal.h"
 #include "safec_lib_common.h"
 #include "cosa_common_util.h"
-
+#include "cosa_x_cisco_com_devicecontrol_internal.h"
 #include "cosa_webconfig_api.h"
 
 #define THIS_PLUGIN_VERSION                         1
@@ -637,6 +637,8 @@ COSA_Init
 
     g_Dhcpv4Object       = (ANSC_HANDLE)CosaDhcpv4Create();
     g_Dhcpv6Object       = (ANSC_HANDLE)CosaDhcpv6Create();
+
+    g_DevCtlObject       = (ANSC_HANDLE)CosaDeviceControlCreate();
 
     EvtDispterHandleEventAsync();
     webConfigFrameworkInit();

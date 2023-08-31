@@ -101,6 +101,7 @@ extern token_t g_tSysevent_token;
 #define BUFF_LEN_256  256
 
 extern int executeCmd(char *cmd);
+extern int CheckAndGetDevicePropertiesEntry( char *pOutput, int size, char *sDevicePropContent );
 
 #include "ipc_msg.h"
 #if defined SUCCESS
@@ -1925,49 +1926,6 @@ CosaDmlDhcpv6SMsgHandler
     pthread_create(&dibblerthread, NULL, &CosaDmlStartDHCP6Client, NULL);
     #endif
     return 0;
-}
-
-/* CheckAndGetDevicePropertiesEntry() */
-int CheckAndGetDevicePropertiesEntry( char *pOutput, int size, char *sDevicePropContent )
-{
-    FILE *fp1 = NULL;
-    char buf[ 1024 ] = { 0 },
-         *urlPtr = NULL;
-    int ret = -1;
-
-    // Read the device.properties file
-    fp1 = fopen( "/etc/device.properties", "r" );
-
-    if ( NULL == fp1 )
-    {
-        CcspTraceError(("Error opening properties file! \n"));
-        return -1;
-    }
-
-    while ( fgets( buf, sizeof( buf ), fp1 ) != NULL )
-    {
-        // Look for Device Properties Passed Content
-        if ( strstr( buf, sDevicePropContent ) != NULL )
-        {
-            buf[strcspn( buf, "\r\n" )] = 0; // Strip off any carriage returns
-
-            // grab content from string(entry)
-            urlPtr = strstr( buf, "=" );
-            if ( urlPtr != NULL )
-            {
-                 urlPtr++;
-            }
-
-            strncpy( pOutput, urlPtr, size );
-
-            ret=0;
-
-            break;
-        }
-    }
-
-    fclose( fp1 );
-    return ret;
 }
 
 int CosaDmlDhcpv6sRestartOnLanStarted(void * arg)

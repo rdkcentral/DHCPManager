@@ -39,7 +39,7 @@ libCcspDhcpMgr_board_sbapi_la_CPPFLAGS = -I$(top_srcdir)/source/TR-181/include \
                                          -I$(top_srcdir)/source/DHCPServerUtils/DHCPv6Server/include \
                                          -I$(top_srcdir)/source/DHCPMgrUtils/include
 
-libCcspDhcpMgr_board_sbapi_la_SOURCES = cosa_dhcpv6_apis.c cosa_dhcpv4_apis.c ../middle_layer_src/cosa_apis_util.c cosa_dhcpv4_webconfig_apis.c lan_webconfig_param.c macbinding_webconfig_param.c
+libCcspDhcpMgr_board_sbapi_la_SOURCES = cosa_dhcpv6_apis.c cosa_dhcpv4_apis.c ../middle_layer_src/cosa_apis_util.c cosa_dhcpv4_webconfig_apis.c lan_webconfig_param.c macbinding_webconfig_param.c cosa_x_cisco_com_devicecontrol_apis.c
 if FEATURE_SUPPORT_MAPT_NAT46
 libCcspDhcpMgr_board_sbapi_la_SOURCES += cosa_mapt_apis.c
 endif
