@@ -57,5 +57,5 @@ int dhcpv6s_restart(struct serv_ipv6 *si6);
 int serv_ipv6_init(struct serv_ipv6 *si6);
 int serv_ipv6_term(struct serv_ipv6 *si6);
 int return_dibbler_server_pid ();
-int syslog_restart_request();
+void syslog_restart_request(void*);
 void resync_to_nonvol(char *);

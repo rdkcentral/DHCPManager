@@ -544,20 +544,26 @@ BOOL IsDhcpConfHasInterface(void)
     return FALSE;
 }
 
-int syslog_restart_request()
+void syslog_restart_request(void* arg)
 {
-    DHCPMGR_LOG_INFO("\n Inside function");
+    DHCPMGR_LOG_INFO("Inside function with arg %s", (char*)arg);
     char l_cSyscfg_get[16] = {0};
     int l_cRetVal=0;
-    char Dhcp_server_status[10]={0};
+    char Dhcp_server_status[16]={0};
     int l_crestart=0;
     char l_cCurrent_PID[8] = {0};
+
+    if(strncmp((char*)arg,"started",7))
+    {
+        DHCPMGR_LOG_INFO("SERVICE DHCP : Return from syslog_restart_request as syslog-status is not started ");
+        return;
+    }
 
     sysevent_get(g_iSyseventV4fd, g_tSyseventV4_token,"dhcp_server-status", Dhcp_server_status, sizeof(Dhcp_server_status));
     if(strncmp(Dhcp_server_status,"started",7))
     {
-        DHCPMGR_LOG_INFO("SERVICE DHCP : Return from syslog_restart_request as the event status is not started ");
-        return 0;
+        DHCPMGR_LOG_INFO("SERVICE DHCP : Return from syslog_restart_request as dhcp_server-status is not started ");
+        return;
     }
     
     sysevent_set(g_iSyseventV4fd, g_tSyseventV4_token, "dns-errinfo", "", 0);
@@ -662,7 +668,7 @@ int syslog_restart_request()
         v_secure_system("killall -HUP `basename dnsmasq`");
         if(l_crestart == 0)
         {
-            return -1; // or return need to confirm
+            return; // or return need to confirm
         }
         v_secure_system("killall `basename dnsmasq`");
         remove_file(PID_FILE);
@@ -672,7 +678,7 @@ int syslog_restart_request()
         if(!strncmp(l_cSyscfg_get,"0",1))
         {
             l_cRetVal=dnsmasq_server_start();
-            DHCPMGR_LOG_INFO("\n dnsmasq_server_start returns %d",l_cRetVal);
+            DHCPMGR_LOG_INFO("dnsmasq_server_start returns %d",l_cRetVal);
             sysevent_set(g_iSyseventV4fd, g_tSyseventV4_token, "dns-status", "started", 0);
         }
         else
@@ -683,7 +689,7 @@ int syslog_restart_request()
             //that lease is not found in the dnsmasq.leases file
             //Get the DNS strict order option
             l_cRetVal=dnsmasq_server_start();
-            DHCPMGR_LOG_INFO("\n dnsmasq_server_start returns %d",l_cRetVal);
+            DHCPMGR_LOG_INFO("dnsmasq_server_start returns %d",l_cRetVal);
             //DHCP_SLOW_START_NEEDED is always false / set to false so below code is removed
             /*if [ "1" = "$DHCP_SLOW_START_NEEDED" ] && [ -n "$TIME_FILE" ]; then
             echo "#!/bin/sh" > $TIME_FILE
@@ -694,12 +700,12 @@ int syslog_restart_request()
             sysevent_set(g_iSyseventV4fd, g_tSyseventV4_token, "dhcp_server-status", "started", 0);
         }
     }
-    return 0;
+    return;
 }
 
 int dhcp_server_start (char *input)
 {
-    DHCPMGR_LOG_INFO("\nInside function with arg %s",input);
+    DHCPMGR_LOG_INFO("Inside function with arg %s",input);
     //Declarations
     char l_cDhcpServerEnable[16] = {0}, l_cLanStatusDhcp[16] = {0};
     char l_cSystemCmd[255] = {0}, l_cPsm_Mode[8] = {0}, l_cStart_Misc[8] = {0};
@@ -1105,14 +1111,14 @@ int dhcp_server_start (char *input)
     print_with_uptime("DHCP SERVICE :dhcp_server-progress_is_set_to_completed:");
     DHCPMGR_LOG_INFO("RDKB_DNS_INFO is : -------  resolv_conf_dump  -------");
     print_file(RESOLV_CONF);
-    DHCPMGR_LOG_INFO("\n function ENDS");
+    DHCPMGR_LOG_INFO("function ENDS");
     return 0;
 }
 
 void resync_to_nonvol(char *RemPools)
 {
     UNREFERENCED_PARAMETER(RemPools);
-    DHCPMGR_LOG_INFO("\nInside function");
+    DHCPMGR_LOG_INFO("Inside function");
     char Pool_List[6][40]={"dmsb.dhcpv4.server.pool.%s.Enable",
                            "dmsb.dhcpv4.server.pool.%s.IPInterface",
                            "dmsb.dhcpv4.server.pool.%s.MinAddress",
@@ -1412,7 +1418,7 @@ void resync_to_nonvol(char *RemPools)
 
 int service_dhcp_init()
 {
-        DHCPMGR_LOG_INFO("\nInside function");
+        DHCPMGR_LOG_INFO("Inside function");
         char l_cPropagate_Ns[8] = {0}, l_cPropagate_Dom[8] = {0};
         char l_cSlow_Start[8] = {0}, l_cByoi_Enabled[8] = {0};
     char l_cWan_IpAddr[16] = {0}, l_cPrim_Temp_Ip_Prefix[16] = {0}, l_cCurrent_Hsd_Mode[16] = {0};

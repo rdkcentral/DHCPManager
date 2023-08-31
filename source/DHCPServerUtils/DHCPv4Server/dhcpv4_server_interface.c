@@ -55,9 +55,6 @@
 
 extern void executeCmd(char *);
 
-static int sysevent_fd_v6s;
-static token_t sysevent_token_v6s;
-
 #define BUFF_LEN_8      8
 #define BUFF_LEN_16    16
 #define BUFF_LEN_32    32
@@ -79,17 +76,7 @@ int dhcp_server_init()
         ifl_register_event_handler(DHCP_SERVER_RESTART, IFL_EVENT_NOTIFY_TRUE, DHCPV4S_CALLER_CTX, dhcp_server_start);
         ifl_register_event_handler(DHCP_SERVER_STOP, IFL_EVENT_NOTIFY_TRUE, DHCPV4S_CALLER_CTX, dhcp_server_stop);
         ifl_register_event_handler(LAN_STATUS, IFL_EVENT_NOTIFY_TRUE, DHCPV4S_CALLER_CTX, lan_status_change);
-
-        char syslog_status_buf[10]={0};
-        sysevent_get(sysevent_fd_v6s, sysevent_token_v6s,
-                    "syslog-status", syslog_status_buf,
-                    sizeof(syslog_status_buf));
-
-        if(!strncmp(syslog_status_buf, "started", 7))
-        {
-            ifl_register_event_handler(SYSLOG_STATUS, IFL_EVENT_NOTIFY_TRUE, DHCPV4S_CALLER_CTX, syslog_restart_request);
-        }
-
+        ifl_register_event_handler(SYSLOG_STATUS, IFL_EVENT_NOTIFY_TRUE, DHCPV4S_CALLER_CTX, syslog_restart_request);
         ifl_register_event_handler(DHCP_SERVER_RESYNC, IFL_EVENT_NOTIFY_TRUE, DHCPV4S_CALLER_CTX, resync_to_nonvol);
 
     #ifdef RDKB_EXTENDER_ENABLED
