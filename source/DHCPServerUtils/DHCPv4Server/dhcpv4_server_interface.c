@@ -75,12 +75,12 @@ int dhcp_server_init()
         ifl_register_event_handler(DHCP_SERVER_START, IFL_EVENT_NOTIFY_TRUE, DHCPV4S_CALLER_CTX, dhcp_server_start);
         ifl_register_event_handler(DHCP_SERVER_RESTART, IFL_EVENT_NOTIFY_TRUE, DHCPV4S_CALLER_CTX, dhcp_server_start);
         ifl_register_event_handler(DHCP_SERVER_STOP, IFL_EVENT_NOTIFY_TRUE, DHCPV4S_CALLER_CTX, dhcp_server_stop);
-        ifl_register_event_handler(LAN_STATUS, IFL_EVENT_NOTIFY_TRUE, DHCPV4S_CALLER_CTX, lan_status_change);
-        ifl_register_event_handler(SYSLOG_STATUS, IFL_EVENT_NOTIFY_TRUE, DHCPV4S_CALLER_CTX, syslog_restart_request);
+        ifl_register_event_handler(LAN_STATUS, IFL_EVENT_NOTIFY_FALSE, DHCPV4S_CALLER_CTX, lan_status_change);
+        ifl_register_event_handler(SYSLOG_STATUS, IFL_EVENT_NOTIFY_FALSE, DHCPV4S_CALLER_CTX, syslog_restart_request);
         ifl_register_event_handler(DHCP_SERVER_RESYNC, IFL_EVENT_NOTIFY_TRUE, DHCPV4S_CALLER_CTX, resync_to_nonvol);
 
     #ifdef RDKB_EXTENDER_ENABLED
-        ifl_register_event_handler(DHCP_CONF_CHANGE, IFL_EVENT_NOTIFY_TRUE, DHCPV4S_CALLER_CTX, dhcp_server_start);
+        ifl_register_event_handler(DHCP_CONF_CHANGE, IFL_EVENT_NOTIFY_FALSE, DHCPV4S_CALLER_CTX, dhcp_server_start);
     #endif
 
     }

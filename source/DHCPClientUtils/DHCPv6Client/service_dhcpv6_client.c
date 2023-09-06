@@ -107,10 +107,10 @@ void init_dhcpv6_client ()
     }
     CcspTraceInfo(("DHCPv6_Client sysevent opened FD: %d (%p)", g_iSyseventfd, &g_iSyseventfd));
 
-    ifl_register_event_handler( EROUTER_MODE_UPDATED, IFL_EVENT_NOTIFY_TRUE, DHCPV6C_CALLER_CTX, dhcpv6_client_service_update);
-    ifl_register_event_handler( PHYLINK_WAN_STATE, IFL_EVENT_NOTIFY_TRUE, DHCPV6C_CALLER_CTX, dhcpv6_client_service_update);
-    ifl_register_event_handler( CURR_WAN_IFNAME, IFL_EVENT_NOTIFY_TRUE, DHCPV6C_CALLER_CTX, dhcpv6_client_service_update);
-    ifl_register_event_handler( BRIDGE_MODE, IFL_EVENT_NOTIFY_TRUE, DHCPV6C_CALLER_CTX, dhcpv6_client_service_update);
+    ifl_register_event_handler( EROUTER_MODE_UPDATED, IFL_EVENT_NOTIFY_FALSE, DHCPV6C_CALLER_CTX, dhcpv6_client_service_update);
+    ifl_register_event_handler( PHYLINK_WAN_STATE, IFL_EVENT_NOTIFY_FALSE, DHCPV6C_CALLER_CTX, dhcpv6_client_service_update);
+    ifl_register_event_handler( CURR_WAN_IFNAME, IFL_EVENT_NOTIFY_FALSE, DHCPV6C_CALLER_CTX, dhcpv6_client_service_update);
+    ifl_register_event_handler( BRIDGE_MODE, IFL_EVENT_NOTIFY_FALSE, DHCPV6C_CALLER_CTX, dhcpv6_client_service_update);
     ifl_register_event_handler( DHCPV6_CLIENT_START, IFL_EVENT_NOTIFY_TRUE, DHCPV6C_CALLER_CTX, dhcpv6_client_service_enable);
     ifl_register_event_handler( DHCPV6_CLIENT_STOP, IFL_EVENT_NOTIFY_TRUE, DHCPV6C_CALLER_CTX, dhcpv6_client_service_disable);
     CcspTraceInfo(("SERVICE_DHCP6C : Cleint event registration completed\n"));
