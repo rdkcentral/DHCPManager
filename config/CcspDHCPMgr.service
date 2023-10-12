@@ -34,7 +34,7 @@ ExecStopPost=/bin/sh -c 'echo "`date`: Stopping/Restarting CcspDHCPMgr" >> ${PRO
 Restart=always
 KillMode=process
 
-StandardOutput=syslog+console
+StandardOutput=journal
 
 [Install]
 WantedBy=ccspcr_ready.target
