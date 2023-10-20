@@ -295,10 +295,9 @@ int serv_dhcp_init()
         }
     }
 
-    if ((sd->sefd = sysevent_open(SE_SERV, SE_SERVER_WELL_KNOWN_PORT,
-                    SE_VERSION, PROG_NAME, &sd->setok)) < 0)
+    if (IFL_SUCCESS != ifl_init_ctx(DHCPV4C_CALLER_CTX, IFL_CTX_DYNAMIC))
     {
-        CcspTraceError(("Failed to open sysevent, Call serv_dhcp_deinit\n"));
+        CcspTraceError(("Failed to init ifl ctx for %s", DHCPV4C_CALLER_CTX));
         serv_dhcp_deinit();
         return -1;
     }
@@ -374,7 +373,6 @@ int serv_dhcp_init()
 static int serv_dhcp_deinit()
 {
     CcspTraceInfo(("%s: BEGIN \n", __FUNCTION__));
-    sysevent_close(sd->sefd, sd->setok);
     if(sd != NULL)
     {
         free(sd);
@@ -562,13 +560,13 @@ void dhcpv4_client_service_renew
       fclose(fp);
     }
 
-    sysevent_set(sd->sefd, sd->setok, "current_wan_state", "up", 0);
+    ifl_set_event( "current_wan_state", "up");
     fp = NULL;
     
     if ((fp = fopen("/proc/uptime", "rb")) == NULL)
     {
         CcspTraceError(("Error in opening /proc/uptime\n"));
-    }     
+    } 
     else
     {
       if (fgets(line, sizeof(line), fp) != NULL)
@@ -577,7 +575,7 @@ void dhcpv4_client_service_renew
           {
               *cp = '\0';
           }
-          sysevent_set(sd->sefd, sd->setok, "wan_start_time", line, 0);
+          ifl_set_event( "wan_start_time", line);
       }
       fclose(fp);
     }

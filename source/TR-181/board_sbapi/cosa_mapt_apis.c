@@ -89,6 +89,7 @@
 #include "secure_wrapper.h"
 #include "safec_lib_common.h"
 #include "cosa_drg_common.h"
+#include "ifl.h"
 
 /*
  * Macro definitions
@@ -539,15 +540,15 @@ CosaDmlMaptStopServices
   errno_t rc = -1;
 
   /* Bring down DHCPv4 client */
-  if (commonSyseventSet ("dhcp_client-release","") != 0)
+  if (ifl_set_event ("dhcp_client-release","") != 0)
   {
        MAPT_LOG_ERROR("Wan Dhcp Release Failed !!");
   }
-  if (commonSyseventSet ("dhcp_client-stop","") != 0)
+  if (ifl_set_event ("dhcp_client-stop","") != 0)
   {
        MAPT_LOG_ERROR("Wan Dhcp Stop Failed !!");
   }
-  commonSyseventSet ("current_wan_ipaddr", "0.0.0.0");
+  ifl_set_event ("current_wan_ipaddr", "0.0.0.0");
   /* Try validating the service stop. status may be? */
   MAPT_LOG_INFO("DHCPv4 client is made down.");
 
@@ -607,50 +608,50 @@ CosaDmlMaptSetEvents
 
   MAPT_LOG_INFO("Entry");
 
-  ret |= commonSyseventSet (EVENT_MAPT_TRANSPORT_MODE, "MAPT");
+  ret |= ifl_set_event (EVENT_MAPT_TRANSPORT_MODE, "MAPT");
   MAPT_LOG_NOTICE("MAP_MODE: MAPT");
 
-  ret |= commonSyseventSet (EVENT_MAPT_CONFIG_FLAG, "set");
+  ret |= ifl_set_event (EVENT_MAPT_CONFIG_FLAG, "set");
 
   rc = sprintf_s(eValue, BUFLEN_128, "%u", g_stMaptData.EaLen);
   ERR_CHK(rc);
-  ret |= commonSyseventSet(EVENT_MAPT_EA_LENGTH, eValue);
+  ret |= ifl_set_event(EVENT_MAPT_EA_LENGTH, eValue);
 
   rc = sprintf_s(eValue, BUFLEN_128, "%u", g_stMaptData.Ratio);
   ERR_CHK(rc);
-  ret |= commonSyseventSet (EVENT_MAPT_RATIO, eValue);
+  ret |= ifl_set_event (EVENT_MAPT_RATIO, eValue);
 
   rc = sprintf_s(eValue, BUFLEN_128, "%u", g_stMaptData.Psid);
   ERR_CHK(rc);
-  ret |= commonSyseventSet (EVENT_MAPT_PSID_VALUE, eValue);
+  ret |= ifl_set_event (EVENT_MAPT_PSID_VALUE, eValue);
 
   rc = sprintf_s(eValue, BUFLEN_128, "%u", g_stMaptData.PsidLen);
   ERR_CHK(rc);
-  ret |= commonSyseventSet (EVENT_MAPT_PSID_LENGTH, eValue);
+  ret |= ifl_set_event (EVENT_MAPT_PSID_LENGTH, eValue);
 
   rc = sprintf_s(eValue, BUFLEN_128, "%u", g_stMaptData.PsidOffset);
   ERR_CHK(rc);
-  ret |= commonSyseventSet (EVENT_MAPT_PSID_OFFSET, eValue);
+  ret |= ifl_set_event (EVENT_MAPT_PSID_OFFSET, eValue);
 
-  ret |= commonSyseventSet (EVENT_MAPT_IPADDRESS, g_stMaptData.IPv4AddrString);
+  ret |= ifl_set_event (EVENT_MAPT_IPADDRESS, g_stMaptData.IPv4AddrString);
 
-  ret |= commonSyseventSet (EVENT_MAPT_IPV6_ADDRESS, g_stMaptData.IPv6AddrString);
+  ret |= ifl_set_event (EVENT_MAPT_IPV6_ADDRESS, g_stMaptData.IPv6AddrString);
 
   rc = sprintf_s(eValue, BUFLEN_128, "%s/%u", g_stMaptData.BrIPv6Prefix
                                             , g_stMaptData.BrIPv6PrefixLen);
   ERR_CHK(rc);
-  ret |= commonSyseventSet (EVENT_MAPT_BR_IPV6_PREFIX, eValue);
+  ret |= ifl_set_event (EVENT_MAPT_BR_IPV6_PREFIX, eValue);
 
   rc = sprintf_s(eValue, BUFLEN_128, "%s/%u", g_stMaptData.RuleIPv4Prefix
                                             , g_stMaptData.RuleIPv4PrefixLen);
   ERR_CHK(rc);
-  ret |= commonSyseventSet (EVENT_MAPT_RULE_IPADDRESS, eValue);
+  ret |= ifl_set_event (EVENT_MAPT_RULE_IPADDRESS, eValue);
 
   rc = sprintf_s(eValue, BUFLEN_128, "%s/%u", g_stMaptData.RuleIPv6Prefix
                                             , g_stMaptData.RuleIPv6PrefixLen);
   ERR_CHK(rc);
-  ret |= commonSyseventSet (EVENT_MAPT_RULE_IPV6_ADDRESS, eValue);
-  ret |= commonSyseventSet(EVENT_MAPT_IS_FMR, g_stMaptData.bFMR?"TRUE":"FALSE");
+  ret |= ifl_set_event (EVENT_MAPT_RULE_IPV6_ADDRESS, eValue);
+  ret |= ifl_set_event(EVENT_MAPT_IS_FMR, g_stMaptData.bFMR?"TRUE":"FALSE");
 
   return ret? STATUS_FAILURE : STATUS_SUCCESS;
 }
@@ -1069,7 +1070,7 @@ CosaDmlMaptResetClient
   {
        if ( fgets(outBuf, BUFLEN_256, fd) && !strstr(outBuf, "erouter0") )
        {
-            if (commonSyseventSet ("dhcp_client-start","") != 0)
+            if (ifl_set_event ("dhcp_client-start","") != 0)
             {
                  MAPT_LOG_ERROR("Failed to restore dhclient !");
 		 v_secure_pclose(fd);
@@ -1091,31 +1092,31 @@ CosaDmlMaptResetEvents
 {
   MAPT_LOG_INFO("Entry");
   MAPT_LOG_NOTICE("MAP_MODE: NONE");
-  return commonSyseventSet (EVENT_MAPT_TRANSPORT_MODE,    "NONE")
+  return ifl_set_event (EVENT_MAPT_TRANSPORT_MODE,    "NONE")
 
-       | commonSyseventSet (EVENT_MAPT_CONFIG_FLAG,       "")
+       | ifl_set_event (EVENT_MAPT_CONFIG_FLAG,       "")
 
-       | commonSyseventSet (EVENT_MAPT_EA_LENGTH,         "")
+       | ifl_set_event (EVENT_MAPT_EA_LENGTH,         "")
 
-       | commonSyseventSet (EVENT_MAPT_RATIO,             "")
+       | ifl_set_event (EVENT_MAPT_RATIO,             "")
 
-       | commonSyseventSet (EVENT_MAPT_PSID_VALUE,        "")
+       | ifl_set_event (EVENT_MAPT_PSID_VALUE,        "")
 
-       | commonSyseventSet (EVENT_MAPT_PSID_LENGTH,       "")
+       | ifl_set_event (EVENT_MAPT_PSID_LENGTH,       "")
 
-       | commonSyseventSet (EVENT_MAPT_PSID_OFFSET,       "")
+       | ifl_set_event (EVENT_MAPT_PSID_OFFSET,       "")
 
-       | commonSyseventSet (EVENT_MAPT_IPADDRESS,         "")
+       | ifl_set_event (EVENT_MAPT_IPADDRESS,         "")
 
-       | commonSyseventSet (EVENT_MAPT_IPV6_ADDRESS,      "")
+       | ifl_set_event (EVENT_MAPT_IPV6_ADDRESS,      "")
 
-       | commonSyseventSet (EVENT_MAPT_BR_IPV6_PREFIX,    "")
+       | ifl_set_event (EVENT_MAPT_BR_IPV6_PREFIX,    "")
 
-       | commonSyseventSet (EVENT_MAPT_RULE_IPADDRESS,    "")
+       | ifl_set_event (EVENT_MAPT_RULE_IPADDRESS,    "")
 
-       | commonSyseventSet (EVENT_MAPT_RULE_IPV6_ADDRESS, "")
+       | ifl_set_event (EVENT_MAPT_RULE_IPV6_ADDRESS, "")
 
-       | commonSyseventSet(EVENT_MAPT_IS_FMR,             "");
+       | ifl_set_event(EVENT_MAPT_IS_FMR,             "");
 }
 
 
@@ -1207,7 +1208,7 @@ CosaDmlMaptRollback
   }
   if ( eState & RB_FIREWALL )
   {
-       ret |= commonSyseventSet (EVENT_FIREWALL_RESTART, NULL);
+       ret |= ifl_set_event (EVENT_FIREWALL_RESTART, NULL);
        MAPT_LOG_INFO("### Mapt firewall reset.")
   }
   if ( eState & RB_CONFIG )
@@ -1533,10 +1534,10 @@ MAPT_LOG_INFO("<<<Trace>>> Received PdIPv6Prefix : %s/%u", g_stMaptData.PdIPv6Pr
 
   /* Restarting firewall to apply mapt rules */
   MAPT_LOG_INFO("MAPT events are set. Triggering firewall-restart");
-  commonSyseventSet (EVENT_FIREWALL_RESTART, NULL);
+  ifl_set_event (EVENT_FIREWALL_RESTART, NULL);
   
   MAPT_LOG_INFO("Triggering ntpd-restart");
-  commonSyseventSet (EVENT_NTPD_RESTART, NULL);
+  ifl_set_event (EVENT_NTPD_RESTART, NULL);
 
   /* Display port based features' status */
   if ( CosaDmlMaptDisplayFeatureStatus() )

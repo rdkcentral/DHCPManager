@@ -71,6 +71,11 @@ int dhcp_server_init()
 
     if (!strncmp(l_cDhcp_Server_Enabled, "1", 1))
     {
+        if (IFL_SUCCESS != ifl_init_ctx(DHCPV4S_CALLER_CTX, IFL_CTX_DYNAMIC))
+        {
+            CcspTraceInfo(("Failed to init ifl ctx for %s", DHCPV4S_CALLER_CTX));
+        }
+
         //Hardcoded dhcp_server_start call for now, Further modifications will be taken care later
         ifl_register_event_handler(DHCP_SERVER_START, IFL_EVENT_NOTIFY_TRUE, DHCPV4S_CALLER_CTX, dhcp_server_start);
         ifl_register_event_handler(DHCP_SERVER_RESTART, IFL_EVENT_NOTIFY_TRUE, DHCPV4S_CALLER_CTX, dhcp_server_start);

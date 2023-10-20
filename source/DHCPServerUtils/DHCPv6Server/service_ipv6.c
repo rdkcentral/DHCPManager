@@ -48,6 +48,7 @@
 #include <sysevent/sysevent.h>
 #include "safec_lib_common.h"
 #include "ccsp_trace.h"
+#include "ifl.h"
 
 #if defined(MULTILAN_FEATURE) || defined(INTEL_PUMA7)
 #include "ccsp_psm_helper.h"
@@ -398,7 +399,7 @@ static int get_dhcpv6s_pool_cfg(dhcpv6s_pool_cfg_t *cfg)
 
     /*get interface prefix*/
     snprintf(buf, sizeof(buf), "ipv6_%s-prefix", cfg->interface);
-    sysevent_get(si6->sefd, si6->setok, buf, cfg->ia_prefix, sizeof(cfg->ia_prefix));
+    ifl_get_event( buf, cfg->ia_prefix, sizeof(cfg->ia_prefix));
 
     DHCPV6S_SYSCFG_GETI(DHCPV6S_NAME, "pool", cfg->index, "", 0, "optionnumber", cfg->opt_num);
     /*CID 54782: Argument cannot be negative */
@@ -436,7 +437,7 @@ static int get_ia_info(__attribute__ ((unused)) char *config_file, ia_na_t *iana
     if(iana == NULL || iapd == NULL)
         return -1;
 #if defined (_CBR_PRODUCT_REQ_) || defined (_BWG_PRODUCT_REQ_)
-        sysevent_get(si6->sefd, si6->setok, COSA_DML_DHCPV6C_PREF_T1_SYSEVENT_NAME, action, sizeof(action));
+        ifl_get_event( COSA_DML_DHCPV6C_PREF_T1_SYSEVENT_NAME, action, sizeof(action));
         errno_t  rc  = -1;
         if(action[0]!='\0')
         {
@@ -450,7 +451,7 @@ static int get_ia_info(__attribute__ ((unused)) char *config_file, ia_na_t *iana
                 }
                 ERR_CHK(rc);
         }
-        sysevent_get(si6->sefd, si6->setok, COSA_DML_DHCPV6C_PREF_T2_SYSEVENT_NAME, action, sizeof(action));
+        ifl_get_event( COSA_DML_DHCPV6C_PREF_T2_SYSEVENT_NAME, action, sizeof(action));
         if(action[0]!='\0')
         {
                 if(!strcmp(action,"'\\0'"))
@@ -463,7 +464,7 @@ static int get_ia_info(__attribute__ ((unused)) char *config_file, ia_na_t *iana
                 }
                 ERR_CHK(rc);
         }
-        sysevent_get(si6->sefd, si6->setok, COSA_DML_DHCPV6C_PREF_PRETM_SYSEVENT_NAME, action, sizeof(action));
+        ifl_get_event( COSA_DML_DHCPV6C_PREF_PRETM_SYSEVENT_NAME, action, sizeof(action));
         if(action[0]!='\0')
         {
                 if(!strcmp(action,"'\\0'"))
@@ -476,7 +477,7 @@ static int get_ia_info(__attribute__ ((unused)) char *config_file, ia_na_t *iana
                 }
                 ERR_CHK(rc);
         }
-        sysevent_get(si6->sefd, si6->setok, COSA_DML_DHCPV6C_PREF_VLDTM_SYSEVENT_NAME, action, sizeof(action));
+        ifl_get_event( COSA_DML_DHCPV6C_PREF_VLDTM_SYSEVENT_NAME, action, sizeof(action));
         if(action[0]!='\0')
         {
                 if(!strcmp(action,"'\\0'"))
@@ -541,19 +542,19 @@ static int get_ia_info(__attribute__ ((unused)) char *config_file, ia_na_t *iana
 
 #if 1
     /*client v6 address*/
-   sysevent_set(si6->sefd, si6->setok, COSA_DML_DHCPV6C_ADDR_SYSEVENT_NAME,       iana->value.v6addr, 0);
-   sysevent_set(si6->sefd, si6->setok, COSA_DML_DHCPV6C_ADDR_IAID_SYSEVENT_NAME,  iana->iaid, 0);
-   sysevent_set(si6->sefd, si6->setok, COSA_DML_DHCPV6C_ADDR_T1_SYSEVENT_NAME,    iana->t1, 0);
-   sysevent_set(si6->sefd, si6->setok, COSA_DML_DHCPV6C_ADDR_T2_SYSEVENT_NAME,    iana->t2, 0);
-   sysevent_set(si6->sefd, si6->setok, COSA_DML_DHCPV6C_ADDR_PRETM_SYSEVENT_NAME, iana->pretm, 0);
-   sysevent_set(si6->sefd, si6->setok, COSA_DML_DHCPV6C_ADDR_VLDTM_SYSEVENT_NAME, iana->vldtm, 0);
+   ifl_set_event( COSA_DML_DHCPV6C_ADDR_SYSEVENT_NAME,       iana->value.v6addr);
+   ifl_set_event( COSA_DML_DHCPV6C_ADDR_IAID_SYSEVENT_NAME,  iana->iaid);
+   ifl_set_event( COSA_DML_DHCPV6C_ADDR_T1_SYSEVENT_NAME,    iana->t1);
+   ifl_set_event( COSA_DML_DHCPV6C_ADDR_T2_SYSEVENT_NAME,    iana->t2);
+   ifl_set_event( COSA_DML_DHCPV6C_ADDR_PRETM_SYSEVENT_NAME, iana->pretm);
+   ifl_set_event( COSA_DML_DHCPV6C_ADDR_VLDTM_SYSEVENT_NAME, iana->vldtm);
    /*v6 prefix*/
-   sysevent_set(si6->sefd, si6->setok, COSA_DML_DHCPV6C_PREF_SYSEVENT_NAME,       iapd->value.v6pref, 0);
-   sysevent_set(si6->sefd, si6->setok, COSA_DML_DHCPV6C_PREF_IAID_SYSEVENT_NAME,  iapd->iaid, 0);
-   sysevent_set(si6->sefd, si6->setok, COSA_DML_DHCPV6C_PREF_T1_SYSEVENT_NAME,    iapd->t1, 0);
-   sysevent_set(si6->sefd, si6->setok, COSA_DML_DHCPV6C_PREF_T2_SYSEVENT_NAME,    iapd->t2, 0);
-   sysevent_set(si6->sefd, si6->setok, COSA_DML_DHCPV6C_PREF_PRETM_SYSEVENT_NAME, iapd->pretm, 0);
-   sysevent_set(si6->sefd, si6->setok, COSA_DML_DHCPV6C_PREF_VLDTM_SYSEVENT_NAME, iapd->vldtm, 0);
+   ifl_set_event( COSA_DML_DHCPV6C_PREF_SYSEVENT_NAME,       iapd->value.v6pref);
+   ifl_set_event( COSA_DML_DHCPV6C_PREF_IAID_SYSEVENT_NAME,  iapd->iaid);
+   ifl_set_event( COSA_DML_DHCPV6C_PREF_T1_SYSEVENT_NAME,    iapd->t1);
+   ifl_set_event( COSA_DML_DHCPV6C_PREF_T2_SYSEVENT_NAME,    iapd->t2);
+   ifl_set_event( COSA_DML_DHCPV6C_PREF_PRETM_SYSEVENT_NAME, iapd->pretm);
+   ifl_set_event( COSA_DML_DHCPV6C_PREF_VLDTM_SYSEVENT_NAME, iapd->vldtm);
 #endif
 #endif
     return 0;
@@ -620,12 +621,12 @@ static int get_active_lanif(unsigned int insts[], unsigned int *num)
         return *num;
     }
 
-    sysevent_get(si6->sefd, si6->setok, "multinet-instances", active_insts, sizeof(active_insts));
+    ifl_get_event( "multinet-instances", active_insts, sizeof(active_insts));
     p = strtok(active_insts, " ");
 
     while (p != NULL) {
         snprintf(buf, sizeof(buf), "multinet_%s-name", p);
-        sysevent_get(si6->sefd, si6->setok, buf, if_name, sizeof(if_name));
+        ifl_get_event( buf, if_name, sizeof(if_name));
         if (strstr(lan_pd_if, if_name)) { /*active interface and need prefix delegation*/
             insts[i] = atoi(p);
             i++;
@@ -702,7 +703,7 @@ static int get_active_lanif(unsigned int insts[], unsigned int *num)
         len += snprintf(active_if_list+len, sizeof(active_if_list)-len, "%d ", insts[idx]);
     }
     /* Set active IPv6 instances */
-    sysevent_set(si6->sefd, si6->setok, "ipv6_active_inst", active_if_list, 0);
+    ifl_set_event( "ipv6_active_inst", active_if_list);
 #endif
 
 
@@ -713,12 +714,12 @@ static int get_active_lanif(unsigned int insts[], unsigned int *num)
         return *num;
     }
 
-    sysevent_get(si6->sefd, si6->setok, "multinet-instances", active_insts, sizeof(active_insts));
+    ifl_get_event( "multinet-instances", active_insts, sizeof(active_insts));
     p = strtok(active_insts, " ");
 
     while (p != NULL) {
         snprintf(buf, sizeof(buf), "multinet_%s-name", p);
-        sysevent_get(si6->sefd, si6->setok, buf, if_name, sizeof(if_name));
+        ifl_get_event( buf, if_name, sizeof(if_name));
         if (strstr(lan_pd_if, if_name)) { /*active interface and need prefix delegation*/
             insts[i] = atoi(p);
             i++;
@@ -739,7 +740,7 @@ static int get_pd_pool(pd_pool_t *pool)
     errno_t rc = -1;
 
     evt_val[0] = 0;
-    sysevent_get(si6->sefd, si6->setok, "ipv6_subprefix-start", evt_val, sizeof(evt_val));
+    ifl_get_event( "ipv6_subprefix-start", evt_val, sizeof(evt_val));
     if (evt_val[0] == 0)
     {
         return -1;
@@ -748,7 +749,7 @@ static int get_pd_pool(pd_pool_t *pool)
     ERR_CHK(rc);
 
     evt_val[0] = 0;
-    sysevent_get(si6->sefd, si6->setok, "ipv6_subprefix-end", evt_val, sizeof(evt_val));
+    ifl_get_event( "ipv6_subprefix-end", evt_val, sizeof(evt_val));
     if (evt_val[0] == 0)
     {
         return -1;
@@ -757,7 +758,7 @@ static int get_pd_pool(pd_pool_t *pool)
     ERR_CHK(rc);
 
     evt_val[0] = 0;
-    sysevent_get(si6->sefd, si6->setok, "ipv6_prefix-length", evt_val, sizeof(evt_val));
+    ifl_get_event( "ipv6_prefix-length", evt_val, sizeof(evt_val));
     if (evt_val[0] == 0)
     {
         return -1;
@@ -765,7 +766,7 @@ static int get_pd_pool(pd_pool_t *pool)
     pool->prefix_length = atoi(evt_val);
 
     evt_val[0] = 0;
-    sysevent_get(si6->sefd, si6->setok, "ipv6_pd-length", evt_val, sizeof(evt_val));
+    ifl_get_event( "ipv6_pd-length", evt_val, sizeof(evt_val));
     if (evt_val[0] == 0)
     {
         return -1;
@@ -800,7 +801,7 @@ static int divide_ipv6_prefix()
     unsigned int        used_sub_prefix_num = 0;
     errno_t  rc = -1;
 
-    sysevent_set(si6->sefd, si6->setok, "ipv6_prefix-divided", "", 0);
+    ifl_set_event( "ipv6_prefix-divided", "");
 
     if (get_prefix_info(si6->mso_prefix, mso_prefix.value, sizeof(mso_prefix.value), (unsigned int *)&mso_prefix.len) != 0) {
         return -1;
@@ -918,9 +919,9 @@ static int divide_ipv6_prefix()
 
         /*set related sysevent*/
         snprintf(evt_name, sizeof(evt_name), "multinet_%d-name", l2_insts[i]);
-        sysevent_get(si6->sefd, si6->setok, evt_name, iface_name, sizeof(iface_name));/*interface name*/
+        ifl_get_event( evt_name, iface_name, sizeof(iface_name));/*interface name*/
         snprintf(evt_name, sizeof(evt_name), "ipv6_%s-prefix", iface_name);
-        sysevent_set(si6->sefd, si6->setok, evt_name, iface_prefix, 0);
+        ifl_set_event( evt_name, iface_prefix);
 
         DHCPMGR_LOG_INFO("interface-prefix %s:%s\n", iface_name, iface_prefix);
 
@@ -941,18 +942,18 @@ static int divide_ipv6_prefix()
     if ((enabled_iface_num % iface_prefix_num) != 0 )
         used_sub_prefix_num += 1;
     if (used_sub_prefix_num < sub_prefix_num) {
-        sysevent_set(si6->sefd, si6->setok, "ipv6_subprefix-start", sub_prefixes[used_sub_prefix_num].value, 0);
-        sysevent_set(si6->sefd, si6->setok, "ipv6_subprefix-end", sub_prefixes[sub_prefix_num-1].value, 0);
+        ifl_set_event( "ipv6_subprefix-start", sub_prefixes[used_sub_prefix_num].value);
+        ifl_set_event( "ipv6_subprefix-end", sub_prefixes[sub_prefix_num-1].value);
     } else {
-        sysevent_set(si6->sefd, si6->setok, "ipv6_subprefix-start", "", 0);
-        sysevent_set(si6->sefd, si6->setok, "ipv6_subprefix-end", "", 0);
+        ifl_set_event( "ipv6_subprefix-start", "");
+        ifl_set_event( "ipv6_subprefix-end", "");
     }
     snprintf(evt_val, sizeof(evt_val), "%d", mso_prefix.len);
-    sysevent_set(si6->sefd, si6->setok, "ipv6_prefix-length", evt_val, 0);
+    ifl_set_event( "ipv6_prefix-length", evt_val);
     snprintf(evt_val, sizeof(evt_val), "%d", mso_prefix.len + bit_boundary);
-    sysevent_set(si6->sefd, si6->setok, "ipv6_pd-length", evt_val, 0);
+    ifl_set_event( "ipv6_pd-length", evt_val);
 
-    sysevent_set(si6->sefd, si6->setok, "ipv6_prefix-divided", "ready", 0);
+    ifl_set_event( "ipv6_prefix-divided", "ready");
 
     if (sub_prefixes != NULL)
         free(sub_prefixes);
@@ -1256,11 +1257,11 @@ static int lan_addr6_set()
      */
     if (divide_ipv6_prefix() != 0) {
         DHCPMGR_LOG_INFO("divide the operator-delegated prefix to sub-prefix error.\n");
-        sysevent_set(si6->sefd, si6->setok, "service_ipv6-status", "error", 0);
+        ifl_set_event( "service_ipv6-status", "error");
         return -1;
     }
 
-    sysevent_get(si6->sefd, si6->setok, "ipv6_prefix-divided", evt_val, sizeof(evt_val));
+    ifl_get_event( "ipv6_prefix-divided", evt_val, sizeof(evt_val));
     if (strcmp(evt_val, "ready")) {
         DHCPMGR_LOG_INFO("[%s] ipv6 prefix is not divided.\n", __FUNCTION__);
         return -1;
@@ -1275,7 +1276,7 @@ static int lan_addr6_set()
 #if defined(MULTILAN_FEATURE)
     /*Get the primary L2 instance number*/
     snprintf(evt_name, sizeof(evt_name), "primary_lan_l2net");
-    sysevent_get(si6->sefd, si6->setok, evt_name, iface_name, sizeof(iface_name));
+    ifl_get_event( evt_name, iface_name, sizeof(iface_name));
     /*Read a bounded number of characters from the string returned by sysevent_get*/
     snprintf(cmd, sizeof(cmd), "%%%dd", (sizeof(cmd) - 1));
     sscanf(iface_name, cmd, &primary_l2_instance);
@@ -1283,9 +1284,9 @@ static int lan_addr6_set()
 
     for (; i < enabled_iface_num; i++) {
         snprintf(evt_name, sizeof(evt_name), "multinet_%d-name", l2_insts[i]);
-        sysevent_get(si6->sefd, si6->setok, evt_name, iface_name, sizeof(iface_name));/*interface name*/
+        ifl_get_event( evt_name, iface_name, sizeof(iface_name));/*interface name*/
         snprintf(evt_name, sizeof(evt_name), "ipv6_%s-prefix", iface_name);
-        sysevent_get(si6->sefd, si6->setok, evt_name, iface_prefix, sizeof(iface_prefix));
+        ifl_get_event( evt_name, iface_prefix, sizeof(iface_prefix));
 
         /*enable ipv6 link local*/
         v_secure_system("ip -6 link set dev %s up", iface_name);
@@ -1296,7 +1297,7 @@ static int lan_addr6_set()
 #endif
         sysctl_iface_set("/proc/sys/net/ipv6/conf/%s/forwarding", iface_name, "1");
 
-        sysevent_set(si6->sefd, si6->setok, "ipv6_linklocal", "up", 0);
+        ifl_set_event( "ipv6_linklocal", "up");
 
 #if defined(MULTILAN_FEATURE)
         syscfg_get(NULL, "bridge_mode", bridge_mode, sizeof(bridge_mode));
@@ -1321,17 +1322,17 @@ static int lan_addr6_set()
         /*If this is the primary LAN instance, set sysevent key lan_ipaddr_v6 to this IPv6 address*/
         if (l2_insts[i] == primary_l2_instance) {
             snprintf(evt_name, sizeof(evt_name), "lan_ipaddr_v6");
-            sysevent_set(si6->sefd, si6->setok, evt_name, ipv6_addr, 0);
+            ifl_set_event( evt_name, ipv6_addr);
         }
 #endif
 
         snprintf(evt_name, sizeof(evt_name), "ipv6_%s-addr", iface_name);
-        sysevent_set(si6->sefd, si6->setok, evt_name, ipv6_addr, 0);
+        ifl_set_event( evt_name, ipv6_addr);
 
         get_prefix_info(iface_prefix, NULL, 0, &prefix_len);
 
 #ifdef MULTILAN_FEATURE
-        sysevent_get(si6->sefd, si6->setok, COSA_DML_DHCPV6C_PREF_PRETM_SYSEVENT_NAME, action, sizeof(action));
+        ifl_get_event( COSA_DML_DHCPV6C_PREF_PRETM_SYSEVENT_NAME, action, sizeof(action));
 
         if(action[0]!='\0') {
             if(!strcmp(action,"'\\0'"))
@@ -1339,7 +1340,7 @@ static int lan_addr6_set()
             else
                 strncpy(iapd_preftm, strtok (action,"'"), sizeof(iapd_preftm));
         }
-        sysevent_get(si6->sefd, si6->setok, COSA_DML_DHCPV6C_PREF_VLDTM_SYSEVENT_NAME, action, sizeof(action));
+        ifl_get_event( COSA_DML_DHCPV6C_PREF_VLDTM_SYSEVENT_NAME, action, sizeof(action));
         if(action[0]!='\0') {
             if(!strcmp(action,"'\\0'"))
                 strncpy(iapd_vldtm, "forever", sizeof(iapd_vldtm));
@@ -1367,7 +1368,7 @@ static int lan_addr6_set()
 
     //Intel Proposed RDKB Generic Bug Fix from XB6 SDK
     /*start zebra*/
-    sysevent_set(si6->sefd, si6->setok, "zebra-restart", NULL, 0);
+    ifl_set_event( "zebra-restart", NULL);
 
     return 0;
 }
@@ -1394,7 +1395,7 @@ static int lan_addr6_unset()
     char *bridge_idx = NULL;
 
     snprintf(evt_name, sizeof(evt_name), "ipv6_active_inst");
-    sysevent_get(si6->sefd, si6->setok, evt_name, active_instances, sizeof(active_instances));/*Get last active IPv6 instances*/
+    ifl_get_event( evt_name, active_instances, sizeof(active_instances));/*Get last active IPv6 instances*/
     bridge_idx = strtok(active_instances, " ");
     while(bridge_idx) {
         l2_insts[if_num++] = atoi(bridge_idx);
@@ -1410,10 +1411,10 @@ static int lan_addr6_unset()
 
 #if defined (_PROPOSED_BUG_FIX_)
     snprintf(evt_name, sizeof(evt_name), "multinet_%d-name", l2_insts[i]);
-    sysevent_get(si6->sefd, si6->setok, evt_name, default_lan_ifname, sizeof(if_name));/*interface name*/
-    sysevent_get(si6->sefd, si6->setok, "previous_ipv6_prefix", old_iface_prefix, sizeof(old_iface_prefix));
+    ifl_get_event( evt_name, default_lan_ifname, sizeof(if_name));/*interface name*/
+    ifl_get_event( "previous_ipv6_prefix", old_iface_prefix, sizeof(old_iface_prefix));
     snprintf(evt_name, sizeof(evt_name), "previous_ipv6_%s-prefix", default_lan_ifname);
-    sysevent_get(si6->sefd, si6->setok, evt_name, old_lan_iface_prefix, sizeof(iface_prefix));
+    ifl_get_event( evt_name, old_lan_iface_prefix, sizeof(iface_prefix));
     if (strstr(old_iface_prefix, "/")) {
         strncpy(old_iface_prefix, strtok(old_iface_prefix, "/"), sizeof(old_iface_prefix));
     }
@@ -1424,25 +1425,25 @@ static int lan_addr6_unset()
 
     for (; i < if_num; i++) {
         snprintf(evt_name, sizeof(evt_name), "multinet_%d-name", l2_insts[i]);
-        sysevent_get(si6->sefd, si6->setok, evt_name, if_name, sizeof(if_name));/*interface name*/
+        ifl_get_event( evt_name, if_name, sizeof(if_name));/*interface name*/
 #if defined (_PROPOSED_BUG_FIX_)
         if (strlen(old_iface_prefix) && strcmp(old_iface_prefix, old_lan_iface_prefix)) {
             snprintf(evt_name, sizeof(evt_name), "ipv6_%s-prefix", if_name);
-            sysevent_get(si6->sefd, si6->setok, evt_name, iface_prefix, sizeof(iface_prefix));
+            ifl_get_event( evt_name, iface_prefix, sizeof(iface_prefix));
             snprintf(evt_name, sizeof(evt_name), "previous_ipv6_%s-prefix", if_name);
-            sysevent_set(si6->sefd, si6->setok, evt_name, iface_prefix, 0);
+            ifl_set_event( evt_name, iface_prefix);
         }
 #endif
 
         snprintf(evt_name, sizeof(evt_name), "ipv6_%s-prefix", if_name);
-        sysevent_get(si6->sefd, si6->setok, evt_name, iface_prefix, sizeof(iface_prefix));
+        ifl_get_event( evt_name, iface_prefix, sizeof(iface_prefix));
 #ifdef MULTILAN_FEATURE
-        sysevent_set(si6->sefd, si6->setok, evt_name, "", 0);
+        ifl_set_event( evt_name, "");
 #endif
 
         /*del v6 addr*/
         snprintf(evt_name, sizeof(evt_name), "ipv6_%s-addr", if_name);
-        sysevent_get(si6->sefd, si6->setok, evt_name, iface_addr, sizeof(iface_addr));
+        ifl_get_event( evt_name, iface_addr, sizeof(iface_addr));
 #if !defined(_CBR_PRODUCT_REQ_) && !defined(_BWG_PRODUCT_REQ_)
         if (iface_addr[0] != '\0' && del_addr6_flg) {
 #else
@@ -1452,11 +1453,11 @@ static int lan_addr6_unset()
             v_secure_system("ip -6 addr del %s/%d dev %s", iface_addr, prefix_len, if_name);
         }
 #ifdef MULTILAN_FEATURE
-        sysevent_set(si6->sefd, si6->setok, evt_name, "", 0);
+        ifl_set_event( evt_name, "");
 #else
         sysctl_iface_set("/proc/sys/net/ipv6/conf/%s/disable_ipv6", if_name, "1"); /*this seems not work*/
 #endif
-        sysevent_set(si6->sefd, si6->setok, "ipv6_linklocal", "down", 0);
+        ifl_set_event( "ipv6_linklocal", "down");
     }
 
     return 0;
@@ -1508,7 +1509,7 @@ static int gen_dibbler_conf()
     char *HwAdrrPath = "/sys/class/net/brlan0/address";
     struct stat check_ConfigFile;
 
-    sysevent_get(si6->sefd, si6->setok, "ipv6_prefix-divided", evt_val, sizeof(evt_val));
+    ifl_get_event( "ipv6_prefix-divided", evt_val, sizeof(evt_val));
     if (strcmp(evt_val, "ready")) {
        /*
         * Check if delegated prefix is already divided for lan interfaces.
@@ -1516,7 +1517,7 @@ static int gen_dibbler_conf()
         */
         if (divide_ipv6_prefix() != 0) {
             DHCPMGR_LOG_INFO("divide the operator-delegated prefix to sub-prefix error.\n");
-            sysevent_set(si6->sefd, si6->setok, "service_ipv6-status", "error", 0);
+            ifl_set_event( "service_ipv6-status", "error");
 #if defined (MULTILAN_FEATURE)
             report_no_lan_prefixes();
 #endif
@@ -1641,7 +1642,7 @@ static int gen_dibbler_conf()
             {
                 unsigned long t1, t2, pref_time, valid_time;
                 if ( ret < 0){
-                    sysevent_get(si6->sefd, si6->setok, COSA_DML_DHCPV6C_PREF_VLDTM_SYSEVENT_NAME, s_ia_pd_pretm, sizeof(s_ia_pd_pretm));
+                    ifl_get_event( COSA_DML_DHCPV6C_PREF_VLDTM_SYSEVENT_NAME, s_ia_pd_pretm, sizeof(s_ia_pd_pretm));
                     dhcpv6s_pool_cfg.lease_time = atol(s_ia_pd_pretm);
                 }
                 else {
@@ -1746,7 +1747,7 @@ OPTIONS:
             if (!strncmp(l_cSecWebUI_Enabled, "true", 4))
             {
                 char dyn_dns[256] = {0};
-                sysevent_get(si6->sefd, si6->setok, "ipv6_nameserver", dyn_dns, sizeof(dyn_dns));
+                ifl_get_event( "ipv6_nameserver", dyn_dns, sizeof(dyn_dns));
                 if ( '\0' == dhcpv6s_pool_cfg.X_RDKCENTRAL_COM_DNSServers[ 0 ] )
                 {
                    strcpy( dhcpv6s_pool_cfg.X_RDKCENTRAL_COM_DNSServers,dyn_dns );
@@ -1766,7 +1767,7 @@ OPTIONS:
                                                 if (!strncmp(l_cSecWebUI_Enabled, "true", 4))
                                                 {
                                                     char static_dns[256] = {0};
-                                                    sysevent_get(si6->sefd, si6->setok, "lan_ipaddr_v6", static_dns, sizeof(static_dns));
+                                                    ifl_get_event( "lan_ipaddr_v6", static_dns, sizeof(static_dns));
                                                     if ( '\0' != static_dns[ 0 ] )
                                                     {
                                                         strcpy( dns_str, static_dns );
@@ -1784,7 +1785,7 @@ OPTIONS:
                                         }
                                         else
                                         {
-                                                sysevent_get(si6->sefd, si6->setok, "ipv6_nameserver", dns_str, sizeof(dns_str));
+                                                ifl_get_event( "ipv6_nameserver", dns_str, sizeof(dns_str));
                                         }
 
                     if (dns_str[0] != '\0') {
@@ -1794,7 +1795,7 @@ OPTIONS:
                 }
                 else if (opt.tag == 24) {//domain
                     char domain_str[256] = {0};
-                    sysevent_get(si6->sefd, si6->setok, "ipv6_dnssl", domain_str, sizeof(domain_str));
+                    ifl_get_event( "ipv6_dnssl", domain_str, sizeof(domain_str));
                     if (domain_str[0] != '\0') {
                         format_dibbler_option(domain_str);
                         fprintf(fp, "     option %s %s\n", tag_list[tag_index].opt_str, domain_str);
@@ -1817,13 +1818,13 @@ OPTIONS:
 
     fclose(fp);
     if (stat(DHCPV6S_CONF_FILE, &check_ConfigFile) == -1) {
-        sysevent_set(si6->sefd, si6->setok, "dibbler_server_conf-status", "", 0);
+        ifl_set_event( "dibbler_server_conf-status", "");
     }
     else if (check_ConfigFile.st_size == 0) {
-        sysevent_set(si6->sefd, si6->setok, "dibbler_server_conf-status", "empty", 0);
+        ifl_set_event( "dibbler_server_conf-status", "empty");
     }
     else {
-        sysevent_set(si6->sefd, si6->setok, "dibbler_server_conf-status", "ready", 0);
+        ifl_set_event( "dibbler_server_conf-status", "ready");
     }
     return 0;
 }
@@ -1886,7 +1887,7 @@ int serv_ipv6_start(__attribute__((__unused__)) void *args)
     syscfg_get(NULL, "last_erouter_mode", rtmod, sizeof(rtmod));
     if (atoi(rtmod) != 1) { /* IPv6-only or Dual-Stack */
         if (!si6->wan_ready) {
-	    sysevent_get(si6->sefd, si6->setok, "ipv6_prefix", si6->mso_prefix, sizeof(si6->mso_prefix));
+	    ifl_get_event( "ipv6_prefix", si6->mso_prefix, sizeof(si6->mso_prefix));
 	    if (strlen(si6->mso_prefix))
 	        si6->wan_ready = true;
 	}
@@ -1898,12 +1899,12 @@ int serv_ipv6_start(__attribute__((__unused__)) void *args)
         return 0;
     }
 
-    sysevent_set(si6->sefd, si6->setok, "service_ipv6-status", "starting", 0);
+    ifl_set_event( "service_ipv6-status", "starting");
 
     /* Fix for IPv6 prefix not getting updated in dibbler server conf file on WAN mode  change */
 #if defined(_CBR2_PRODUCT_REQ_)
-    sysevent_get(si6->sefd, si6->setok, "ipv6_prefix", si6->mso_prefix, sizeof(si6->mso_prefix));
-    sysevent_set(si6->sefd, si6->setok, "ipv6_prefix-divided", "", 0);
+    ifl_get_event( "ipv6_prefix", si6->mso_prefix, sizeof(si6->mso_prefix));
+    ifl_set_event( "ipv6_prefix-divided", "");
 #endif
 
     /*
@@ -1924,26 +1925,26 @@ int serv_ipv6_start(__attribute__((__unused__)) void *args)
 #if !defined(_CBR_PRODUCT_REQ_) && !defined(_BWG_PRODUCT_REQ_)
     if (lan_addr6_set() !=0) {
         DHCPMGR_LOG_INFO("assign IPv6 address for lan interfaces error!\n");
-        sysevent_set(si6->sefd, si6->setok, "service_ipv6-status", "error", 0);
+        ifl_set_event( "service_ipv6-status", "error");
         return -1;
     }
 #endif
 
     //Intel Proposed RDKB Generic Bug Fix from XB6 SDK
     /*start zebra*/
-    sysevent_set(si6->sefd, si6->setok, "zebra-restart", NULL, 0);
+    ifl_set_event( "zebra-restart", NULL);
 
     if (dhcpv6s_start() != 0) {
         DHCPMGR_LOG_INFO("start dhcpv6 server error.\n");
-        sysevent_set(si6->sefd, si6->setok, "service_ipv6-status", "error", 0);
+        ifl_set_event( "service_ipv6-status", "error");
         return -1;
     }
 #ifdef MULTILAN_FEATURE
     /* Restart firewall to apply ip6tables rules*/
-    sysevent_set(si6->sefd, si6->setok, "firewall-restart", NULL, 0);
+    ifl_set_event( "firewall-restart", NULL);
 #endif
 
-    sysevent_set(si6->sefd, si6->setok, "service_ipv6-status", "started", 0);
+    ifl_set_event( "service_ipv6-status", "started");
     return 0;
 }
 
@@ -1955,24 +1956,24 @@ int serv_ipv6_stop(__attribute__((__unused__)) void *args)
     if (!serv_can_stop(si6->sefd, si6->setok, "service_ipv6"))
         return -1;
 
-    sysevent_set(si6->sefd, si6->setok, "service_ipv6-status", "stopping", 0);
+    ifl_set_event( "service_ipv6-status", "stopping");
 
     if (dhcpv6s_stop() != 0) {
         DHCPMGR_LOG_INFO("stop dhcpv6 server error.\n");
-        sysevent_set(si6->sefd, si6->setok, "service_ipv6-status", "error", 0);
+        ifl_set_event( "service_ipv6-status", "error");
         return -1;
     }
 #if !defined(_CBR_PRODUCT_REQ_) && !defined(_BWG_PRODUCT_REQ_)
     del_addr6_flg = false;
     if (lan_addr6_unset() !=0) {
         DHCPMGR_LOG_INFO("unset IPv6 address for lan interfaces error!\n");
-        sysevent_set(si6->sefd, si6->setok, "service_ipv6-status", "error", 0);
+        ifl_set_event( "service_ipv6-status", "error");
         del_addr6_flg = true;
         return -1;
     }
     del_addr6_flg = true;
 #endif
-    sysevent_set(si6->sefd, si6->setok, "service_ipv6-status", "stopped", 0);
+    ifl_set_event( "service_ipv6-status", "stopped");
     return 0;
 }
 
@@ -2021,13 +2022,13 @@ int serv_ipv6_init()
 #endif
     }
 
-    sysevent_get(si6->sefd, si6->setok, "ipv6_prefix", si6->mso_prefix, sizeof(si6->mso_prefix));
+    ifl_get_event( "ipv6_prefix", si6->mso_prefix, sizeof(si6->mso_prefix));
     if (strlen(si6->mso_prefix))
         si6->wan_ready = true;
     else
         return -1;
 
-    sysevent_get(si6->sefd, si6->setok, "erouter_topology-mode", buf, sizeof(buf));
+    ifl_get_event( "erouter_topology-mode", buf, sizeof(buf));
     switch(atoi(buf)) {
         case 1:
             si6->tpmod = FAVOR_DEPTH;

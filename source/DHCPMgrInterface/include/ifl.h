@@ -32,6 +32,11 @@ typedef enum _event_type {
     IFL_EVENT_NOTIFY_TRUE
 } ifl_event_type;
 
+typedef enum _context_type {
+    IFL_CTX_STATIC = 0,
+    IFL_CTX_DYNAMIC
+} ifl_ctx_type;
+
 /*
  * define interface layer return type codes.
  */
@@ -56,12 +61,14 @@ typedef enum _ifl_ret {
  * Interface layer external API prototypes.
  */
 ifl_ret  ifl_init (char* mainCtx);
+ifl_ret  ifl_init_ctx (char* ctx, ifl_ctx_type cType);
 ifl_ret  ifl_register_event_handler (char* event, ifl_event_type eType, char* callerCtx, fptr_t cb);
 ifl_ret  ifl_unregister_event_handler (char* event, char* callerCtx);
 
 ifl_ret  ifl_get_event (char* event, char* value, int valueLength);
 ifl_ret  ifl_set_event (char* event, char* value);
 
+ifl_ret  ifl_deinit_ctx (char* ctx);
 ifl_ret  ifl_deinit (void);
 
 #endif

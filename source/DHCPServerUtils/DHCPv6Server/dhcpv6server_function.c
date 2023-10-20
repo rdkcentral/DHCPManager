@@ -210,6 +210,10 @@ void dhcpv6_server_init()
   //ifl_register_event_handler(DHCPV6S_REBOOT_SERVER, 1, DHCPV6S_CALLER_CTX, CosaDmlDhcpv6sRebootServer);
   //ifl_register_event_handler(DHCPV6S_REFRESH_CONFIG, 1, DHCPV6S_CALLER_CTX, _cosa_dhcpsv6_refresh_config);
 #if defined(_CBR_PRODUCT_REQ_) && !defined(_CBR2_PRODUCT_REQ_)
+  if (IFL_SUCCESS != ifl_init_ctx(DHCPV6S_CALLER_CTX, IFL_CTX_DYNAMIC))
+  {
+      CcspTraceError(("Failed to init ifl ctx for %s", DHCPV6S_CALLER_CTX));
+  }
   serv_ipv6_init();
   ifl_register_event_handler("dhcpv6_server-start", IFL_EVENT_NOTIFY_TRUE, DHCPV6S_CALLER_CTX, serv_ipv6_start);
   ifl_register_event_handler("dhcpv6_server-stop", IFL_EVENT_NOTIFY_TRUE, DHCPV6S_CALLER_CTX, serv_ipv6_stop);
@@ -290,7 +294,7 @@ int CosaDmlDHCPv6sTriggerRestart(BOOL OnlyTrigger)
     DHCPVS_DEBUG_PRINT
   #if defined(CISCO_CONFIG_DHCPV6_PREFIX_DELEGATION) && ! defined(DHCPV6_PREFIX_FIX)
     UNREFERENCED_PARAMETER(OnlyTrigger);
-    commonSyseventSet("dhcpv6_server-restart", "");
+    ifl_set_event("dhcpv6_server-restart", "");
   #else
     int fd = 0;
     char str[32] = "restart";
@@ -380,7 +384,7 @@ int _dibbler_server_operation(char * arg)
         }
 #ifdef FEATURE_RDKB_WAN_MANAGER
         char prefix[64] = {0};
-        commonSyseventGet("ipv6_prefix", prefix, sizeof(prefix));
+        ifl_get_event("ipv6_prefix", prefix, sizeof(prefix));
         if (strlen(prefix) > 3)
         {
             g_dhcpv6_server_prefix_ready = TRUE;
@@ -420,6 +424,11 @@ dhcpv6s_dbg_thrd(void * in)
     char msg[1024] = {0};
     fd_set rfds;
     struct timeval tm;
+
+    if (IFL_SUCCESS != ifl_init_ctx(DHCPV6S_CALLER_CTX, IFL_CTX_STATIC))
+    {
+        DHCPMGR_LOG_ERROR("Failed to init ifl ctx for %s", DHCPV6S_CALLER_CTX);
+    }
 
     v6_srvr_fifo_file_dscrptr = open(DHCPS6V_SERVER_RESTART_FIFO, O_RDWR);
 
@@ -489,14 +498,14 @@ void CosaDmlDhcpv6sRebootServer()
 
     char event_value[64] = {0};
 #ifdef FEATURE_RDKB_WAN_MANAGER
-    commonSyseventGet("ipv6_prefix", event_value, sizeof(event_value));
+    ifl_get_event("ipv6_prefix", event_value, sizeof(event_value));
     if (strlen(event_value) > 3)
     {
         g_dhcpv6_server_prefix_ready = TRUE;
     }
     memset(event_value,0,sizeof(event_value));
 #endif
-    commonSyseventGet("lan-status", event_value, sizeof(event_value));
+    ifl_get_event("lan-status", event_value, sizeof(event_value));
     if ( !strncmp(event_value, "started", strlen("started") ) )
     {
         g_lan_ready = TRUE;
@@ -504,7 +513,7 @@ void CosaDmlDhcpv6sRebootServer()
     if (!g_dhcpv6_server_prefix_ready || !g_lan_ready)
         return;
 #if defined (MULTILAN_FEATURE)
-    commonSyseventSet("dhcpv6s-restart", "");
+    ifl_set_event("dhcpv6s-restart", "");
 #else
     FILE *fp = NULL;
     int fd = 0;
@@ -571,8 +580,8 @@ void CosaDmlDhcpv6sRebootServer()
 }
 
 #if defined(_XB6_PRODUCT_REQ_) && defined(_COSA_BCM_ARM_)
-static int sysevent_fd_global = 0;
-static token_t sysevent_token_global;
+//static int sysevent_fd_global = 0;
+//static token_t sysevent_token_global;
 #endif
 
 /*now we have 2 threads to access __cosa_dhcpsv6_refresh_config(), one is the big thread to process datamodel, the other is dhcpv6c_dbg_thrd(void * in),
@@ -700,7 +709,7 @@ void __cosa_dhcpsv6_refresh_config()
 #ifdef CONFIG_CISCO_DHCP6S_REQUIREMENT_FROM_DPC3825
         if ( sDhcpv6ServerPool[Index].Cfg.UnicastEnable ){
             char globalAddress[64] = {0};
-            commonSyseventGet("lan_ipaddr_v6", globalAddress, sizeof(globalAddress));
+            ifl_get_event("lan_ipaddr_v6", globalAddress, sizeof(globalAddress));
             if ( strlen(globalAddress) > 0 )
                 fprintf(fp, "   unicast %s\n", globalAddress);
         }
@@ -800,14 +809,14 @@ void __cosa_dhcpsv6_refresh_config()
 
                                 memset( sysEventName, 0, sizeof(sysEventName));
                                 snprintf(sysEventName, sizeof(sysEventName), COSA_DML_WANIface_PREF_PRETM_SYSEVENT_NAME, dmValue);
-                                commonSyseventGet(sysEventName, s_iapd_pretm, sizeof(s_iapd_pretm));
+                                ifl_get_event(sysEventName, s_iapd_pretm, sizeof(s_iapd_pretm));
 
                                 memset( sysEventName, 0, sizeof(sysEventName));
                                 snprintf(sysEventName, sizeof(sysEventName), COSA_DML_WANIface_PREF_VLDTM_SYSEVENT_NAME, dmValue);
-                                commonSyseventGet(sysEventName, s_iapd_vldtm, sizeof(s_iapd_vldtm));
+                                ifl_get_event(sysEventName, s_iapd_vldtm, sizeof(s_iapd_vldtm));
 #else
-                                commonSyseventGet(COSA_DML_DHCPV6C_PREF_PRETM_SYSEVENT_NAME, s_iapd_pretm, sizeof(s_iapd_pretm));
-                                commonSyseventGet(COSA_DML_DHCPV6C_PREF_VLDTM_SYSEVENT_NAME, s_iapd_vldtm, sizeof(s_iapd_vldtm));
+                                ifl_get_event(COSA_DML_DHCPV6C_PREF_PRETM_SYSEVENT_NAME, s_iapd_pretm, sizeof(s_iapd_pretm));
+                                ifl_get_event(COSA_DML_DHCPV6C_PREF_VLDTM_SYSEVENT_NAME, s_iapd_vldtm, sizeof(s_iapd_vldtm));
 #endif
                                 sscanf(s_iapd_pretm, "%lu", &iapd_pretm);
                                 sscanf(s_iapd_vldtm, "%lu", &iapd_vldtm);
@@ -926,7 +935,7 @@ OPTIONS:
                                                   if (!strncmp(l_cSecWebUI_Enabled, "true", 4))
                                                   {
                                                       char static_dns[256] = {0};
-                                                      commonSyseventGet("lan_ipaddr_v6", static_dns, sizeof(static_dns));
+                                                      ifl_get_event("lan_ipaddr_v6", static_dns, sizeof(static_dns));
                                                       if ( '\0' != dns_str[ 0 ] )
                                                       {
                                                           if ( '\0' != static_dns[ 0 ] )
@@ -941,7 +950,7 @@ OPTIONS:
                                                       else
                                                       {
                                                           char dyn_dns[256] = {0};
-                                                          sysevent_get(sysevent_fd_global, sysevent_token_global, "wan6_ns", dyn_dns, sizeof(dyn_dns));
+                                                          ifl_get_event ("wan6_ns", dyn_dns, sizeof(dyn_dns));
                                                           if ( '\0' != dyn_dns[ 0 ] )
                                                           {
                                                               format_dibbler_option(dyn_dns);
@@ -974,12 +983,12 @@ OPTIONS:
                                                    {
                                                        char static_dns[256] = {0};
                                                        char dyn_dns[256] = {0};
-                                                       sysevent_get(sysevent_fd_global, sysevent_token_global, "wan6_ns", dyn_dns, sizeof(dyn_dns));
+                                                       ifl_get_event ("wan6_ns", dyn_dns, sizeof(dyn_dns));
                                                        if ( '\0' != dyn_dns[ 0 ] )
                                                        {
                                                            format_dibbler_option(dyn_dns);
                                                        }
-                                                       commonSyseventGet("lan_ipaddr_v6", static_dns, sizeof(static_dns));
+                                                       ifl_get_event("lan_ipaddr_v6", static_dns, sizeof(static_dns));
                                                        if ( '\0' != dns_str[ 0 ] )
                                                        {
                                                             if ( '\0' != static_dns[ 0 ] )
@@ -1041,7 +1050,7 @@ OPTIONS:
                                         }
                                         else
                                         {
-                                                sysevent_get(sysevent_fd_global, sysevent_token_global, "wan6_ns", dns_str, sizeof(dns_str));
+                                                ifl_get_event ("wan6_ns", dns_str, sizeof(dns_str));
                                                 if (dns_str[0] != '\0') {
                                                         format_dibbler_option(dns_str);
                                                         if( isInCaptivePortal == TRUE )
@@ -1060,7 +1069,7 @@ OPTIONS:
                 {//domain
                     char domain_str[256] = {0};
                         CcspTraceWarning(("_cosa_dhcpsv6_refresh_config -- Tag is 24 \n"));
-                    sysevent_get(sysevent_fd_global, sysevent_token_global, "ipv6_dnssl", domain_str, sizeof(domain_str));
+                    ifl_get_event ("ipv6_dnssl", domain_str, sizeof(domain_str));
                     if (domain_str[0] != '\0') {
                         format_dibbler_option(domain_str);
                         if( isInCaptivePortal == TRUE )
@@ -1096,7 +1105,7 @@ OPTIONS:
                                             char l_cSecWebUI_Enabled[8] = {0};
                                             syscfg_get(NULL, "SecureWebUI_Enable", l_cSecWebUI_Enabled, sizeof(l_cSecWebUI_Enabled));
                                             char static_dns[256] = {0};
-                                            commonSyseventGet("lan_ipaddr_v6", static_dns, sizeof(static_dns));
+                                            ifl_get_event("lan_ipaddr_v6", static_dns, sizeof(static_dns));
                                             // Check device is in captive portal mode or not
                                             if( 1 == isInCaptivePortal )
                                             {
@@ -1158,7 +1167,7 @@ OPTIONS:
                 }
                 else if (sDhcpv6ServerPoolOption[Index][Index2].Tag == 24) {
                     char domain_str[256] = {0};
-                    sysevent_get(sysevent_fd_global, sysevent_token_global, "ipv6_domain_name", domain_str, sizeof(domain_str));
+                    ifl_get_event ("ipv6_domain_name", domain_str, sizeof(domain_str));
                     if (domain_str[0] != '\0') {
                         if( isInCaptivePortal == TRUE )
                         {
@@ -1172,7 +1181,7 @@ OPTIONS:
                 }
                 else if (sDhcpv6ServerPoolOption[Index][Index2].Tag == 17) {
                     char vendor_spec[512] = {0};
-                    sysevent_get(sysevent_fd_global, sysevent_token_global, "vendor_spec", vendor_spec, sizeof(vendor_spec));
+                    ifl_get_event ("vendor_spec", vendor_spec, sizeof(vendor_spec));
                     if (vendor_spec[0] != '\0') {
                         fprintf(fp, "    option %s %s\n", tagList[Index3].cmdstring, vendor_spec);
                     }
@@ -1210,7 +1219,7 @@ OPTIONS:
                                                   if (!strncmp(l_cSecWebUI_Enabled, "true", 4))
                                                   {
                                                       char static_dns[256] = {0};
-                                                      commonSyseventGet("lan_ipaddr_v6", static_dns, sizeof(static_dns));
+                                                      ifl_get_event("lan_ipaddr_v6", static_dns, sizeof(static_dns));
                                                       if ( '\0' != dnsStr[ 0 ] )
                                                       {
                                                           if ( '\0' != static_dns[ 0 ] )
@@ -1256,7 +1265,7 @@ OPTIONS:
                                                   if (!strncmp(l_cSecWebUI_Enabled, "true", 4))
                                                   {
                                                       char static_dns[256] = {0};
-                                                      commonSyseventGet("lan_ipaddr_v6", static_dns, sizeof(static_dns));
+                                                      ifl_get_event("lan_ipaddr_v6", static_dns, sizeof(static_dns));
                                                       char dyn_dns[256] = {0};
                                                       ret = CosaDmlDHCPv6sGetDNS((char*)g_recv_options[Index4].Value, dyn_dns, sizeof(dyn_dns) );
                                                       if ( '\0' != dnsStr[ 0 ] )
@@ -1319,7 +1328,7 @@ OPTIONS:
                                    else
                                    {
 #if defined(_COSA_BCM_ARM_)
-                       ret=commonSyseventGet("wan6_ns", dnsStr, sizeof(dnsStr));
+                       ret=ifl_get_event("wan6_ns", dnsStr, sizeof(dnsStr));
 #else
                        ret = CosaDmlDHCPv6sGetDNS((char *)g_recv_options[Index4].Value, dnsStr, sizeof(dnsStr) );
 #endif
@@ -1431,13 +1440,13 @@ OPTIONS:
         CcspTraceWarning(("%s rename failed %s\n", __FUNCTION__, strerror(errno)));
 #endif
 if (stat(SERVER_CONF_LOCATION, &check_ConfigFile) == -1) {
-        commonSyseventSet("dibbler_server_conf-status","");
+        ifl_set_event("dibbler_server_conf-status","");
 }
 else if (check_ConfigFile.st_size == 0) {
-        commonSyseventSet("dibbler_server_conf-status","empty");
+        ifl_set_event("dibbler_server_conf-status","empty");
 }
 else {
-        commonSyseventSet("dibbler_server_conf-status","ready");
+        ifl_set_event("dibbler_server_conf-status","ready");
 }
 EXIT:
     return;
@@ -1493,7 +1502,7 @@ void __cosa_dhcpsv6_refresh_config()
       // CcspTraceError(("[%s] ERROR divide the operator-delegated prefix to sub-prefix error.\n",  __FUNCTION__));
         DHCPMGR_LOG_ERROR("divide the operator-delegated prefix to sub-prefix error.");
         // sysevent_set(si6->sefd, si6->setok, "service_ipv6-status", "error", 0);
-        commonSyseventSet("service_ipv6-status", "error");
+        ifl_set_event("service_ipv6-status", "error");
         return;
     }
 #endif
@@ -1526,7 +1535,7 @@ void __cosa_dhcpsv6_refresh_config()
 #ifdef CONFIG_CISCO_DHCP6S_REQUIREMENT_FROM_DPC3825
         if ( sDhcpv6ServerPool[Index].Cfg.UnicastEnable ){
             char globalAddress[64] = {0};
-            commonSyseventGet("lan_ipaddr_v6", globalAddress, sizeof(globalAddress));
+            ifl_get_event("lan_ipaddr_v6", globalAddress, sizeof(globalAddress));
             if ( strlen(globalAddress) > 0 )
                 fprintf(fp, "   unicast %s\n", globalAddress);
         }
@@ -1847,13 +1856,13 @@ OPTIONS:
     if(fp != NULL)
       fclose(fp);
         if (stat(SERVER_CONF_LOCATION, &check_ConfigFile) == -1) {
-              commonSyseventSet("dibbler_server_conf-status","");
+              ifl_set_event("dibbler_server_conf-status","");
         }
         else if (check_ConfigFile.st_size == 0) {
-                commonSyseventSet("dibbler_server_conf-status","empty");
+                ifl_set_event("dibbler_server_conf-status","empty");
         }
         else {
-                commonSyseventSet("dibbler_server_conf-status","ready");
+                ifl_set_event("dibbler_server_conf-status","ready");
         }
 EXIT:
     return;

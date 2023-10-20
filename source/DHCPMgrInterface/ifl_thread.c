@@ -27,6 +27,7 @@
 #define IFL_THREAD_LOW_PRIORITY     0
 
 typedef void*(*tfptr_t)(void*);
+typedef void ifl_lock_t;
 
 typedef enum _thread_prop {
     IFL_THRD_PROP_NONE              = 0x00,
@@ -125,6 +126,50 @@ static ifl_ret _ifl_thread_set_priority (pthread_t tID, int policy ,int priority
 /*
  * External API definitions
  */
+ifl_ret ifl_lock_init (ifl_lock_t** lock)
+{
+    ifl_ret ret = IFL_ERROR;
+    pthread_mutexattr_t mAttr;
+    pthread_mutex_t*  mtLock = *lock = NULL;
+    int rc = -1;
+
+    if ((rc = pthread_mutexattr_init(&mAttr)))
+    {
+        _what_is_the_problem(111, rc, "Mutex attr init failed");
+    }
+    else
+    if ((rc = pthread_mutexattr_setrobust(&mAttr,   PTHREAD_MUTEX_ROBUST)
+            | pthread_mutexattr_setprotocol(&mAttr, PTHREAD_PRIO_INHERIT)
+            | pthread_mutexattr_setpshared(&mAttr,  PTHREAD_PROCESS_PRIVATE)))
+    {
+        _what_is_the_problem(111, rc, "Mutex attr set failed");
+    }
+    else
+    if (!(mtLock = (pthread_mutex_t*) malloc (sizeof(pthread_mutex_t))))
+    {
+        IFL_LOG_ERROR("Mutex malloc failed!");
+        pthread_mutexattr_destroy(&mAttr);
+    }
+    else
+    if ((rc = pthread_mutex_init(mtLock, &mAttr)))
+    {
+         _what_is_the_problem(111, rc, "Mutex init failed");
+         ret = IFL_LOCK_INIT_ERROR;
+    }
+    else
+    if ((rc = pthread_mutexattr_destroy(&mAttr)))
+    {
+        _what_is_the_problem(111, rc, "Mutex attr destroy failed");
+    }
+    else
+    {
+        *lock = (void*)mtLock;
+        ret = IFL_SUCCESS;
+    }
+
+    return ret;
+}
+
 ifl_ret ifl_thread_init (void)
 {
     ifl_ret ret = IFL_SUCCESS;
@@ -180,6 +225,17 @@ ifl_ret ifl_thread_lower_priority (uint8 tID)
     return IFL_SUCCESS;
 }
 
+ifl_ret ifl_lose_priority (void)
+{
+    int rc = 0;
+
+    if ((rc = _ifl_thread_set_priority(pthread_self(), SCHED_OTHER, IFL_THREAD_LOW_PRIORITY)))
+    {
+        _what_is_the_problem(111, rc, "Thread scheduling failed");
+    }
+
+    return IFL_SUCCESS;
+}
 
 ifl_ret ifl_thread_reset_priority (uint8 tID)
 {
@@ -193,6 +249,17 @@ ifl_ret ifl_thread_reset_priority (uint8 tID)
     return IFL_SUCCESS;
 }
 
+ifl_ret ifl_gain_priority (void)
+{
+    int rc = 0;
+
+    if ((rc = _ifl_thread_set_priority(pthread_self(), SCHED_RR, IFL_THREAD_DEFAULT_PRIORITY)))
+    {
+        _what_is_the_problem(111, rc, "Thread scheduling failed");
+    }
+
+    return IFL_SUCCESS;
+}
 
 ifl_ret ifl_thread_create (thread_prop tPrpty, tfptr_t tFunc, void* tData)
 {
@@ -257,6 +324,151 @@ ifl_ret ifl_thread_create (thread_prop tPrpty, tfptr_t tFunc, void* tData)
     if ((rc = pthread_attr_destroy(&attr)))
     {
         _what_is_the_problem(111, rc, "Thread attr destroy failed");
+    }
+
+    return ret;
+}
+
+/* Unify the redundant APIs */
+ifl_ret ifl_lock (ifl_lock_t* lock, lock_type lType)
+{
+    ifl_ret ret = IFL_LOCK_ERROR;
+    int rc = -1;
+    int tID = 111;
+
+    if (!lock)
+    {
+        IFL_LOG_ERROR("lock entity is null!");
+        return ret;
+    }
+
+    while(ret!=IFL_SUCCESS)
+    {
+        switch (lType)
+        {
+            case IFL_LOCK_TYPE_SPIN:        // Fall through
+            case IFL_LOCK_TYPE_SPIN_NO_WAIT:
+                    //IFL_LOG_INFO("TrySPIN");
+                    rc = pthread_spin_trylock((pthread_spinlock_t*)lock);
+                    break;
+
+            case IFL_LOCK_TYPE_SPIN_WAIT:
+                    //IFL_LOG_INFO("SPIN");
+                    rc = pthread_spin_lock((pthread_spinlock_t*)lock);
+                    break;
+
+            case IFL_LOCK_TYPE_MUTEX:       // Fall through
+            case IFL_LOCK_TYPE_MUTEX_NO_WAIT:
+                    //IFL_LOG_INFO("TryMUTEX");
+                    rc = pthread_mutex_trylock((pthread_mutex_t*)lock);
+                    break;
+
+            case IFL_LOCK_TYPE_MUTEX_WAIT:
+                    //IFL_LOG_INFO("MUTEX");
+                    rc = pthread_mutex_lock((pthread_mutex_t*)lock);
+                    break;
+
+            case IFL_LOCK_TYPE_SEM:         // Fall through
+            default: IFL_LOG_ERROR("[%d] ifl lock type not supported(%d)!", tID, lType);
+        }
+
+        if (!rc)
+        {
+                    //IFL_LOG_INFO("[%d] Lock acquired.", tID);
+                    ret = IFL_SUCCESS;
+        }
+        else
+        if (EOWNERDEAD == rc)
+        {
+                    IFL_LOG_ERROR("[%d] Previously locked thread exited!", tID);
+                    if (!pthread_mutex_consistent((pthread_mutex_t*)lock))
+                    {
+                        IFL_LOG_ERROR("[%d] Lock recovered!", tID);
+                    }
+                    else
+                    {
+                        IFL_LOG_ERROR("[%d] Lock recovery failed!", tID);
+                        // Fall through with tryunlock?
+                    }
+                    break;
+         }
+         else
+         if (ENOTRECOVERABLE == rc)
+         {
+                    IFL_LOG_ERROR("[%d] Lock not recoverable!!", tID);
+                    if (!pthread_mutex_destroy((pthread_mutex_t*)lock))
+                    {
+                        pthread_mutexattr_t mAttr;
+                        int lrc = -1;
+                        IFL_LOG_ERROR("[%d] Lock destroyed!", tID);
+                        IFL_LOG_ERROR("[%d] Lock reiniting!", tID);
+
+                        lrc  = pthread_mutexattr_init(&mAttr);
+                        lrc |= pthread_mutexattr_setrobust(&mAttr, PTHREAD_MUTEX_ROBUST);
+                        lrc |= pthread_mutex_init((pthread_mutex_t*)lock, &mAttr);
+
+                        if (lrc)
+                        {
+                            IFL_LOG_ERROR("[%d] Lock reinit failed!", tID);
+                        }
+                        else
+                        {
+                            IFL_LOG_ERROR("[%d] Lock reinit done!", tID);
+                            if (!pthread_mutex_lock((pthread_mutex_t*)lock))
+                            {
+                                IFL_LOG_ERROR("[%d] Lock acquired.", tID);
+                            }
+                            else
+                            {
+                                IFL_LOG_ERROR("[%d] Lock acquire failed!", tID);
+                            }
+                        }
+                        pthread_mutexattr_destroy(&mAttr);
+                    }
+                    else
+                    {
+                        IFL_LOG_ERROR("[%d] Lock destroy failed!", tID);
+                    }
+                    break;
+         }
+         else
+         if (EBUSY == rc)
+         {
+                    IFL_LOG_INFO("[%d] Lock is Busy!", tID);
+                    ret = IFL_LOCK_BUSY;
+
+                    // yield() here?
+                    if (IFL_LOCK_TYPE_MUTEX == lType ||
+                        IFL_LOCK_TYPE_SPIN  == lType)
+                    {
+                        //IFL_LOG_INFO("[%d] yielding...", tID);
+                        if (pthread_yield())
+                        {
+                            /* Should not happen, as this always succeeds in Linux */
+                            IFL_LOG_ERROR("[%d] Rejected yielding!", tID);
+                        }
+                    }
+                    else
+                    if (IFL_LOCK_TYPE_MUTEX_NO_WAIT == lType ||
+                        IFL_LOCK_TYPE_SPIN_NO_WAIT  == lType)
+                    {
+                        break;
+                    }
+                    else
+                    {
+                        IFL_LOG_ERROR("[%d] Lock undefined busy state!", tID);
+                    }
+         }
+         else
+         {
+                    _what_is_the_problem(tID, rc, "Lock acquire failed");
+                    break;
+         }
+    }
+
+    if (IFL_SUCCESS != ret && IFL_LOCK_BUSY != ret)
+    {
+        IFL_LOG_ERROR("[%d] Ambiguous lock logic. SHOULD BE FIXED!!!", tID);
     }
 
     return ret;
@@ -430,6 +642,34 @@ ifl_ret ifl_thread_unlock (uint8 tID, lock_type lType)
 }
 
 
+ifl_ret ifl_unlock (ifl_lock_t* lock, lock_type lType)
+{
+    ifl_ret ret = IFL_UNLOCK_ERROR;
+    int rc = -1;
+
+    if (IFL_LOCK_TYPE_SPIN == lType)
+    {
+        rc = pthread_spin_unlock((pthread_spinlock_t*)lock);
+    }
+    else
+    {
+        rc = pthread_mutex_unlock((pthread_mutex_t*)lock);
+    }
+
+    if (!rc)
+    {
+        //IFL_LOG_INFO("[%d] Lock released.", tID);
+        ret = IFL_SUCCESS;
+    }
+    else
+    {
+        _what_is_the_problem(111, rc, "Lock release failed");
+    }
+
+    return ret;
+}
+
+
 ifl_ret ifl_thread_yield (uint8 tID)
 {
     IFL_LOG_INFO("[%d] Yeilding...", tID);
@@ -465,3 +705,25 @@ ifl_ret ifl_thread_deinit (void)
     return ret;
 }
 
+
+ifl_ret ifl_lock_deinit(ifl_lock_t** lock)
+{
+    ifl_ret ret = IFL_SUCCESS;
+    int     rc  = 0;
+
+    if ((rc = pthread_mutex_destroy((pthread_mutex_t*)*lock)))
+    {
+        _what_is_the_problem(111, rc, "Mutex destroy failed");
+        ret = IFL_ERROR;
+    }
+    if ((rc = pthread_spin_destroy((pthread_spinlock_t*)*lock)))
+    {
+        _what_is_the_problem(111, rc, "Spin destroy failed");
+        ret = IFL_ERROR;
+    }
+
+    free(*lock);
+    *lock = NULL;
+
+    return ret;
+}

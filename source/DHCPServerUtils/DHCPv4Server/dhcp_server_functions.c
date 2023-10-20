@@ -39,7 +39,7 @@
 #include "safec_lib_common.h"
 #include "secure_wrapper.h"
 #include "ccsp_trace.h"
-
+#include "ifl.h"
 
 #define HOSTS_FILE              "/etc/hosts"
 #define HOSTNAME_FILE           "/etc/hostname"
@@ -80,8 +80,8 @@
                                   (byte == 248) || (byte == 240) || (byte == 224) || \
                                   (byte == 192) || (byte == 128)) ? 1 : 0)
 extern void* g_vBus_handle;
-extern int g_iSyseventV4fd;
-extern token_t g_tSyseventV4_token;
+//extern int g_iSyseventV4fd;
+//extern token_t g_tSyseventV4_token;
 extern char g_cDhcp_Lease_Time[8];
 extern char g_cMfg_Name[8];
 extern char g_cMig_Check[8];
@@ -185,7 +185,7 @@ int prepare_hostname()
         int l_iRes = 0;
 
         syscfg_get(NULL, "hostname", l_cHostName, sizeof(l_cHostName));
-        sysevent_get(g_iSyseventV4fd, g_tSyseventV4_token, "current_lan_ipaddr", l_cCurLanIP, sizeof(l_cCurLanIP));
+        ifl_get_event( "current_lan_ipaddr", l_cCurLanIP, sizeof(l_cCurLanIP));
         syscfg_get(NULL, "SecureWebUI_LocalFqdn", l_clocFqdn, sizeof(l_clocFqdn));
         syscfg_get(NULL, "SecureWebUI_Enable", l_cSecWebUI_Enabled, sizeof(l_cSecWebUI_Enabled));
 
@@ -499,7 +499,7 @@ void prepare_dhcp_options_wan_dns()
 
         if (!strncmp(l_cPropagate_Ns, "1", 1))
         {
-                sysevent_get(g_iSyseventV4fd, g_tSyseventV4_token, "wan_dhcp_dns", l_cWan_Dhcp_Dns, sizeof(l_cWan_Dhcp_Dns));
+                ifl_get_event( "wan_dhcp_dns", l_cWan_Dhcp_Dns, sizeof(l_cWan_Dhcp_Dns));
                 if (0 != l_cWan_Dhcp_Dns[0])
                 {
                         l_cToken = strtok(l_cWan_Dhcp_Dns, " ");
@@ -659,7 +659,7 @@ void do_extra_pools (FILE *local_dhcpconf_file, char *prefix, unsigned char bDhc
         errno_t safec_rc = -1;
 
 
-        sysevent_get(g_iSyseventV4fd, g_tSyseventV4_token,
+        ifl_get_event(
                        "dhcp_server_current_pools", l_cPools, sizeof(l_cPools));
 
         l_cToken = strtok(l_cPools, "\n");
@@ -673,7 +673,7 @@ void do_extra_pools (FILE *local_dhcpconf_file, char *prefix, unsigned char bDhc
                         {
                                 ERR_CHK(safec_rc);
                         }
-                sysevent_get(g_iSyseventV4fd, g_tSyseventV4_token,
+                ifl_get_event(
                               l_cSysevent_Cmd, l_cDhcpEnabled, sizeof(l_cDhcpEnabled));
 
                         if (!strncmp(l_cDhcpEnabled, "TRUE", 4))
@@ -683,7 +683,7 @@ void do_extra_pools (FILE *local_dhcpconf_file, char *prefix, unsigned char bDhc
                                 {
                                         ERR_CHK(safec_rc);
                                 }
-                        sysevent_get(g_iSyseventV4fd, g_tSyseventV4_token,
+                        ifl_get_event(
                                                  l_cSysevent_Cmd, l_cIpv4Inst, sizeof(l_cIpv4Inst));
                         l_iIpv4Inst = atoi(l_cIpv4Inst);
                                 safec_rc = sprintf_s(l_cSysevent_Cmd, sizeof(l_cSysevent_Cmd),"ipv4_%d-status", l_iIpv4Inst);
@@ -691,7 +691,7 @@ void do_extra_pools (FILE *local_dhcpconf_file, char *prefix, unsigned char bDhc
                                 {
                                         ERR_CHK(safec_rc);
                                 }
-                        sysevent_get(g_iSyseventV4fd, g_tSyseventV4_token,
+                        ifl_get_event(
                                              l_cSysevent_Cmd, l_cIpv4InstStatus, sizeof(l_cIpv4InstStatus));
 
                                 if (!strncmp(l_cIpv4InstStatus, "up", 2))
@@ -701,7 +701,7 @@ void do_extra_pools (FILE *local_dhcpconf_file, char *prefix, unsigned char bDhc
                                         {
                                                 ERR_CHK(safec_rc);
                                         }
-                                sysevent_get(g_iSyseventV4fd, g_tSyseventV4_token,
+                                ifl_get_event(
                                             l_cSysevent_Cmd, l_cDhcp_Start_Addr, sizeof(l_cDhcp_Start_Addr));
 
                                         safec_rc = sprintf_s(l_cSysevent_Cmd, sizeof(l_cSysevent_Cmd),"dhcp_server_%d_endaddr", l_iPool);
@@ -709,7 +709,7 @@ void do_extra_pools (FILE *local_dhcpconf_file, char *prefix, unsigned char bDhc
                                         {
                                                 ERR_CHK(safec_rc);
                                         }
-                                sysevent_get(g_iSyseventV4fd, g_tSyseventV4_token,
+                                ifl_get_event(
                                              l_cSysevent_Cmd, l_cDhcp_End_Addr, sizeof(l_cDhcp_End_Addr));
 
                                         safec_rc = sprintf_s(l_cSysevent_Cmd, sizeof(l_cSysevent_Cmd),"dhcp_server_%d_subnet", l_iPool);
@@ -717,7 +717,7 @@ void do_extra_pools (FILE *local_dhcpconf_file, char *prefix, unsigned char bDhc
                                         {
                                                 ERR_CHK(safec_rc);
                                         }
-                                sysevent_get(g_iSyseventV4fd, g_tSyseventV4_token,
+                                ifl_get_event(
                                              l_cSysevent_Cmd, l_cLan_Subnet, sizeof(l_cLan_Subnet));
 
                                         safec_rc = sprintf_s(l_cSysevent_Cmd, sizeof(l_cSysevent_Cmd),"dhcp_server_%d_leasetime", l_iPool);
@@ -725,7 +725,7 @@ void do_extra_pools (FILE *local_dhcpconf_file, char *prefix, unsigned char bDhc
                                         {
                                                 ERR_CHK(safec_rc);
                                         }
-                                sysevent_get(g_iSyseventV4fd, g_tSyseventV4_token,
+                                ifl_get_event(
                                              l_cSysevent_Cmd, l_cDhcp_Lease_Time, sizeof(l_cDhcp_Lease_Time));
 
                                         safec_rc = sprintf_s(l_cSysevent_Cmd, sizeof(l_cSysevent_Cmd),"ipv4_%d-ifname", l_iIpv4Inst);
@@ -733,7 +733,7 @@ void do_extra_pools (FILE *local_dhcpconf_file, char *prefix, unsigned char bDhc
                                         {
                                                 ERR_CHK(safec_rc);
                                         }
-                                 sysevent_get(g_iSyseventV4fd, g_tSyseventV4_token,
+                                 ifl_get_event(
                                              l_cSysevent_Cmd, l_cIfName, sizeof(l_cIfName));
 
                                              //TODO prefix is not considered for first drop
@@ -781,13 +781,13 @@ void UpdateConfigListintoConfFile(FILE *l_fLocal_Dhcp_ConfFile)
     char count[12];
     int dhcp_dyn_cnfig_counter=0;
     char dhcp_dyn_conf_change[1024] = {0};
-    sysevent_get(g_iSyseventV4fd, g_tSyseventV4_token, "dhcp_conf_change_counter", count,sizeof(count));
+    ifl_get_event( "dhcp_conf_change_counter", count,sizeof(count));
     dhcp_dyn_cnfig_counter = atoi(count);
     for(int i=1; i<= dhcp_dyn_cnfig_counter; i++)
     {
         char dynConfChange[256]  = {0};
         snprintf(dhcp_dyn_conf_change,sizeof(dynConfChange), "dhcp_dyn_conf_change_%d",i);
-        sysevent_get(g_iSyseventV4fd, g_tSyseventV4_token, dhcp_dyn_conf_change, dynConfChange, sizeof(dynConfChange));
+        ifl_get_event( dhcp_dyn_conf_change, dynConfChange, sizeof(dynConfChange));
         if(dynConfChange[0] != '\0' )
         {
             char confInterface[32] = {0};
@@ -820,13 +820,13 @@ void AddConfList(char *confToken)
     char dhcp_dyn_conf_change[1024];
     char conf[256]={'\0'};
     strncpy(conf, confToken, sizeof(conf)-1);
-    sysevent_get(g_iSyseventV4fd, g_tSyseventV4_token, "dhcp_conf_change_counter", count,sizeof(count));
+    ifl_get_event( "dhcp_conf_change_counter", count,sizeof(count));
     dhcp_dyn_cnfig_counter = atoi(count);
     snprintf(dhcp_dyn_conf_change, sizeof(conf), "dhcp_dyn_conf_change_%d",dhcp_dyn_cnfig_counter+1);
-    sysevent_set(g_iSyseventV4fd, g_tSyseventV4_token, dhcp_dyn_conf_change , conf, 0);
+    ifl_set_event( dhcp_dyn_conf_change , conf);
     dhcp_dyn_cnfig_counter++;
     sprintf(count, "%d", dhcp_dyn_cnfig_counter);
-    sysevent_set(g_iSyseventV4fd, g_tSyseventV4_token, "dhcp_conf_change_counter", count, 0);
+    ifl_set_event( "dhcp_conf_change_counter", count);
 }
 
 void UpdateConfList(char *confTok, int ct)
@@ -837,7 +837,7 @@ void UpdateConfList(char *confTok, int ct)
     strncpy(conf, confTok, sizeof(conf)-1);
     snprintf(dhcp_dyn_conf_change, sizeof(conf), "dhcp_dyn_conf_change_%d",ct);
     printf("sysevent set dhcp_dyn_conf_change_%d: %s\n",ct,conf);
-    sysevent_set(g_iSyseventV4fd, g_tSyseventV4_token, dhcp_dyn_conf_change , conf, 0);
+    ifl_set_event( dhcp_dyn_conf_change , conf);
 }
 
 enum interface IsInterfaceExists(char *confTok, char * confInf, int* inst)
@@ -850,7 +850,7 @@ enum interface IsInterfaceExists(char *confTok, char * confInf, int* inst)
     strncpy(conf, confTok, sizeof(conf)-1);
     strncpy(infc, confInf, sizeof(infc)-1);
 
-    sysevent_get(g_iSyseventV4fd, g_tSyseventV4_token, "dhcp_conf_change_counter", count,sizeof(count));
+    ifl_get_event( "dhcp_conf_change_counter", count,sizeof(count));
     dhcp_dyn_cnfig_counter = atoi(count);
     if(dhcp_dyn_cnfig_counter ==0)
     {
@@ -863,7 +863,7 @@ enum interface IsInterfaceExists(char *confTok, char * confInf, int* inst)
             char dynConfChange[256]  = {0};
             char dynConfChag[256]  = {0};
             snprintf(dhcp_dyn_conf_change,sizeof(dynConfChange), "dhcp_dyn_conf_change_%d",i);
-            sysevent_get(g_iSyseventV4fd, g_tSyseventV4_token, dhcp_dyn_conf_change, dynConfChange, sizeof(dynConfChange));
+            ifl_get_event( dhcp_dyn_conf_change, dynConfChange, sizeof(dynConfChange));
             strncpy(dynConfChag, dynConfChange, sizeof(dynConfChag)-1);
             char dynInf[32] = {0};
             if(dynConfChag[0] != '\0' )
@@ -900,7 +900,7 @@ void UpdateDhcpConfChangeBasedOnEvent()
     enum interface inf;
     char confInface[32] = {0};
     int instance;
-    sysevent_get(g_iSyseventV4fd, g_tSyseventV4_token, "dhcp_conf_change", confToken, sizeof(confToken));
+    ifl_get_event( "dhcp_conf_change", confToken, sizeof(confToken));
     strncpy(confTok, confToken, sizeof(confTok)-1);
     if(confTok[0] != '\0' )
     {
@@ -1039,7 +1039,7 @@ int prepare_dhcp_conf (char *input)
         struct sockaddr_in sa;
         memset (buff, 0, sizeof(buff));
 
-        sysevent_get(g_iSyseventV4fd, g_tSyseventV4_token, "ipv4_dns_0", dns_ip1, sizeof(dns_ip1));
+        ifl_get_event( "ipv4_dns_0", dns_ip1, sizeof(dns_ip1));
         if (inet_pton(AF_INET, dns_ip1, &(sa.sin_addr)))
         {
             dns_flag = 1;
@@ -1052,7 +1052,7 @@ int prepare_dhcp_conf (char *input)
 
         }
 
-        sysevent_get(g_iSyseventV4fd, g_tSyseventV4_token, "ipv4_dns_1", dns_ip2, sizeof(dns_ip2));
+        ifl_get_event( "ipv4_dns_1", dns_ip2, sizeof(dns_ip2));
         if (inet_pton(AF_INET, dns_ip2, &(sa.sin_addr)))
         {
             dns_flag = 1;
@@ -1067,13 +1067,13 @@ int prepare_dhcp_conf (char *input)
 
         memset(dns1_ipv6, 0, sizeof(dns1_ipv6));
 
-        sysevent_get(g_iSyseventV4fd, g_tSyseventV4_token, "cellular_wan_v6_dns1", dns1_ipv6, sizeof(dns1_ipv6));
+        ifl_get_event( "cellular_wan_v6_dns1", dns1_ipv6, sizeof(dns1_ipv6));
         if (inet_pton(AF_INET6, dns1_ipv6, &ipv6_addr))
         {
             dns_flag = 1;
         }
 
-        sysevent_get(g_iSyseventV4fd, g_tSyseventV4_token, "cellular_wan_v6_dns2", dns2_ipv6, sizeof(dns2_ipv6));
+        ifl_get_event( "cellular_wan_v6_dns2", dns2_ipv6, sizeof(dns2_ipv6));
         if (inet_pton(AF_INET6, dns2_ipv6, &ipv6_addr))
         {
             dns_flag = 1;
@@ -1133,7 +1133,7 @@ int prepare_dhcp_conf (char *input)
 #endif
         // Add DHCP option 43: Vendor specific data
         memset (buff, 0, sizeof(buff));
-        sysevent_get(g_iSyseventV4fd, g_tSyseventV4_token, "dhcpv4_option_43", buff, sizeof(buff));
+        ifl_get_event( "dhcpv4_option_43", buff, sizeof(buff));
         if ((buff != NULL) && strlen(buff) > 0)
         {
             fprintf(l_fLocal_Dhcp_ConfFile, "dhcp-option=43,%s\n", buff);
@@ -1157,7 +1157,7 @@ int prepare_dhcp_conf (char *input)
         }
 
     syscfg_get(NULL, "SecureWebUI_Enable", l_cSecWebUI_Enabled, sizeof(l_cSecWebUI_Enabled));
-    sysevent_get(g_iSyseventV4fd, g_tSyseventV4_token, "phylink_wan_state", l_cWan_Check, sizeof(l_cWan_Check));
+    ifl_get_event( "phylink_wan_state", l_cWan_Check, sizeof(l_cWan_Check));
     if (!strncmp(l_cSecWebUI_Enabled, "true", 4))
     {
         if(!strncmp(l_cWan_Check, "up", 2))
@@ -1321,7 +1321,7 @@ int prepare_dhcp_conf (char *input)
                    DHCPMGR_LOG_INFO("DHCP SERVER : Initialize migration case variable to false");
                    l_bMig_Case = FALSE;
                 }
-                sysevent_get(g_iSyseventV4fd, g_tSyseventV4_token, "wan_service-status", l_cWan_Service_Stat, sizeof(l_cWan_Service_Stat));
+                ifl_get_event( "wan_service-status", l_cWan_Service_Stat, sizeof(l_cWan_Service_Stat));
 
                 l_iRetry_Count = 0;
                 l_iRet_Val = PSM_VALUE_GET_STRING(PSM_NAME_WIFI_RES_MIG, l_cpPsm_Get);
@@ -1475,7 +1475,7 @@ int prepare_dhcp_conf (char *input)
         // otherwise we use the lan domain name
         if (!strncmp(l_cPropagate_Dom, "1", 1))
         {
-            sysevent_get(g_iSyseventV4fd, g_tSyseventV4_token, "dhcp_domain", l_cLan_Domain, sizeof(l_cLan_Domain));
+            ifl_get_event( "dhcp_domain", l_cLan_Domain, sizeof(l_cLan_Domain));
         }
         if (0 == l_cLan_Domain[0])
         {
@@ -1596,7 +1596,7 @@ int prepare_dhcp_conf (char *input)
     }
 #endif
 
-        sysevent_get(g_iSyseventV4fd, g_tSyseventV4_token, "lan-status", l_cLan_Status, sizeof(l_cLan_Status));
+        ifl_get_event( "lan-status", l_cLan_Status, sizeof(l_cLan_Status));
         if (!strncmp(l_cLan_Status, "started", 7))
         {
                 // calculate_dhcp_range has code to write dhcp-range
@@ -1613,7 +1613,7 @@ int prepare_dhcp_conf (char *input)
                         if (!strncmp(l_cSecWebUI_Enabled, "true", 4))
                         {
                             char  l_clocFqdn[16] = {0},l_cCurLanIP[16] = {0};
-                            sysevent_get(g_iSyseventV4fd, g_tSyseventV4_token, "current_lan_ipaddr", l_cCurLanIP, sizeof(l_cCurLanIP));
+                            ifl_get_event( "current_lan_ipaddr", l_cCurLanIP, sizeof(l_cCurLanIP));
                             syscfg_get(NULL, "SecureWebUI_LocalFqdn", l_clocFqdn, sizeof(l_clocFqdn));
                             fprintf(l_fLocal_Dhcp_ConfFile, "address=/%s/%s\n",l_clocFqdn,l_cCurLanIP );
                             fprintf(l_fLocal_Dhcp_ConfFile, "server=/%s/%s\n",l_clocFqdn,l_cCurLanIP );
@@ -1857,7 +1857,7 @@ int prepare_dhcp_conf (char *input)
             prepare_whitelist_urls(l_fLocal_Dhcp_ConfFile);
         }
 
-        sysevent_set(g_iSyseventV4fd, g_tSyseventV4_token, "captiveportaldhcp", "completed", 0);
+        ifl_set_event( "captiveportaldhcp", "completed");
         }
 
         //Prepare static dns urls
@@ -1929,7 +1929,7 @@ void get_dhcp_option_for_brlan0( char *pDhcpNs_OptionString )
         syscfg_get(NULL, "dhcp_nameserver_1", l_cDhcpNs_1, sizeof(l_cDhcpNs_1));
         syscfg_get(NULL, "dhcp_nameserver_2", l_cDhcpNs_2, sizeof(l_cDhcpNs_2));
         syscfg_get(NULL, "dhcp_nameserver_3", l_cDhcpNs_3, sizeof(l_cDhcpNs_3));
-        sysevent_get(g_iSyseventV4fd, g_tSyseventV4_token, "current_lan_ipaddr", l_cLocalNs, sizeof(l_cLocalNs));
+        ifl_get_event( "current_lan_ipaddr", l_cLocalNs, sizeof(l_cLocalNs));
 
         safec_rc = strcpy_s( l_cDhcpNs_OptionString, sizeof(l_cDhcpNs_OptionString),"dhcp-option=brlan0,6");
         ERR_CHK(safec_rc);
@@ -2027,7 +2027,7 @@ void check_and_get_wan_dhcp_dns( char *pl_cWan_Dhcp_Dns )
         int  charCounter                     = 0;
         errno_t safec_rc = -1;
 
-        sysevent_get(g_iSyseventV4fd, g_tSyseventV4_token, "wan_dhcp_dns", l_cWan_Dhcp_Dns, sizeof(l_cWan_Dhcp_Dns));
+        ifl_get_event( "wan_dhcp_dns", l_cWan_Dhcp_Dns, sizeof(l_cWan_Dhcp_Dns));
 
         DHCPMGR_LOG_INFO("DHCP SERVER : wan_dhcp_dns:%s", l_cWan_Dhcp_Dns );
 

@@ -120,8 +120,8 @@
 
 #include "lm_api.h"
 #include <cjson/cJSON.h>
-extern int g_iSyseventfd;
-extern token_t g_tSysevent_token;
+//extern int g_iSyseventfd;
+//extern token_t g_tSysevent_token;
 
 #undef COSA_DML_DHCP_LEASES_FILE
 #undef COSA_DML_DHCP_OPTIONS_FILE
@@ -1654,7 +1654,8 @@ CosaDmlDhcpcGetInfo
     }
 #endif
         pid = pid_of(pDHCPCv4_Bin, (char *)pDhcpc->Cfg.Interface);
-        sysevent_get(g_iSyseventfd, g_tSysevent_token, "wan-status", l_cWanState, sizeof(l_cWanState));
+        //sysevent_get(g_iSyseventfd, g_tSysevent_token, "wan-status", l_cWanState, sizeof(l_cWanState));
+        commonSyseventGet("wan-status", l_cWanState, sizeof(l_cWanState));
         if ((pDhcpc->Cfg.bEnabled) && (pid > 0))
         {
             pInfo->Status = COSA_DML_DHCP_STATUS_Enabled;
@@ -2540,7 +2541,6 @@ CosaDmlDhcpsGetPoolInfo
 
     UNREFERENCED_PARAMETER(hContext);
     AnscTraceFlow(("%s: ulInstanceNumber =%lu\n", __FUNCTION__, ulInstanceNumber));
-    errno_t                         rc              = -1;
 
     if(ulInstanceNumber == 1) {
         int rc = -1;
@@ -2582,11 +2582,11 @@ CosaDmlDhcpsGetPoolInfo
         pPoolInfo = &(pPoolLinkObj->SPool.Info);
 
         //update status value here
-        token_t        se_token;
+        //token_t        se_token;
         char           dhcp_status[64];
-        int            se_fd = -1;
+        //int            se_fd = -1;
 
-        se_fd = s_sysevent_connect(&se_token);
+        /*se_fd = s_sysevent_connect(&se_token);
         if (0 > se_fd) {
 
             AnscTraceFlow(("%s: dhcp_status = syseventerror\n", __FUNCTION__));
@@ -2594,10 +2594,11 @@ CosaDmlDhcpsGetPoolInfo
             rc = strcpy_s(dhcp_status, sizeof(dhcp_status), "syseventError");
             ERR_CHK(rc);
         }
-        else
+        else*/
         {
             /* Get DHCP Server Status */
-            sysevent_get(se_fd, se_token, "dhcp_server-status", dhcp_status, sizeof(dhcp_status));
+            //sysevent_get(se_fd, se_token, "dhcp_server-status", dhcp_status, sizeof(dhcp_status));
+            commonSyseventGet("dhcp_server-status", dhcp_status, sizeof(dhcp_status));
 
             AnscTraceFlow(("%s: dhcp_status = %s\n", __FUNCTION__, dhcp_status));
 

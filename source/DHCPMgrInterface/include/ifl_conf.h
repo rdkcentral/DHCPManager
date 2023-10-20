@@ -31,6 +31,11 @@
  */
 #define IFL_MAX_TASK_THRD          4
 
+/*
+ * MAx number of records for task resources
+ */
+#define IFL_MAX_TASK_RESOURCE      24
+
 /* No. of queues that will be required by the application.
  * One queue per thread would be supported for now.
  * Hence, load sharing would be supported later.
@@ -40,7 +45,7 @@
 /*
  * Max number of items for queue.
  */
-#define IFL_MAX_QLEN              12
+#define IFL_MAX_QLEN               12
 
 /* No. of context that will be required by the application.
  * One context per queue is ideal. One queue cannot have more
@@ -57,6 +62,6 @@
 /*
  * Max number of items for event hanlers map.
  */
-#define IFL_MAX_EVENT_HANDLER_MAP    24
+#define IFL_MAX_EVENT_HANDLER_MAP  24
 
 #endif

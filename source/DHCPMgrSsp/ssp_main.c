@@ -473,7 +473,22 @@ CcspTraceInfo(("\nAfter daemonize before signal\n"));
     signal(SIGALRM, sig_handler);
 #endif
 
-CcspTraceInfo(("\nbefore cmd_dispatch command\n"));
+    CcspTraceInfo(("DHCPMgr InterfaceLayer initialization started\n"));
+    // inti dhcpmgr interfacelayer
+    if (ifl_init("DHCP-Mgr") == IFL_SUCCESS)
+    {
+        if (IFL_SUCCESS != ifl_init_ctx("DHCP-Mgr-main", IFL_CTX_STATIC))
+        {
+            CcspTraceError(("Failed to init ifl ctx for DHCP-Mgr-main\n"));
+        }
+        CcspTraceInfo(("DHCPMgr InterfaceLayer initialized.\n"));
+    }
+    else
+    {
+        CcspTraceError(("Error in initialising DHCPMgr InterfaceLayer\n"));
+    }
+
+    CcspTraceInfo(("\nbefore cmd_dispatch command\n"));
 
     cmd_dispatch('e');
 
@@ -518,17 +533,6 @@ CcspTraceWarning(("\nAfter Cdm_Init\n"));
         exit(1);
     }
 
-    CcspTraceInfo(("DHCPMgr InterfaceLayer initialization started\n"));
-    // inti dhcpmgr interfacelayer
-    if (ifl_init("DHCP-Mgr") == IFL_SUCCESS)
-    {
-        CcspTraceInfo(("DHCPMgr InterfaceLayer initialized Ended\n"));
-    }
-    else
-    {
-        CcspTraceError(("Error in initialising DHCPMgr InterfaceLayer\n"));
-    }
-
 #ifdef DHCPV4_CLIENT_SUPPORT
     //Init dhcpv4 client
     CcspTraceInfo(("serv_dhcp_init (dhcpv4 client) Started\n"));
@@ -565,6 +569,8 @@ CcspTraceWarning(("\nAfter Cdm_Init\n"));
 #endif
 
     system("touch /tmp/dhcpmgr_initialized");
+
+    ifl_deinit_ctx("DHCP-Mgr-main");
 
     if ( bRunAsDaemon )
     {

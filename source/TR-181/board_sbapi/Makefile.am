@@ -31,6 +31,7 @@ hardware_platform = i686-linux-gnu
 noinst_LTLIBRARIES = libCcspDhcpMgr_board_sbapi.la
 libCcspDhcpMgr_board_sbapi_la_CPPFLAGS = -I$(top_srcdir)/source/TR-181/include \
                                          -I$(top_srcdir)/source/TR-181/middle_layer_src \
+                                         -I$(top_srcdir)/source/DHCPMgrInterface/include \
                                          -I$(top_srcdir)/source/DHCPServerUtils/ \
                                          -I$(top_srcdir)/source/DHCPServerUtils/utils/include \
                                          -I$(top_srcdir)/source/DHCPClientUtils/DHCPv4Client/include \

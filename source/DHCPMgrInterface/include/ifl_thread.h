@@ -21,6 +21,7 @@
 #define __IFL_THREAD_H__
 
 typedef void*(*tfptr_t)(void*);
+typedef void ifl_lock_t;
 
 typedef enum _thread_prop {
     IFL_THRD_PROP_NONE              = 0x00,
@@ -62,4 +63,10 @@ ifl_ret ifl_thread_yield (uint8 tID);
 ifl_ret ifl_thread_lower_priority (uint8 tID);
 ifl_ret ifl_thread_reset_priority (uint8 tID);
 ifl_ret ifl_thread_deinit (void);
+ifl_ret ifl_lock_init (ifl_lock_t** lock);
+ifl_ret ifl_lock (ifl_lock_t* lock, lock_type lType);
+ifl_ret ifl_unlock (ifl_lock_t* lock, lock_type lType);
+ifl_ret ifl_lock_deinit (ifl_lock_t** lock);
+ifl_ret ifl_gain_priority(void);
+ifl_ret ifl_lose_priority(void);
 #endif

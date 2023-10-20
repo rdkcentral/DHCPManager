@@ -17,12 +17,14 @@
   limitations under the License.
 ************************************************************************************/
 
+#define _GNU_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/sysinfo.h>
+
 #include "errno.h"
 #include "sysevent/sysevent.h"
 #include "safec_lib_common.h"
@@ -33,41 +35,59 @@
 #define LOCALHOST   "127.0.0.1"
 
 typedef struct _thread_data_t {
-    void*        qObj;
-    uint8        ctxID;
+    void*               qObj;
+    uint8               ctxID;
 } thread_data_t;
 
 typedef struct _q_data_t {
-    fptr_t       cb;
-    char         eValue[BUFLEN_64];
+    fptr_t              cb;
+    char                eValue[BUFLEN_64];
 } q_data_t;
 
 typedef struct _handler_t {
-    fptr_t       cb;
-    uint8        ctxID;
+    fptr_t              cb;
+    uint8               ctxID;
     ifl_event_type   eType;
 } handler_t;
 
 typedef struct _event_handler_map_t {
-    char         event[BUFLEN_64];
-    handler_t    handler[IFL_MAX_CONTEXT];
-    uint8        handlerCount;
-    async_id_t   asyncID;
+    char                event[BUFLEN_64];
+    handler_t           handler[IFL_MAX_CONTEXT];
+    uint8               handlerCount;
+    async_id_t          asyncID;
 } event_handler_map_t;
 
 typedef struct _q_context_idx_map_t {
-    char         qCtx[BUFLEN_16];
-    void*        qObj;
+    char                qCtx[BUFLEN_16];
+    void*               qObj;
 } q_context_idx_map_t;
+
+typedef struct _task_resource_t {
+    int                 se_fd;
+    token_t             se_tok;
+} task_resource_t;
+
+typedef struct _task_resource_table_t {
+    pid_t               tID;
+    char                tCtx[BUFLEN_16];
+    task_resource_t*    tResrc;
+} task_resource_table_t;
+
 
 /*
  * static globals
  */
-static event_handler_map_t  evtToHdlMap[IFL_MAX_EVENT_HANDLER_MAP];
-static q_context_idx_map_t  ctxToIdxMap[IFL_MAX_CONTEXT];
-static uint8                thdToIdxMap[IFL_MAX_CONTEXT];
-static int       sysevent_fd;
-static token_t   sysevent_token;
+static event_handler_map_t    evtToHdlMap[IFL_MAX_EVENT_HANDLER_MAP];
+static q_context_idx_map_t    ctxToIdxMap[IFL_MAX_CONTEXT];
+static uint8                  thdToIdxMap[IFL_MAX_CONTEXT];
+static task_resource_table_t  tskResrcTbl[IFL_MAX_TASK_RESOURCE];
+static ifl_lock_t*            trtLock;
+static int                    sysevent_fd;
+static token_t                sysevent_token;
+
+static uint8 tskResrcTblCnt              = 0;
+static uint8 ifl_default_ctx_enabled     = 0;
+
 
 /*
  * Static prototypes
@@ -76,6 +96,14 @@ static void* _task_manager_thrd (void *value);
 static void* _task_thrd (void *value);
 static uint8 _get_ctx_id (char* ctx);
 static uint8 _get_evt_id (char* event, uint8 addEvent);
+static void _init_default_ctx (void);
+static void _deinit_task_resource (task_resource_table_t* trtEntry);
+static void _dealloc_task_resource (task_resource_t* tResrc);
+static task_resource_table_t* _add_entry_to_task_resource_table (char* ctx, uint8 flag);
+static task_resource_table_t* _init_task_resource (char* ctx);
+static task_resource_t* _lookup_task_resource_table (pid_t tID);
+static task_resource_t* _alloc_task_resource (task_resource_table_t* trtEntry);
+
 
 /*
  * Static API definitions
@@ -142,6 +170,175 @@ static uint8 _get_evt_id (char* event, uint8 addEvent)
 }
 
 
+static task_resource_t* _alloc_task_resource (task_resource_table_t* trtEntry)
+{
+    task_resource_t* tResrc = trtEntry->tResrc;
+
+    if (trtEntry && tResrc)
+    {
+        if (tResrc->se_fd)
+        {
+            IFL_LOG_WARNING("Possible sysevent fd leak!");
+        }
+
+        tResrc->se_fd = sysevent_open(LOCALHOST, SE_SERVER_WELL_KNOWN_PORT,
+                                                 SE_VERSION, trtEntry->tCtx, &tResrc->se_tok);
+        if (!tResrc->se_fd)
+        {
+            IFL_LOG_ERROR("Failed to open sysevent!");
+            tResrc = NULL;
+        }
+    }
+    return tResrc;
+}
+
+
+static void _dealloc_task_resource (task_resource_t* tResrc)
+{
+    if (tResrc)
+    {
+        if (tResrc->se_fd)
+        {
+            sysevent_close(tResrc->se_fd, tResrc->se_tok);
+            tResrc->se_fd = 0;
+        }
+    }
+}
+
+
+static task_resource_table_t* _add_entry_to_task_resource_table (char* ctx, uint8 flag)
+{
+    task_resource_table_t* retTrt = NULL;
+    uint8 tIdx=0;
+
+    for (tIdx=0; tIdx < tskResrcTblCnt; tIdx++)
+    {
+         if (!strncmp(ctx, tskResrcTbl[tIdx].tCtx, BUFLEN_16))
+         {
+             IFL_LOG_INFO("ctx %s already exists!", ctx);
+             retTrt = &tskResrcTbl[tIdx];
+             break;
+         }
+    }
+
+    if (flag && tIdx == tskResrcTblCnt)
+    {
+        if (tskResrcTblCnt < IFL_MAX_TASK_RESOURCE)
+        {
+            errno_t sRet = strcpy_s(tskResrcTbl[tIdx].tCtx, BUFLEN_16, ctx);
+            ERR_CHK(sRet);
+            tskResrcTbl[tIdx].tResrc = (task_resource_t*)malloc(sizeof(task_resource_t));
+            (retTrt = &tskResrcTbl[tIdx])->tResrc->se_fd = 0;
+            tskResrcTblCnt++;
+        }
+        else
+        {
+            IFL_LOG_ERROR("No more room for task resource table entry!");
+        }
+    }
+    return retTrt;
+}
+
+
+static task_resource_t* _lookup_task_resource_table (pid_t tID)
+{
+    task_resource_t* tResrc = NULL;
+
+    if (tID)
+    {
+        for (uint8 idx=0; idx < tskResrcTblCnt; idx++)
+        {
+            if (tID == tskResrcTbl[idx].tID)
+            {
+                tResrc = tskResrcTbl[idx].tResrc;
+                break;
+            }
+        }
+
+        /* Lets temporarily have the default ctx inorder not to turn down the request. */
+        if (!tResrc && ifl_default_ctx_enabled)
+        {   /* The first row in the task resrc tbl is the default ctx, if enabled. */
+            tResrc = tskResrcTbl[0].tResrc;
+        }
+    }
+    return tResrc;
+}
+
+
+static task_resource_table_t* _init_task_resource (char* ctx)
+{
+    task_resource_table_t* trtEntry = NULL;
+
+    ifl_lock(trtLock, IFL_LOCK_TYPE_MUTEX_WAIT);
+       if ((trtEntry = _add_entry_to_task_resource_table(ctx, 0)))
+       {
+           if (_alloc_task_resource(trtEntry))
+           {
+               // assignning the threadID of the thread in execution.
+               trtEntry->tID  = gettid();
+               IFL_LOG_INFO("Updated deferred ctx %d-%s-%d", trtEntry->tID
+                                                           , trtEntry->tCtx
+                                                           , trtEntry->tResrc->se_fd);
+           }
+           else
+           {
+               IFL_LOG_ERROR("Failed to update deferred ctx %s!", trtEntry->tCtx);
+           }
+       }
+       else
+       {
+           IFL_LOG_INFO("Task resource table entry not found for ctx %s!", ctx);
+       }
+    ifl_unlock(trtLock, IFL_LOCK_TYPE_MUTEX_WAIT);
+
+    return trtEntry;
+}
+
+
+static void _deinit_task_resource (task_resource_table_t* trtEntry)
+{
+    ifl_lock(trtLock, IFL_LOCK_TYPE_MUTEX_WAIT);
+       if (trtEntry)
+       {
+           trtEntry->tID = 0;
+           _dealloc_task_resource(trtEntry->tResrc);
+       }
+    ifl_unlock(trtLock, IFL_LOCK_TYPE_MUTEX_WAIT);
+}
+
+
+static void _init_default_ctx (void)
+{
+    task_resource_table_t* trtEntry = NULL;
+
+    if ((trtEntry = _add_entry_to_task_resource_table("ifl-dflt-ctx", 1)))
+    {
+        if (_alloc_task_resource(trtEntry))
+        {
+            // thread ID not required for default context
+            trtEntry->tID  = 0;
+            IFL_LOG_INFO("Default ctx %d-%s-%d added.", trtEntry->tID
+                                                      , trtEntry->tCtx
+                                                      , trtEntry->tResrc->se_fd);
+            ifl_default_ctx_enabled = 1;
+        }
+        else
+        {
+            if (trtEntry->tResrc)
+            {
+                free(trtEntry->tResrc);
+                trtEntry->tResrc = NULL;
+            }
+            tskResrcTblCnt--;
+            IFL_LOG_ERROR("Failed to allocate task resource for default ctx!");
+        }
+    }
+    else
+    {
+       IFL_LOG_ERROR("Failed to add task resource table entry for default ctx!");
+    }
+}
+
 /*
  * External API definitions
  */
@@ -154,6 +351,8 @@ ifl_ret ifl_init (char* mainCtx)
     memset(thdToIdxMap, 0, sizeof(thdToIdxMap));
 
     ifl_thread_init();
+    ifl_lock_init(&trtLock);
+    _init_default_ctx();
 
     sysevent_fd = sysevent_open(LOCALHOST, SE_SERVER_WELL_KNOWN_PORT, SE_VERSION, mainCtx, &sysevent_token);
 
@@ -165,6 +364,107 @@ ifl_ret ifl_init (char* mainCtx)
     return ret;
 }
 
+
+ifl_ret ifl_init_ctx (char* ctx, ifl_ctx_type cType)
+{
+    ifl_ret ret = IFL_ERROR;
+    task_resource_table_t* trtEntry = NULL;
+
+    if (!ctx || (cType != IFL_CTX_STATIC && cType != IFL_CTX_DYNAMIC))
+    {
+        IFL_LOG_ERROR("Invalid ctx init %s-%d", ctx, cType);
+        return ret;
+    }
+
+    ifl_gain_priority();
+    ifl_lock(trtLock, IFL_LOCK_TYPE_MUTEX_WAIT);
+
+    if ((trtEntry = _add_entry_to_task_resource_table(ctx, 1)))
+    {
+        if (cType == IFL_CTX_STATIC)
+        {
+            if (trtEntry->tID)
+            {
+                IFL_LOG_WARNING("Task resource duplication. Skipping(%s)!", ctx);
+            }
+            else
+            if (_alloc_task_resource(trtEntry))
+            {
+                // assignning the threadID of the thread in execution.
+                trtEntry->tID  = gettid();
+                IFL_LOG_INFO("New ctx %d-%s-%d added.", trtEntry->tID
+                                                      , trtEntry->tCtx
+                                                      , trtEntry->tResrc->se_fd);
+                ret = IFL_SUCCESS;
+            }
+            else
+            {
+                if (trtEntry->tResrc)
+                {
+                    free(trtEntry->tResrc);
+                    trtEntry->tResrc = NULL;
+                }
+                tskResrcTblCnt--;
+                IFL_LOG_ERROR("Failed to allocate task resource for %s", ctx);
+            }
+        }
+        else if (cType == IFL_CTX_DYNAMIC)
+        {
+            IFL_LOG_INFO("New deferred ctx %s added.", trtEntry->tCtx);
+            ret = IFL_SUCCESS;
+        }
+     }
+     else
+     {
+        IFL_LOG_ERROR("Failed to add task resource table entry for %s!", ctx);
+     }
+
+    ifl_unlock(trtLock, IFL_LOCK_TYPE_MUTEX);
+    ifl_lose_priority();
+  
+    return ret;
+}
+
+ifl_ret ifl_deinit_ctx (char* ctx)
+{
+    uint8 tIdx = 0;
+
+    if (ctx)
+    {
+        ifl_gain_priority();
+        ifl_lock(trtLock, IFL_LOCK_TYPE_MUTEX_WAIT);
+
+        for (tIdx=0; tIdx < tskResrcTblCnt; tIdx++)
+        {
+            if (!strncmp(ctx, tskResrcTbl[tIdx].tCtx, BUFLEN_16))
+            {
+                break;
+            }
+        }
+
+        if (tIdx != tskResrcTblCnt)
+        {
+            _dealloc_task_resource(tskResrcTbl[tIdx].tResrc);
+            free(tskResrcTbl[tIdx].tResrc);
+
+            if (tIdx != tskResrcTblCnt -1 )
+            {
+                memcpy(&tskResrcTbl[tIdx], &tskResrcTbl[tskResrcTblCnt-1],
+                                           sizeof(task_resource_table_t));
+                tIdx = tskResrcTblCnt -1;
+            }
+
+            tskResrcTbl[tIdx].tResrc = NULL;
+            tskResrcTbl[tIdx].tID = 0;
+            tskResrcTbl[tIdx].tCtx[0] = '\0';
+            tskResrcTblCnt--;
+        }
+
+        ifl_unlock(trtLock, IFL_LOCK_TYPE_MUTEX_WAIT);
+        ifl_lose_priority();
+    }
+    return IFL_SUCCESS;
+}
 
 ifl_ret ifl_register_event_handler (char* event, ifl_event_type eType, char* callerCtx, fptr_t cb)
 {
@@ -229,12 +529,31 @@ ifl_ret ifl_register_event_handler (char* event, ifl_event_type eType, char* cal
 
     return ret;
 }
-
+*/
 
 ifl_ret ifl_get_event (char* event, char* value, int valueLength)
 {
     ifl_ret ret = IFL_SUCCESS;
+    task_resource_t* tResrc = NULL;
 
+    ifl_gain_priority();
+
+    ifl_lock(trtLock, IFL_LOCK_TYPE_MUTEX_WAIT);
+       tResrc = _lookup_task_resource_table(gettid());
+    ifl_unlock(trtLock, IFL_LOCK_TYPE_MUTEX_WAIT);
+
+    if (tResrc)
+    {   // check return
+        sysevent_get(tResrc->se_fd, tResrc->se_tok, event, value, valueLength);
+        IFL_LOG_INFO("SE_GET(%d) %s: %s", tResrc->se_fd, event, value);
+    }
+    else
+    {
+        IFL_LOG_ERROR("Failed to lookup task resource!");
+        ret = IFL_ERROR;
+    }
+
+    ifl_lose_priority();
     return ret;
 }
 
@@ -242,19 +561,38 @@ ifl_ret ifl_get_event (char* event, char* value, int valueLength)
 ifl_ret ifl_set_event (char* event, char* value)
 {
     ifl_ret ret = IFL_SUCCESS;
+    task_resource_t* tResrc = NULL;
 
+    ifl_gain_priority();
+
+    ifl_lock(trtLock, IFL_LOCK_TYPE_MUTEX_WAIT);
+       tResrc = _lookup_task_resource_table(gettid());
+    ifl_unlock(trtLock, IFL_LOCK_TYPE_MUTEX_WAIT);
+
+    if (tResrc)
+    {   // check return
+        sysevent_set(tResrc->se_fd, tResrc->se_tok, event, value, 0);
+        IFL_LOG_INFO("SE_SET(%d) %s: %s", tResrc->se_fd, event, value);
+    }
+    else
+    {
+        IFL_LOG_ERROR("Failed to lookup task resource!");
+        ret = IFL_ERROR;
+    }
+
+    ifl_lose_priority();
     return ret;
-}*/
+}
 
 
 ifl_ret ifl_deinit(void)
 {
     ifl_ret ret = IFL_SUCCESS;
 
+    ifl_deinit_ctx("ifl-dflt-ctx");
     /*
      * Define API
      */
-
     return ret;
 }
 
@@ -377,7 +715,10 @@ static void *_task_thrd(void *tData)
     ifl_ret retL     = IFL_ERROR;
     q_data_t* qData  = NULL;
     uint8 gotNewTask = 0;
+    task_resource_table_t* trtEntry = NULL;
     IFL_LOG_INFO("[%d] Created.", ((thread_data_t*)tData)->ctxID);
+
+    trtEntry = _init_task_resource(ctxToIdxMap[((thread_data_t*)tData)->ctxID].qCtx);
 
     do {
         while (ifl_thread_lock(((thread_data_t*)tData)->ctxID, IFL_LOCK_TYPE_MUTEX),
@@ -423,7 +764,9 @@ static void *_task_thrd(void *tData)
         }
     } while (gotNewTask);
 
+    _deinit_task_resource(trtEntry);
     IFL_LOG_INFO("[%d] Exit.", ((thread_data_t*)tData)->ctxID);
     free(tData);
+
     return NULL;
 }

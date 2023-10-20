@@ -32,6 +32,7 @@
 #include "secure_wrapper.h"
 #include "safec_lib_common.h"
 #include "cJSON.h"
+#include "ifl.h"
 #include <sys/ioctl.h>
 
 #define UNUSED(x) (void)(x)
@@ -511,7 +512,15 @@ token_t commonSyseventToken;
 
 static int openCommonSyseventConnection() {
     if (commonSyseventFd == -1) {
-        commonSyseventFd = s_sysevent_connect(&commonSyseventToken);
+        //commonSyseventFd = s_sysevent_connect(&commonSyseventToken);
+        if (IFL_SUCCESS != ifl_init_ctx("cosa_apis_util", IFL_CTX_STATIC))
+        {
+            CcspTraceError(("Failed to init ifl ctx for cosa_apis_util"));
+        }
+        else
+        {
+            commonSyseventFd = 0;
+        }
     }
     return 0;
 }
@@ -520,14 +529,16 @@ int commonSyseventSet(char* key, char* value){
     if(commonSyseventFd == -1) {
         openCommonSyseventConnection();
     }
-    return sysevent_set(commonSyseventFd, commonSyseventToken, key, value, 0);
+    //return sysevent_set(commonSyseventFd, commonSyseventToken, key, value, 0);
+    return ifl_set_event(key, value);
 }
 
 int commonSyseventGet(char* key, char* value, int valLen){
     if(commonSyseventFd == -1) {
         openCommonSyseventConnection();
     }
-    return sysevent_get(commonSyseventFd, commonSyseventToken, key, value, valLen);
+    //return sysevent_get(commonSyseventFd, commonSyseventToken, key, value, valLen);
+    return ifl_get_event(key, value, valLen);
 }
 
 int commonSyseventClose() {
@@ -537,7 +548,8 @@ int commonSyseventClose() {
         return 0;
     }
 
-    retval = sysevent_close(commonSyseventFd, commonSyseventToken);
+    //retval = sysevent_close(commonSyseventFd, commonSyseventToken);
+    retval = ifl_deinit_ctx("cosa_apis_util");
     commonSyseventFd = -1;
     return retval;
 }

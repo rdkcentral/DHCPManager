@@ -39,8 +39,6 @@ typedef enum _rt_mod {
 /*  STRUCTURE DECLARATIONS  */
 typedef struct _serv_dhcp {
     char            ifname[16];
-    int             sefd;
-    token_t         setok;
     rt_mod          rtmod;
     wan_prot        prot;
 } serv_dhcp;

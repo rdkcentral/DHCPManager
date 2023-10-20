@@ -53,6 +53,10 @@ typedef enum _event_type {
     IFL_EVENT_NOTIFY
 } ifl_event_type;
 
+typedef enum _context_type {
+    IFL_CTX_STATIC = 0,
+    IFL_CTX_DYNAMIC
+} ifl_ctx_type;
 
 /*
  * define interface layer return type codes.

@@ -61,8 +61,6 @@
 #define BUFF_LEN_128   128
 #define BUFF_LEN_256   256
 
-int g_iSyseventfd;
-token_t g_tSysevent_token;
 
 extern void copy_command_output(char *, char *, int);
 
@@ -92,20 +90,17 @@ static inline void remove_file(char *tb_removed_file)
 void deinit_dhcpv6_client ()
 {
     CcspTraceInfo(("SERVICE_DHCP6C : Client deinit started\n"));
-    sysevent_close(g_iSyseventfd, g_tSysevent_token);
 }
 
 void init_dhcpv6_client ()
 {
     CcspTraceInfo(("SERVICE_DHCP6C : Cleint event registration started\n"));
 
-    if ((g_iSyseventfd = sysevent_open(SE_SERV, SE_SERVER_WELL_KNOWN_PORT, SE_VERSION,
-                                    PROG_NAME, &g_tSysevent_token)) < 0)
+    if (IFL_SUCCESS != ifl_init_ctx(DHCPV6C_CALLER_CTX, IFL_CTX_DYNAMIC))
     {
-        CcspTraceError(("Failed to open sysevent, Call deinit_dhcpv6_client\n"));
+        CcspTraceError(("Failed to init ifl ctx for %s", DHCPV6C_CALLER_CTX));
         deinit_dhcpv6_client ();
     }
-    CcspTraceInfo(("DHCPv6_Client sysevent opened FD: %d (%p)", g_iSyseventfd, &g_iSyseventfd));
 
     ifl_register_event_handler( EROUTER_MODE_UPDATED, IFL_EVENT_NOTIFY_FALSE, DHCPV6C_CALLER_CTX, dhcpv6_client_service_update);
     ifl_register_event_handler( PHYLINK_WAN_STATE, IFL_EVENT_NOTIFY_FALSE, DHCPV6C_CALLER_CTX, dhcpv6_client_service_update);
@@ -133,11 +128,11 @@ void dhcpv6_client_service_start ()
 
     syscfg_get(NULL, "last_erouter_mode", l_cLastErouterMode, sizeof(l_cLastErouterMode));
     syscfg_get(NULL, "dibbler_client_enable_v2", l_cDibblerEnable, sizeof(l_cDibblerEnable));
-    sysevent_get(g_iSyseventfd, g_tSysevent_token, "current_ipv4_link_state", l_cPhylinkWanState, sizeof(l_cPhylinkWanState));
-    sysevent_get(g_iSyseventfd, g_tSysevent_token, "wan_ifname", l_cWanIfname, sizeof(l_cWanIfname));
-    sysevent_get(g_iSyseventfd, g_tSysevent_token, "phylink_wan_state", l_cWanLinkStatus, sizeof(l_cWanLinkStatus));
-    sysevent_get(g_iSyseventfd, g_tSysevent_token, "bridge_mode", l_cBridgeMode, sizeof(l_cBridgeMode));
-    sysevent_get(g_iSyseventfd, g_tSysevent_token, "wan-status", l_cWanState, sizeof(l_cWanState));
+    ifl_get_event( "current_ipv4_link_state", l_cPhylinkWanState, sizeof(l_cPhylinkWanState));
+    ifl_get_event( "wan_ifname", l_cWanIfname, sizeof(l_cWanIfname));
+    ifl_get_event( "phylink_wan_state", l_cWanLinkStatus, sizeof(l_cWanLinkStatus));
+    ifl_get_event( "bridge_mode", l_cBridgeMode, sizeof(l_cBridgeMode));
+    ifl_get_event( "wan-status", l_cWanState, sizeof(l_cWanState));
 
     if ((strncmp(l_cLastErouterMode, "2", 1)) && (strncmp(l_cLastErouterMode, "3", 1)))
     {
@@ -273,7 +268,7 @@ void dhcpv6_client_service_stop ()
             {
                 // After stop the DHCPv6 client, need to clear the sysevent tr_erouter0_dhcpv6_client_v6addr
                 // So that it can be triggered again once DHCPv6 client got the same IPv6 address with the old address
-                sysevent_set(g_iSyseventfd, g_tSysevent_token, "tr_erouter0_dhcpv6_client_v6addr", "", 0);
+                ifl_set_event( "tr_erouter0_dhcpv6_client_v6addr", "");
             }
         }
     }
@@ -300,7 +295,7 @@ void dhcpv6_client_service_update()
 
     char l_cDhcpv6cEnabled[BUFF_LEN_8] = {0};
 
-    sysevent_get(g_iSyseventfd, g_tSysevent_token, "dhcpv6c_enabled", l_cDhcpv6cEnabled, sizeof(l_cDhcpv6cEnabled));
+    ifl_get_event( "dhcpv6c_enabled", l_cDhcpv6cEnabled, sizeof(l_cDhcpv6cEnabled));
 
     if (!strncmp(l_cDhcpv6cEnabled, "1", 1))
     {
@@ -317,10 +312,10 @@ void dhcpv6_client_service_enable()
     CcspTraceInfo(("SERVICE_DHCP6C : SERVICE ENABLE\n"));
 
     char l_cDhcpv6cEnabled[BUFF_LEN_8] = {0};
-    sysevent_get(g_iSyseventfd, g_tSysevent_token, "dhcpv6c_enabled", l_cDhcpv6cEnabled, sizeof(l_cDhcpv6cEnabled));
+    ifl_get_event( "dhcpv6c_enabled", l_cDhcpv6cEnabled, sizeof(l_cDhcpv6cEnabled));
 
     dhcpv6_client_service_start();
-    sysevent_set(g_iSyseventfd, g_tSysevent_token, "dhcpv6c_enabled", "1", 0);
+    ifl_set_event( "dhcpv6c_enabled", "1");
 }
 
 void dhcpv6_client_service_disable()
@@ -328,7 +323,7 @@ void dhcpv6_client_service_disable()
     CcspTraceInfo(("SERVICE_DHCP6C : SERVICE DISABLE\n"));
 
     char l_cDhcpv6cEnabled[BUFF_LEN_8] = {0};
-    sysevent_get(g_iSyseventfd, g_tSysevent_token, "dhcpv6c_enabled", l_cDhcpv6cEnabled, sizeof(l_cDhcpv6cEnabled));
+    ifl_get_event( "dhcpv6c_enabled", l_cDhcpv6cEnabled, sizeof(l_cDhcpv6cEnabled));
 
     if (strncmp(l_cDhcpv6cEnabled, "1", 1))
     {
@@ -336,7 +331,7 @@ void dhcpv6_client_service_disable()
         return;
     }
 
-    sysevent_set(g_iSyseventfd, g_tSysevent_token, "dhcpv6c_enabled", "0", 0);
+    ifl_set_event( "dhcpv6c_enabled", "0");
 
     CcspTraceInfo(("Removing file: %s\n", DHCP6C_PROGRESS_FILE));
     remove_file(DHCP6C_PROGRESS_FILE);
