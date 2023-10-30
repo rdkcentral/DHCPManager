@@ -1727,7 +1727,7 @@ int prepare_dhcp_conf (char *input)
                 DHCPMGR_LOG_INFO("DHCP_SERVER : [brebhaul] dhcp-option=brebhaul,6,%s", l_cWan_Dhcp_Dns);
         }
 
-#elif defined (INTEL_PUMA7) || (defined (_COSA_BCM_ARM_) && !defined(_CBR_PRODUCT_REQ_)) // ARRIS XB6 ATOM, TCXB6
+#elif defined (INTEL_PUMA7) || (defined (_COSA_BCM_ARM_) && !defined(_CBR_PRODUCT_REQ_)) || defined(_COSA_QCA_ARM_) // ARRIS XB6 ATOM, TCXB6
         fprintf(l_fLocal_Dhcp_ConfFile, "interface=ath12\n");
         fprintf(l_fLocal_Dhcp_ConfFile, "dhcp-range=169.254.0.5,169.254.0.253,255.255.255.0,infinite\n");
 
