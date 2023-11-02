@@ -83,6 +83,7 @@
 #include "ccsp_trace.h"
 #include "util.h"
 #include "ifl.h"
+#include <libnet.h>
 
 extern void* g_pDslhDmlAgent;
 extern ANSC_HANDLE bus_handle;
@@ -7431,7 +7432,8 @@ void enable_IPv6(char* if_name)
         if(tbuff[strlen(tbuff)-1] == '0')
         {
                 v_secure_system("sysctl -w net.ipv6.conf.%s.autoconf=1",if_name);
-                v_secure_system("ifconfig %s down;ifconfig %s up",if_name,if_name);
+                interface_down(if_name);
+		interface_up(if_name);
         }
 
         rc = sprintf_s(cmd, sizeof(cmd), "%s_ipaddr_v6",if_name);
@@ -7440,11 +7442,11 @@ void enable_IPv6(char* if_name)
             ERR_CHK(rc);
         }
         ifl_get_event(cmd, ipv6_addr, sizeof(ipv6_addr));
-        v_secure_system("ip -6 route add %s dev %s", ipv6_addr, if_name);
+        route_add_va_arg("-6 %s dev %s", ipv6_addr, if_name);
         #ifdef _COSA_INTEL_XB3_ARM_
-        v_secure_system("ip -6 route add %s dev %s table erouter", ipv6_addr, if_name);
+        route_add_va_arg("-6 %s dev %s table erouter", ipv6_addr, if_name);
         #endif
-        v_secure_system("ip -6 rule add iif %s lookup erouter",if_name);
+        rule_add_va_arg("-6 iif %s lookup erouter",if_name);
 
         #ifdef RDKB_EXTENDER_ENABLED
             if ( DEVICE_MODE_ROUTER == Get_Device_Mode() && access(ULA_ROUTE_SET, R_OK) == 0 )
@@ -7845,31 +7847,31 @@ static void *InterfaceEventHandler_thrd(void *data)
 void AssignIpv6Addr(char* ifname , char* ipv6Addr)
 {
     CcspTraceInfo(("%s : interface name=%s , ipv6 address=%s\n", __FUNCTION__, ifname,ipv6Addr));
-    v_secure_system("ip -6 addr add %s dev %s", ipv6Addr,ifname);
+    addr_add_va_arg("-6 %s dev %s", ipv6Addr,ifname);
 }
 
 void DelIpv6Addr(char* ifname , char* ipv6Addr)
 {
     CcspTraceInfo(("%s : interface name=%s , ipv6 address=%s\n", __FUNCTION__, ifname,ipv6Addr));
-    v_secure_system("ip -6 addr del %s dev %s", ipv6Addr,ifname);
+    addr_delete_va_arg("-6 %s dev %s", ipv6Addr,ifname);
 }
 
 void SetV6Route(char* ifname , char* route_addr,int metric_val)
 {
     CcspTraceInfo(("%s : interface name=%s ,route_addr=%s, metric_val=%d\n", __FUNCTION__, ifname,route_addr,metric_val));
     if ( 0 == metric_val )
-        v_secure_system("ip -6 route add default via %s dev %s ", route_addr,ifname);
+        route_add_va_arg("-6 default via %s dev %s ", route_addr,ifname);
     else
-        v_secure_system("ip -6 route add default via %s dev %s metric %d", route_addr,ifname,metric_val);
+        route_add_va_arg("-6 default via %s dev %s metric %d", route_addr,ifname,metric_val);
 
 }
 void UnSetV6Route(char* ifname , char* route_addr,int metric_val)
 {
     CcspTraceInfo(("%s : interface name=%s ,route_addr=%s, metric_val=%d\n", __FUNCTION__, ifname,route_addr,metric_val));	
     if ( 0 == metric_val )
-        v_secure_system("ip -6 route del default via %s dev %s", route_addr,ifname);
+        route_delete_va_arg("-6 default via %s dev %s", route_addr,ifname);
     else
-        v_secure_system("ip -6 route del default via %s dev %s metric %d", route_addr,ifname,metric_val);
+        route_delete_va_arg("-6 default via %s dev %s metric %d", route_addr,ifname,metric_val);
 
 }
 
@@ -7877,18 +7879,18 @@ void SetV6RouteTable(char* ifname , char* route_addr,int metric_val,int table_nu
 {
     CcspTraceInfo(("%s: interface name=%s ,route_addr=%s,metric_val=%d, table_num=%d\n", __FUNCTION__, ifname,route_addr,metric_val,table_num));
     if ( 0 == metric_val )
-        v_secure_system("ip -6 route add default via %s dev %s table %d", route_addr,ifname,table_num);
+        route_add_va_arg("-6 default via %s dev %s table %d", route_addr,ifname,table_num);
     else
-        v_secure_system("ip -6 route add default via %s dev %s metric %d table %d", route_addr,ifname,metric_val,table_num);
+        route_add_va_arg("-6 default via %s dev %s metric %d table %d", route_addr,ifname,metric_val,table_num);
 
 }
 void UnSetV6RouteFromTable(char* ifname , char* route_addr,int metric_val, int table_num)
 {
     CcspTraceInfo(("%s: interface name=%s ,route_addr=%s,metric_val=%d, table_num=%d\n", __FUNCTION__, ifname,route_addr,metric_val,table_num));
     if ( 0 == metric_val )
-        v_secure_system("ip -6 route del default via %s dev %s table %d", route_addr,ifname,table_num);
+        route_delete_va_arg("-6 default via %s dev %s table %d", route_addr,ifname,table_num);
     else
-        v_secure_system("ip -6 route del default via %s dev %s metric %d table %d", route_addr,ifname,metric_val,table_num);
+        route_delete_va_arg("-6 default via %s dev %s metric %d table %d", route_addr,ifname,metric_val,table_num);
 }
 
 
@@ -7937,7 +7939,7 @@ void addRemoteWanIpv6Route()
                     ifl_get_event(MESH_WAN_WAN_IPV6ADDR, ipv6_address, sizeof(ipv6_address));
                     if( '\0' != ipv6_address[0] )
                     {
-                        v_secure_system("ip -6 route del default");
+                        route_delete("-6 default");
                         SetV6Route(mesh_wan_ifname,strtok(ipv6_address,"/"),1025);
                         ifl_set_event("remotewan_routeset", "true");
                     }
@@ -8842,9 +8844,9 @@ dhcpv6c_dbg_thrd(void * in)
 #if !defined(_COSA_INTEL_XB3_ARM_)
                         // not the best place to add route, just to make it work
                         // delegated prefix need to route to LAN interface
-                        v_secure_system("ip -6 route add %s dev %s", v6pref, COSA_DML_DHCPV6_SERVER_IFNAME);
+                        route_add_va_arg("-6 %s dev %s", v6pref, COSA_DML_DHCPV6_SERVER_IFNAME);
                         #ifdef _COSA_INTEL_XB3_ARM_
-                        v_secure_system("ip -6 route add %s dev %s table erouter", v6pref, COSA_DML_DHCPV6_SERVER_IFNAME);
+                        route_add_va_arg("-6 %s dev %s table erouter", v6pref, COSA_DML_DHCPV6_SERVER_IFNAME);
                         #endif
                         /* we need save this for zebra to send RA
                            ipv6_prefix           // xx:xx::/yy
@@ -9096,7 +9098,7 @@ dhcpv6c_dbg_thrd(void * in)
 #ifdef _HUB4_PRODUCT_REQ_
                         else {
                                 CcspTraceInfo(("%s Going to set [%s] address on brlan0 interface \n", __FUNCTION__, globalIP));
-                                v_secure_system("ip -6 addr add %s/64 dev %s valid_lft %d preferred_lft %d",
+                                addr_add_va_arg("-6 %s/64 dev %s valid_lft %d preferred_lft %d",
                                                 globalIP, COSA_DML_DHCPV6_SERVER_IFNAME, hub4_valid_lft, hub4_preferred_lft);
                                 ifl_set_event("lan_ipaddr_v6", globalIP);
                                 // send an event to wanmanager that Global-prefix is set
@@ -9135,7 +9137,7 @@ dhcpv6c_dbg_thrd(void * in)
                     ifl_get_event(SYSEVENT_FIELD_IPV6_ULA_ADDRESS,
                                  ula_address, sizeof(ula_address));
                     if(ula_address[0] != '\0') {
-                        v_secure_system("ip -6 addr add %s/64 dev %s", ula_address, COSA_DML_DHCPV6_SERVER_IFNAME);
+                        addr_add_va_arg("-6 %s/64 dev %s", ula_address, COSA_DML_DHCPV6_SERVER_IFNAME);
                     }
                     ret = dhcpv6_assign_global_ip(v6pref, COSA_DML_DHCPV6_SERVER_IFNAME, globalIP);
                     if(ret != 0) {
@@ -9144,7 +9146,7 @@ dhcpv6c_dbg_thrd(void * in)
                     else
                     {
                         CcspTraceInfo(("%s Going to set [%s] address on brlan0 interface \n", __FUNCTION__, globalIP));
-                        v_secure_system("ip -6 addr add %s/64 dev %s valid_lft %s preferred_lft %s", globalIP, COSA_DML_DHCPV6_SERVER_IFNAME, hub4_valid_lft, hub4_preferred_lft);
+                        addr_add_va_arg("-6 %s/64 dev %s valid_lft %s preferred_lft %s", globalIP, COSA_DML_DHCPV6_SERVER_IFNAME, hub4_valid_lft, hub4_preferred_lft);
                         ifl_set_event("lan_ipaddr_v6", globalIP);
                         // send an event to Sky-pro app manager that Global-prefix is set
                         ifl_set_event("lan_prefix_set", globalIP);
@@ -9153,9 +9155,9 @@ dhcpv6c_dbg_thrd(void * in)
 #endif // FEATURE_RDKB_WAN_MANAGER
                         // not the best place to add route, just to make it work
                         // delegated prefix need to route to LAN interface
-                        v_secure_system("ip -6 route add %s dev %s", v6pref, COSA_DML_DHCPV6_SERVER_IFNAME);
+                        route_add_va_arg("-6 %s dev %s", v6pref, COSA_DML_DHCPV6_SERVER_IFNAME);
                         #ifdef _COSA_INTEL_XB3_ARM_
-                        v_secure_system("ip -6 route add %s dev %s table erouter", v6pref, COSA_DML_DHCPV6_SERVER_IFNAME);
+                        route_add_va_arg("-6 %s dev %s table erouter", v6pref, COSA_DML_DHCPV6_SERVER_IFNAME);
                         #endif
                         /* we need save this for zebra to send RA
                            ipv6_prefix           // xx:xx::/yy

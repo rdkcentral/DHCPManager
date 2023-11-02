@@ -46,5 +46,5 @@ libCcspDhcpMgr_Dhcpv4Client_la_CPPFLAGS = -I${PKG_CONFIG_SYSROOT_DIR}$(includedi
 
 libCcspDhcpMgr_Dhcpv4Client_la_SOURCES = service_dhcpv4_client.c dhcp_client_common.c dhcpv4_client_utils.c udhcpc_client_utils.c service_udhcpc.c
 
-libCcspDhcpMgr_Dhcpv4Client_la_LIBADD = -lccsp_common -ltelemetry_msgsender -lulog -lsyscfg -lsysevent -ltime_conversion -lprint_uptime -lhal_platform
+libCcspDhcpMgr_Dhcpv4Client_la_LIBADD = -lccsp_common -ltelemetry_msgsender -lulog -lsyscfg -lsysevent -ltime_conversion -lprint_uptime -lhal_platform -lnet
 

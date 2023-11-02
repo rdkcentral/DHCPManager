@@ -71,6 +71,7 @@
 #include <telemetry_busmessage_sender.h>
 #include <stdint.h>
 #include "secure_wrapper.h"
+#include <libnet.h>
 
 #ifdef FEATURE_SUPPORT_ONBOARD_LOGGING
 #include <rdk_debug.h>
@@ -267,13 +268,13 @@ static int handle_defconfig (udhcpc_script_t *pinfo)
     {
         if (pinfo->ip_util_exist)
         {
-            v_secure_system("ip -4 addr flush dev %s",interface);
-            v_secure_system("ip link set dev %s up",interface);
+            addr_delete_va_arg("-4 dev %s",interface);
+            interface_up(interface);
         
         }
         else
         {
-            v_secure_system("/sbin/ifconfig %s 0.0.0.0",interface);
+		interface_set_ip(interface ,"0.0.0.0");
         }    
     }
 #endif
@@ -504,12 +505,12 @@ int add_route (udhcpc_script_t *pinfo)
     {      
         if (pinfo->ip_util_exist)
         {
-            v_secure_system("ip route add default via %s metric %d",tok,metric);
+            route_add_va_arg("default via %s metric %d",tok,metric);
 	    printf("\n %s router:%s buf: ip route add default via %s metric %d",__FUNCTION__,router,tok,metric);
         }
         else
         {
-            v_secure_system("route add default gw %s dev %s metric %d 2>/dev/null",tok,interface,metric);
+            route_add_va_arg("default gw %s dev %s metric %d",tok,interface,metric);
 	    printf("\n %s router:%s buf: route add default gw %s dev %s metric %d 2>/dev/null",__FUNCTION__,router,tok,interface,metric);
         }
         ++metric;
@@ -521,12 +522,12 @@ int add_route (udhcpc_script_t *pinfo)
         {
             if (pinfo->ip_util_exist)
             {
-                v_secure_system("ip route add default via %s metric %d",tok,metric);
+                route_add_va_arg("default via %s metric %d",tok,metric);
 		printf("\n %s router:%s buf:ip route add default via %s metric %d",__FUNCTION__,router,tok,metric);
             }
             else
             {
-                v_secure_system("route add default gw %s dev %s metric %d 2>/dev/null",tok,interface,metric);
+                route_add_va_arg("default gw %s dev %s metric %d",tok,interface,metric);
 		printf("\n %s router:%s buf:route add default gw %s dev %s metric %d 2>/dev/null",__FUNCTION__,router,tok,interface,metric);
             }
             ++metric;
@@ -943,9 +944,9 @@ static int handle_wan (udhcpc_script_t *pinfo)
     if (pinfo->ip_util_exist)
     {
 	if(broadcast_ip){
-        	v_secure_system("ip addr add dev %s %s/%s broadcast %s",interface,ip,mask,broadcast_ip);
+                addr_add_va_arg("dev %s %s/%s broadcast %s",interface,ip,mask,broadcast_ip);
 	}else{
-		v_secure_system("ip addr add dev %s %s/%s",interface,ip,mask);
+                addr_add_va_arg("dev %s %s/%s",interface,ip,mask);
         }
         if (mask && ip)
         {
@@ -967,10 +968,10 @@ static int handle_wan (udhcpc_script_t *pinfo)
         if (ip)
         {
             if(broadcast_ip){
-            	v_secure_system("/sbin/ifconfig %s %s broadcast %s netmask %s",interface,ip,broadcast_ip,subnet);
+		    addr_add_va_arg("dev %s broadcast %s %s/%s",interface,broadcast_ip,ip,subnet);
 		printf("\n %s router:%s buf: /sbin/ifconfig %s %s broadcast %s netmask %s",__FUNCTION__,router,interface,ip,broadcast_ip,subnet);
 	    }else{
-                v_secure_system("/sbin/ifconfig %s %s netmask %s",interface,ip,subnet);
+		    addr_add_va_arg("dev %s %s/%s",interface,ip,subnet);
 		printf("\n %s router:%s buf:/sbin/ifconfig %s %s netmask %s",__FUNCTION__,router,interface,ip,subnet);
             }
         }
@@ -1004,23 +1005,23 @@ static int handle_wan (udhcpc_script_t *pinfo)
         printf("\n %s removing ip rule based on prev_ip:%s and adding ip: %s\n",__FUNCTION__,prev_ip,ip);
         if(strcmp(prev_ip,"") && strcmp(prev_ip,"0.0.0.0"))
         {
-                v_secure_system("ip -4 rule del from %s lookup erouter",prev_ip);
-                v_secure_system("ip -4 rule del from %s lookup all_lans",prev_ip);
+                rule_delete_va_arg("-4 from %s lookup erouter",prev_ip);
+                rule_delete_va_arg("-4 from %s lookup all_lans",prev_ip);
         }
 
-        v_secure_system("ip -4 rule add from %s lookup erouter",ip);
-        v_secure_system("ip -4 rule add from %s lookup all_lans",ip);
+        rule_add_va_arg("-4 from %s lookup erouter",ip);
+        rule_add_va_arg("-4 from %s lookup all_lans",ip);
     }
 
     // Set default route
     if (pinfo->ip_util_exist)
     {
-	v_secure_system("ip route add default via %s dev %s table erouter",router, interface);
+	route_add_va_arg("default via %s dev %s table erouter",router, interface);
 	printf("\nSet default route command: ip route add default via %s dev %s table erouter",router, interface);
     }
     else
     {
-	v_secure_system("route add default via %s dev %s table erouter",router, interface);
+	route_add_va_arg("default via %s dev %s table erouter",router, interface);
 	printf("\nSet default route command: route add default via %s dev %s table erouter",router, interface);
     }
 

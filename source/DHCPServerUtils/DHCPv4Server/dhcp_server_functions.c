@@ -35,6 +35,7 @@
 #include <ccsp_psm_helper.h>
 #include <ccsp_base_api.h>
 #include <ccsp_memory.h>
+#include <libnet.h>
 
 #include "safec_lib_common.h"
 #include "secure_wrapper.h"
@@ -1009,7 +1010,7 @@ int prepare_dhcp_conf (char *input)
                 Ansc_FreeMemory_Callback(psmStrValue);
                 psmStrValue = NULL;
         }
-        v_secure_system("ip addr add "GRE_VLAN_IFACE_IP"/24 dev %s", mesh_wan_ifname);
+        addr_add_va_arg("dev %s %s/24", mesh_wan_ifname, GRE_VLAN_IFACE_IP);
 
         // edit the config file
 

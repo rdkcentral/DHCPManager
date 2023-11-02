@@ -40,6 +40,7 @@
 #include "service_dhcpv4_client.h"
 #include "ccsp_trace.h"
 #include "ifl.h"
+#include <libnet.h>
 
 #define BUFF_LEN_8      8
 #define BUFF_LEN_16     16
@@ -616,7 +617,7 @@ void dhcpv4_client_service_release
     }
     fclose(fp);
 
-    vsystem("ip -4 addr flush dev %s", sd->ifname);
+    addr_delete_va_arg("-4 dev %s", sd->ifname);
 }
 
 /**********************************************************************

@@ -243,15 +243,11 @@ void dhcpv6_client_service_stop ()
 
                 if (strncmp(l_cErouter0Status, "UP", 2))
                 {
-#if defined(CORE_NET_LIB)
-                   interface_up("erouter0");
-#else
-                   ret = v_secure_system("ip link set erouter0 up");
+                   ret = interface_up("erouter0");
                    if(ret !=0)
                    {
-                       CcspTraceError(("Failure in executing command via v_secure_system. ret val: %d \n", ret));
+                       CcspTraceError(("Failed to up erouter0 : ret val: %d \n", ret));
                    }
-#endif
                 }
             }
             CcspTraceInfo(("SERVICE_DHCP6C : Sending SIGTERM to %s\n",DHCPV6_PID_FILE));

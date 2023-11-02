@@ -49,6 +49,7 @@
 #include "safec_lib_common.h"
 #include "ccsp_trace.h"
 #include "ifl.h"
+#include <libnet.h>
 
 #if defined(MULTILAN_FEATURE) || defined(INTEL_PUMA7)
 #include "ccsp_psm_helper.h"
@@ -1184,8 +1185,8 @@ static void update_mtu(void){
                 mtu_val = atoi(mtu_string);
                 if (0 != mtu_val)
                     /* Setting MTU value to same as current MTU has no effect in Linux so set it twice to force it to apply */
-                    v_secure_system("ip link set dev %s mtu %d", name_string, (mtu_val - 1));
-                    v_secure_system("ip link set dev %s mtu %d", name_string, mtu_val);
+                    interface_set_mtu(name_string, (mtu_val - 1));
+                    interface_set_mtu(name_string, mtu_val);
             }
 
             /* Free the memory used to fetch the L3 values */
@@ -1252,6 +1253,7 @@ static int lan_addr6_set()
 #if defined(MULTILAN_FEATURE)
     char bridge_mode[BRIDGE_MODE_STRLEN]={0};
 #endif
+    int ret;
 
     /*
      * divide the Operator-delegated prefix to sub-prefixes
@@ -1290,7 +1292,7 @@ static int lan_addr6_set()
         ifl_get_event( evt_name, iface_prefix, sizeof(iface_prefix));
 
         /*enable ipv6 link local*/
-        v_secure_system("ip -6 link set dev %s up", iface_name);
+        interface_up(iface_name);
         sysctl_iface_set("/proc/sys/net/ipv6/conf/%s/autoconf", iface_name, "1");
 #ifndef MULTILAN_FEATURE
         sysctl_iface_set("/proc/sys/net/ipv6/conf/%s/disable_ipv6", iface_name, "1");
@@ -1353,14 +1355,15 @@ static int lan_addr6_set()
         v_secure_system("ip -6 addr change %s/%d dev %s valid_lft %s preferred_lft %s",
                 ipv6_addr, prefix_len, iface_name, iapd_vldtm, iapd_preftm);
 #else
-        v_secure_system("ip -6 addr add %s/%d dev %s valid_lft %s preferred_lft %s",
+        addr_add_va_arg("-6 %s/%d dev %s valid_lft %s preferred_lft %s",
                 ipv6_addr, prefix_len, iface_name, iapd_vldtm, iapd_preftm);
 #endif
 
         bzero(ipv6_addr, sizeof(ipv6_addr));
 #else
-        if (v_secure_system("ip -6 addr add %s/%d dev %s valid_lft forever preferred_lft forever",
-                    ipv6_addr, prefix_len, iface_name) != 0) {
+	ret = addr_add_va_arg("-6 %s/%d dev %s valid_lft forever preferred_lft forever",
+			ipv6_addr, prefix_len, iface_name);
+        if ( ret != 0) {
             DHCPMGR_LOG_INFO("%s set ipv6 addr error.\n", iface_name);
             return -1;
         }
@@ -1451,7 +1454,7 @@ static int lan_addr6_unset()
         if (iface_addr[0] != '\0') {
 #endif
             get_prefix_info(iface_prefix, NULL, 0, (unsigned int *)&prefix_len);
-            v_secure_system("ip -6 addr del %s/%d dev %s", iface_addr, prefix_len, if_name);
+            addr_delete_va_arg("-6 %s/%d dev %s", iface_addr, prefix_len, if_name);
         }
 #ifdef MULTILAN_FEATURE
         ifl_set_event( evt_name, "");

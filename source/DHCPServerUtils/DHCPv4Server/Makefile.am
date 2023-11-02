@@ -33,4 +33,4 @@ libCcspDhcpMgr_Dhcpv4Server_la_CPPFLAGS = -I${PKG_CONFIG_SYSROOT_DIR}$(includedi
 
 libCcspDhcpMgr_Dhcpv4Server_la_SOURCES = dhcp_server_functions.c service_dhcp_server.c dhcpv4_server_interface.c
 
-libCcspDhcpMgr_Dhcpv4Server_la_LIBADD = -lccsp_common -ltelemetry_msgsender -lulog -lsyscfg -lsysevent -ltime_conversion -lprint_uptime
+libCcspDhcpMgr_Dhcpv4Server_la_LIBADD = -lccsp_common -ltelemetry_msgsender -lulog -lsyscfg -lsysevent -ltime_conversion -lprint_uptime -lnet

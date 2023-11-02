@@ -39,5 +39,5 @@ if BCI_SUPPORT
 libCcspDhcpMgr_Dhcpv6Server_la_SOURCES += service_ipv6.c
 endif
 
-libCcspDhcpMgr_Dhcpv6Server_la_LIBADD = -lccsp_common -ltelemetry_msgsender -lulog -lsyscfg -lsysevent -ltime_conversion -lprint_uptime
+libCcspDhcpMgr_Dhcpv6Server_la_LIBADD = -lccsp_common -ltelemetry_msgsender -lulog -lsyscfg -lsysevent -ltime_conversion -lprint_uptime -lnet
 
