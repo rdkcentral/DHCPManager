@@ -311,6 +311,7 @@ int CosaDmlDHCPv6sTriggerRestart(BOOL OnlyTrigger)
         DHCPMGR_LOG_INFO("open dhcpv6 server restart fifo when writing.");
         return 1;
     }
+    CcspTraceDebug(("%s -- %d: Writing %s to DHCPS6V_SERVER_RESTART_FIFO... \n", __FUNCTION__, __LINE__, str));
     write( fd, str, sizeof(str) );
     close(fd);
 
@@ -474,7 +475,7 @@ dhcpv6s_dbg_thrd(void * in)
             sleep(3);
             memset(msg, 0, sizeof(msg));
             read(v6_srvr_fifo_file_dscrptr, msg, sizeof(msg));
-
+            CcspTraceDebug(("%s,%d: Calling CosaDmlDhcpv6sRebootServer... \n", __FUNCTION__, __LINE__));
             CosaDmlDhcpv6sRebootServer();
             continue;
         }
@@ -524,7 +525,8 @@ void CosaDmlDhcpv6sRebootServer()
         g_dhcpv6s_restart_count=0;
 
         //when need stop, it's supposed the configuration file need to be updated.
-        _cosa_dhcpsv6_refresh_config();
+        CcspTraceDebug(("%s - Calling _cosa_dhcpsv6_refresh_config...\n",__FUNCTION__));
+	_cosa_dhcpsv6_refresh_config();
         CcspTraceInfo(("%s - Call _dibbler_server_operation stop\n",__FUNCTION__));
         _dibbler_server_operation("stop");
     }
