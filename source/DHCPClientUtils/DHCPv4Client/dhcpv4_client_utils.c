@@ -19,6 +19,7 @@
 
 #include "dhcp_client_utils.h"
 #include "udhcpc_client_utils.h"
+#include "ifl.h"
 #include <syscfg/syscfg.h>
 #include <string.h>
 
@@ -138,6 +139,15 @@ pid_t start_dhcpv4_client (dhcp_params * params)
     // init part
     dhcp_opt_list * req_opt_list = NULL;
     dhcp_opt_list * send_opt_list = NULL;
+
+    char mapt_mode[16] = {0};
+
+    ifl_get_event("map_transport_mode", mapt_mode, sizeof(mapt_mode));
+    if (strcmp(mapt_mode, "MAPT") == 0)
+    {
+        DBG_PRINT("%s: Do not start dhcpv4 client when mapt is already configured\n", __FUNCTION__);
+        return pid;
+    }
 
     DBG_PRINT("%s %d: Collecting DHCP GET/SEND Request\n", __FUNCTION__, __LINE__);
     if (get_dhcpv4_opt_list(&req_opt_list, &send_opt_list) == FAILURE)

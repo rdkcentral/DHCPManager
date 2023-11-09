@@ -402,6 +402,7 @@ void dhcpv4_client_service_start(void *arg)
     #if defined(_PLATFORM_IPQ_)
     int ret = -1;
     #endif
+    char mapt_mode[16] = {0};
 
     #if defined(_PLATFORM_IPQ_)
         pid = pid_of("udhcpc", sd->ifname);
@@ -441,6 +442,13 @@ void dhcpv4_client_service_start(void *arg)
     {
         CcspTraceInfo(("Has Pid file, Stop dhcpv4 client \n"));
         dhcpv4_client_stop(sd->ifname);
+    }
+
+    ifl_get_event("map_transport_mode", mapt_mode, sizeof(mapt_mode));
+    if (strcmp(mapt_mode, "MAPT") == 0)
+    {
+        CcspTraceInfo(("%s: Do not start dhcpv4 client when mapt is already configured\n", __FUNCTION__));
+        return;
     }
 
     #if defined(_PLATFORM_IPQ_)
@@ -640,6 +648,14 @@ int dhcpv4_client_start
     int err = 0;
     char l_cErouter_Mode[BUFF_LEN_16] = {0}, l_cWan_if_name[BUFF_LEN_16] = {0}, cEthWanMode[BUFF_LEN_8] = {0};
     int pid = -1;
+    char mapt_mode[16] = {0};
+
+    ifl_get_event( "map_transport_mode", mapt_mode, sizeof(mapt_mode));
+    if (strcmp(mapt_mode, "MAPT") == 0)
+    {
+        CcspTraceInfo(("%s: Do not start dhcpv4 client when mapt is already configured\n", __FUNCTION__));
+        return -1;
+    }
 
     syscfg_get(NULL, "last_erouter_mode", l_cErouter_Mode, sizeof(l_cErouter_Mode));
     syscfg_get(NULL, "wan_physical_ifname", l_cWan_if_name, sizeof(l_cWan_if_name));
