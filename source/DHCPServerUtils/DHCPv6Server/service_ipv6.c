@@ -139,7 +139,7 @@ struct serv_ipv6 {
     enum tp_mod tpmod;
 };
 
-static struct serv_ipv6 *si6;
+static struct serv_ipv6 *si6 = NULL;
 
 typedef struct ia_info {
     union {
@@ -244,6 +244,7 @@ struct dhcpv6_tag tag_list[] =
     else if ( val[0] ) out = atoi(val); \
 } \
 
+int serv_ipv6_update(void);
 #ifdef _CBR_PRODUCT_REQ_
 static uint64_t helper_ntoh64(const uint64_t *inputval)
 {
@@ -1879,6 +1880,8 @@ int serv_ipv6_start(__attribute__((__unused__)) void *args)
         DHCPMGR_LOG_INFO("%s: args %s\n", __FUNCTION__, (char *)args);
     char rtmod[16];
 
+    serv_ipv6_update();
+
     /* state check */
     if (!serv_can_start(si6->sefd, si6->setok, "service_ipv6"))
         return -1;
@@ -1987,7 +1990,7 @@ int serv_ipv6_restart(__attribute__((__unused__)) void *args)
 
 int serv_ipv6_init()
 {
-    char buf[16];
+ 
 #ifdef MULTILAN_FEATURE
     int ret = 0;
     char* pCfg = CCSP_MSG_BUS_CFG;
@@ -1997,18 +2000,28 @@ int serv_ipv6_init()
     memset(si6, 0, sizeof(struct serv_ipv6));
 
     if ((si6->sefd = sysevent_open(SE_SERV, SE_SERVER_WELL_KNOWN_PORT,
-				   SE_VERSION, PROG_NAME, (unsigned int *)&si6->setok)) < 0) {
-        DHCPMGR_LOG_INFO("%s: fail to open sysevent\n", __FUNCTION__);
-        return -1;
+                      SE_VERSION, PROG_NAME, (unsigned int *)&si6->setok)) < 0) {
+         DHCPMGR_LOG_INFO("%s: fail to open sysevent\n", __FUNCTION__);
+         return -1;
     }
 
+
 #ifdef MULTILAN_FEATURE
-    ret = CCSP_Message_Bus_Init((char *)service_ipv6_component_id, pCfg, &bus_handle, (CCSP_MESSAGE_BUS_MALLOC)Ansc_AllocateMemory_Callback, Ansc_FreeMemory_Callback);
-    if (ret == -1) {
+    ret = CCSP_Message_Bus_Init((char *)service_ipv6_component_id, pCfg, &bus_handle,
+             (CCSP_MESSAGE_BUS_MALLOC)Ansc_AllocateMemory_Callback, Ansc_FreeMemory_Callback);
+    if (ret == -1)
+    {
         DHCPMGR_LOG_INFO("%s: DBUS connection failed \n", __FUNCTION__);
         bus_handle = NULL;
     }
 #endif
+
+return 0;
+}
+
+int serv_ipv6_update(void)
+{
+    char buf[16];
     syscfg_get(NULL, "last_erouter_mode", buf, sizeof(buf));
     if(atoi(buf) == 1) {/*v4 only*/
         DHCPMGR_LOG_INFO("IPv6 not enabled on board!\n");
