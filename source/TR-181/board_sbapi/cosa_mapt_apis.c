@@ -287,7 +287,7 @@ CosaDmlMaptApplyConfig
 )
 {
   MAPT_LOG_INFO("Entry");
-  int ret;
+  //int ret;
 #if defined (_COSA_BCM_ARM_) && defined (_XB6_PRODUCT_REQ_)
   if ( access("/proc/sys/net/flowmgr/disable_mapt_accel", F_OK) )
   {
@@ -327,18 +327,21 @@ CosaDmlMaptApplyConfig
   }
   MAPT_LOG_INFO("Nat46 module loaded and configured successfully.");
 
-  if (  !interface_up(MAPT_INTERFACE) )
+  //if (  !interface_up(MAPT_INTERFACE) )
+  if ( v_secure_system("ip link set %s up", MAPT_INTERFACE) )
   {
        MAPT_LOG_ERROR("Failed to set %s link up!", MAPT_INTERFACE);
        return STATUS_FAILURE;
   }
 
 #ifdef INTEL_PUMA7
-  ret =  addr_add_va_arg("%s dev %s", g_stMaptData.IPv4AddrString, MAPT_INTERFACE);
-  if (ret)
   {
-       MAPT_LOG_ERROR("Failed to add ip %s to %s!", g_stMaptData.IPv4AddrString, MAPT_INTERFACE);
-       return STATUS_FAILURE;
+     int ret =  addr_add_va_arg("%s dev %s", g_stMaptData.IPv4AddrString, MAPT_INTERFACE);
+     if (ret)
+     {
+         MAPT_LOG_ERROR("Failed to add ip %s to %s!", g_stMaptData.IPv4AddrString, MAPT_INTERFACE);
+         return STATUS_FAILURE;
+     }
   }
 #endif
 
@@ -353,15 +356,18 @@ CosaDmlMaptApplyConfig
        return STATUS_FAILURE;
   }
 
-  if ( !interface_set_mtu(MAPT_INTERFACE, MAPT_MTU_SIZE) )
+  //if ( !interface_set_mtu(MAPT_INTERFACE, MAPT_MTU_SIZE) )
+  if ( v_secure_system("ip link set dev %s mtu %s", MAPT_INTERFACE, MAPT_MTU_SIZE) )
   {
        MAPT_LOG_ERROR("Failed to set mtu %s on %s!", MAPT_MTU_SIZE, MAPT_INTERFACE);
        return STATUS_FAILURE;
   }
 
-   ret = route_add_va_arg("-6 %s dev %s metric 256 mtu %s",
+  /*ret = route_add_va_arg("-6 %s dev %s metric 256 mtu %s",
 		   g_stMaptData.IPv6AddrString, MAPT_INTERFACE, MAPT_MTU_SIZE);
-  if (ret)
+  if (ret)*/
+  if ( v_secure_system("ip -6 route add %s dev %s metric 256 mtu %s",
+                        g_stMaptData.IPv6AddrString, MAPT_INTERFACE, MAPT_MTU_SIZE) )
   {
        MAPT_LOG_ERROR("Failed to add %s route on %s!",
                        g_stMaptData.IPv6AddrString, MAPT_INTERFACE);
