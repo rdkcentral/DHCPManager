@@ -4761,12 +4761,15 @@ int CheckAndGetDevicePropertiesEntry( char *pOutput, int size, char *sDeviceProp
             {
             	 urlPtr++;
             }
-          
+           
+            if (urlPtr !=NULL)
+            {
             strncpy( pOutput, urlPtr, size );
 
             ret=0;
 
             break;
+	    }
         }
     }
 
