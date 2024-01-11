@@ -179,10 +179,17 @@ void dhcpv6_client_service_start ()
     }
     else if (access(DHCPV6_PID_FILE, F_OK) != 0)
     {
-        if (access(DHCP6C_PROGRESS_FILE, F_OK) != 0)
-        {
-            creat(DHCP6C_PROGRESS_FILE,S_IWUSR | S_IWGRP | S_IWOTH);
-            CcspTraceInfo(("SERVICE_DHCP6C : Starting DHCPv6 Client from service_dhcpv6_client binary\n"));
+        if (access(DHCP6C_PROGRESS_FILE, F_OK) != 0) {
+            int fd = creat(DHCP6C_PROGRESS_FILE, S_IWUSR | S_IWGRP | S_IWOTH);
+            if (fd == -1) {
+                // Handling error creating file
+                CcspTraceError(("SERVICE_DHCP6C: Failed to create %s: %s\n", DHCP6C_PROGRESS_FILE, strerror(errno)));
+            
+            } else {
+                CcspTraceInfo(("SERVICE_DHCP6C : Starting DHCPv6 Client from service_dhcpv6_client binary\n"));
+                close(fd);
+        }
+
 #if defined(_COSA_INTEL_XB3_ARM_) || defined(INTEL_PUMA7)
             if (strncmp(l_cDibblerEnable, "true", 4))
             {
