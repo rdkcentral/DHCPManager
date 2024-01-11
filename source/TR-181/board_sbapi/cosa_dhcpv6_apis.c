@@ -7540,7 +7540,7 @@ int handle_MocaIpv6(char *status)
     }
     if(strcmp((const char*)status, "ready") == 0)
     {
-       if(( strlen(mbuf)!=0 ) && ( ipv6If != NULL ) && ( Inf_name != NULL ))
+       if(( strlen(mbuf)!=0 ) && ( Inf_name != NULL ))
         {
             if( (strcmp(mbuf, "true") == 0) && (HomeIsolationEnable == 1))
             {
