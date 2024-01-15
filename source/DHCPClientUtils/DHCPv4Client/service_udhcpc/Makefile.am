@@ -1,8 +1,8 @@
 ##########################################################################
-# If not stated otherwise in this file or this component's Licenses.txt
+# If not stated otherwise in this file or this component's LICENSE
 # file the following copyright and licenses apply:
 #
-# Copyright 2018 RDK Management
+# Copyright 2020 RDK Management
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,12 +16,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 ##########################################################################
-[Unit]
-Description=CcspDHCPMgr path service
 
-[Path]
-PathExists=/tmp/psm_initialized
-Unit=CcspDHCPMgr.service
+bin_PROGRAMS = udhcpc_response_handler
 
-[Install]
-WantedBy=multi-user.target
+AM_LDFLAGS =  -lpthread -lz -lnanomsg
+
+udhcpc_response_handler_CPPFLAGS = -I${PKG_CONFIG_SYSROOT_DIR}$(includedir)/dbus-1.0 -I${PKG_CONFIG_SYSROOT_DIR}$(libdir)/dbus-1.0/include -I$(top_srcdir)/source/DHCPServerUtils/utils/include
+
+udhcpc_response_handler_SOURCES = service_udhcpc.c
+
+udhcpc_response_handler_LDADD =  -ltelemetry_msgsender -lulog -lsyscfg -lsysevent -ltime_conversion -lprint_uptime -lnet
+
+

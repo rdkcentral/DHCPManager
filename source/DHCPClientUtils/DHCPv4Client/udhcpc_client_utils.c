@@ -31,32 +31,32 @@
  * NOTE        : free() required to clear allocated space this function allocates
  *
  */
-static char * ascii_to_hex (char * buff, int buff_len)
-{
-    if ((buff == NULL) || (buff_len == 0))
-    {
-        DBG_PRINT("Invalid args..\n");
-        return NULL;
-    }
+/* static char * ascii_to_hex (char * buff, int buff_len) */
+/* { */
+/*     if ((buff == NULL) || (buff_len == 0)) */
+/*     { */
+/*         DBG_PRINT("Invalid args..\n"); */
+/*         return NULL; */
+/*     } */
 
-    int len = (buff_len * 2) + 1;
-    char * hex_buff = malloc (len);
-    if (hex_buff == NULL)
-    {
-        DBG_PRINT ("malloc() failure\n");
-        return NULL;
-    }
-    memset (hex_buff, 0, len);
+/*     int len = (buff_len * 2) + 1; */
+/*     char * hex_buff = malloc (len); */
+/*     if (hex_buff == NULL) */
+/*     { */
+/*         DBG_PRINT ("malloc() failure\n"); */
+/*         return NULL; */
+/*     } */
+/*     memset (hex_buff, 0, len); */
 
-    int i = 0;
-    for (i = 0; i < buff_len; i++)
-    {
-        sprintf(&hex_buff[i*2], "%02X", buff[i]);
-    }
+/*     int i = 0; */
+/*     for (i = 0; i < buff_len; i++) */
+/*     { */
+/*         sprintf(&hex_buff[i*2], "%02X", buff[i]); */
+/*     } */
 
-    return hex_buff;
+/*     return hex_buff; */
 
-}
+/* } */
 
 /*
  * udhcpc_get_req_options ()
@@ -86,7 +86,12 @@ static int udhcpc_get_req_options (char * buff, dhcp_opt_list * req_opt_list)
     while (req_opt_list)
     {
         memset (&args, 0, BUFLEN_16);
-        if (req_opt_list->dhcp_opt == DHCPV4_OPT_42)
+        if (req_opt_list->dhcp_opt == DHCPV4_OPT_2)
+        {
+            /* CID 189999 Calling risky function */
+            snprintf(args, (BUFLEN_16-1),"-O timezone ");
+        }
+        else if (req_opt_list->dhcp_opt == DHCPV4_OPT_42)
         {
             strcpy (args, "-O ntpsrv ");
         }
@@ -133,16 +138,17 @@ static int udhcpc_get_send_options (char * buff, dhcp_opt_list * send_opt_list)
         if (send_opt_list->dhcp_opt == DHCPV4_OPT_60)
         {
             // Option 60 - Vendor Class Identifier has udhcp cmd line arg "-V <option-str>"
-            snprintf (args, BUFLEN_128, "-V \"%s\" ", send_opt_list->dhcp_opt_val);
+            snprintf (args, BUFLEN_128, "-V %s ", send_opt_list->dhcp_opt_val);
         }
         else
         {
-            char * buffer = ascii_to_hex (send_opt_list->dhcp_opt_val, strlen(send_opt_list->dhcp_opt_val));
-            if (buffer != NULL)
-            {
-                snprintf (args, BUFLEN_128, "-x 0x%02X:%s ", send_opt_list->dhcp_opt, buffer);
-                free(buffer);
-            }
+            /* char * buffer = ascii_to_hex (send_opt_list->dhcp_opt_val, strlen(send_opt_list->dhcp_opt_val)); */
+            /* if (buffer != NULL) */
+            /* { */
+            /*     snprintf (args, BUFLEN_128, "-x 0x%02X:%s ", send_opt_list->dhcp_opt, buffer); */
+            /*     free(buffer); */
+            /* } */
+            snprintf (args, BUFLEN_128, "-x 0x%02X:%s ", send_opt_list->dhcp_opt, send_opt_list->dhcp_opt_val);
         }
         send_opt_list = send_opt_list->next;
         strcat (buff,args);
@@ -181,7 +187,7 @@ static int udhcpc_get_other_args (char * buff, dhcp_params * params)
     }
 
    // Add -s <servicefile>
-    char servicefile[BUFLEN_32] = {0};
+    char servicefile[BUFLEN_64] = {0};
 #ifdef UDHCPC_SCRIPT_FILE
     snprintf (servicefile, sizeof(servicefile), "-s %s ", UDHCPC_SERVICE_SCRIPT_FILE);
 #else
@@ -219,10 +225,18 @@ static int udhcpc_get_other_args (char * buff, dhcp_params * params)
  */
 pid_t start_udhcpc (dhcp_params * params, dhcp_opt_list * req_opt_list, dhcp_opt_list * send_opt_list)
 {
-    if (params == NULL)
+    if ((params == NULL) || (params->ifname == NULL))
     {
         DBG_PRINT("%s %d: Invalid args..\n", __FUNCTION__, __LINE__);
         return FAILURE;
+    }
+
+    pid_t pid = 0;
+    pid = get_process_pid(UDHCPC_CLIENT, params->ifname, false);
+
+    if (pid > 0)
+    {
+        DBG_PRINT("%s %d: another instance of %s runing on %s\n", __FUNCTION__, __LINE__, UDHCPC_CLIENT, params->ifname);
     }
 
     char buff [BUFLEN_512] = {0};
@@ -250,7 +264,21 @@ pid_t start_udhcpc (dhcp_params * params, dhcp_opt_list * req_opt_list, dhcp_opt
 
     DBG_PRINT("%s %d: Starting udhcpc.\n", __FUNCTION__, __LINE__);
 
-    return start_exe(UDHCPC_CLIENT_PATH, buff);
+    pid = start_exe(UDHCPC_CLIENT_PATH, buff);
+
+#ifdef UDHCPC_RUN_IN_BACKGROUND
+    // udhcpc-client will demonize a child thread during start, so we need to collect the exited main thread
+    if (collect_waiting_process(pid, UDHCPC_TERMINATE_TIMEOUT) != SUCCESS)
+    {
+        DBG_PRINT("%s %d: unable to collect pid for %d.\n", __FUNCTION__, __LINE__, pid);
+    }
+
+    DBG_PRINT("%s %d: Started dibbler-client. returning pid..\n", __FUNCTION__, __LINE__);
+    pid = get_process_pid (UDHCPC_CLIENT, NULL, true);
+#endif
+
+    return pid;
+
 }
 
 
@@ -273,7 +301,7 @@ int stop_udhcpc (dhcp_params * params)
     char cmdarg[BUFLEN_32] = {0};
 
     snprintf(cmdarg, sizeof(cmdarg), "%s", params->ifname);
-    pid = get_process_pid(UDHCPC_CLIENT, cmdarg);
+    pid = get_process_pid(UDHCPC_CLIENT, cmdarg, true);
 
     if (pid <= 0)
     {
@@ -284,10 +312,14 @@ int stop_udhcpc (dhcp_params * params)
     if (signal_process(pid, SIGUSR2) != RETURN_OK)
     {
         DBG_PRINT("%s %d: unable to send signal to pid %d\n", __FUNCTION__, __LINE__, pid);
-        return FAILURE;
+        return FAILURE;    }
+    if (signal_process(pid, SIGTERM) != RETURN_OK)
+    {
+         DBG_PRINT("%s %d: unable to send signal to pid %d\n", __FUNCTION__, __LINE__, pid);
+         return FAILURE;
     }
-
-    return collect_waiting_process(pid, UDHCPC_TERMINATE_TIMEOUT);
+    int ret = collect_waiting_process(pid, UDHCPC_TERMINATE_TIMEOUT);
+    return ret;
 
 }
 

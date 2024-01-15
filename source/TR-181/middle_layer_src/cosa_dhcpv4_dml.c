@@ -91,6 +91,7 @@
 #endif
 
 #include <syscfg/syscfg.h>
+#include "dhcp_client_utils.h"
 
 extern void* g_pDslhDmlAgent;
 extern ANSC_HANDLE g_Dhcpv4Object;
@@ -979,7 +980,6 @@ Client_GetParamStringValue
     CHAR                            tmpBuff[128]      = {0};
     ULONG                           i                 = 0;
     ULONG                           len               = 0;
-    PUCHAR                          pString           = NULL;
     errno_t   rc  = -1;
 
     /* check the parameter name and return the corresponding value */
@@ -1004,7 +1004,7 @@ Client_GetParamStringValue
     if( AnscEqualString(ParamName, "Interface", TRUE))
     {
         /* collect value */
-        pString = CosaUtilGetFullPathNameByKeyword
+/*        pString = CosaUtilGetFullPathNameByKeyword
             (
                 (PUCHAR)"Device.IP.Interface.",
                 (PUCHAR)"Name",
@@ -1019,7 +1019,8 @@ Client_GetParamStringValue
         else
         {
             return 0;
-        }
+        }*/
+return  update_pValue(pValue,pUlSize, pDhcpc->Cfg.Interface);
 
     }
 
@@ -1136,12 +1137,14 @@ Client_SetParamBoolValue
 #ifdef DHCPV4_CLIENT_SUPPORT
         if (bValue == TRUE)
         {
-            dhcpv4_client_service_start(sd);
+            //dhcpv4_client_service_start(sd);
+			CosaDmlStartDhcpv4Client(hInsContext);
             dhcpv4_client_enabled = 1;
         }
         else
         {
-            dhcpv4_client_service_stop(sd);
+            //dhcpv4_client_service_stop(sd);
+			CosaDmlStopDhcpv4Client(hInsContext);
             dhcpv4_client_enabled = 0;
         }
 #endif
@@ -1154,11 +1157,16 @@ Client_SetParamBoolValue
         /* save update to backup */
         if ( bValue )
         {
-            returnStatus = CosaDmlDhcpcRenew(NULL, pDhcpc->Cfg.InstanceNumber);
-            if ( returnStatus != ANSC_STATUS_SUCCESS )
+            if (pDhcpc->Cfg.bEnabled)
             {
-                return  FALSE;
+                returnStatus = CosaDmlDhcpcRenew(hInsContext, pDhcpc->Cfg.InstanceNumber);
+                if ( returnStatus != ANSC_STATUS_SUCCESS )
+                {
+                    return  FALSE;
+                }
             }
+            else
+                return FALSE;
         }
 
         return  TRUE;
@@ -1168,7 +1176,8 @@ Client_SetParamBoolValue
 
 #ifdef DHCPV4_CLIENT_SUPPORT
 //    serv_dhcp_deinit();
-    dhcpv4_client_service_stop(sd);
+    //dhcpv4_client_service_stop(sd);
+	CosaDmlStopDhcpv4Client(hInsContext);
     dhcpv4_client_enabled = 0;
 #endif
 
@@ -1330,6 +1339,18 @@ Client_SetParamStringValue
     {
         /* save update to backup */
         rc = STRCPY_S_NOCLOBBER(pDhcpc->Cfg.Interface, sizeof(pDhcpc->Cfg.Interface), pString);
+        if(rc != EOK)
+        {
+            ERR_CHK(rc);
+            return FALSE;
+        }
+        return TRUE;
+    }
+
+    if( AnscEqualString(ParamName, "Alias", TRUE))
+    {
+        /* save update to backup */
+        rc = STRCPY_S_NOCLOBBER(pDhcpc->Cfg.Alias, sizeof(pDhcpc->Cfg.Alias), pString);
         if(rc != EOK)
         {
             ERR_CHK(rc);
@@ -8456,7 +8477,7 @@ Option1_AddEntry
     if(pPool->Cfg.InstanceNumber == 1)
     {
         AnscTraceFlow(("%s: not supporting addinging option for pool 1.\n", __FUNCTION__));
-        goto EXIT2;
+        return (ANSC_HANDLE)ANSC_STATUS_FAILURE;
     }
 
     pDhcpOption  = (PCOSA_DML_DHCPSV4_OPTION)AnscAllocateMemory( sizeof(COSA_DML_DHCPSV4_OPTION) );

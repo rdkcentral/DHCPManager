@@ -41,7 +41,7 @@ extern int dhcp_sysevent_fd;
  * @return     : returns a pid of runnning dibbler-client
  *
  */
-static pid_t return_dibbler_pid ()
+pid_t return_dibbler_pid ()
 {
     pid_t pid = 0;
     FILE * pidfile_fd = NULL;
@@ -405,7 +405,7 @@ pid_t start_dibbler (dhcp_params * params, dhcp_opt_list * req_opt_list, dhcp_op
     }
 
     DBG_PRINT("%s %d: Started dibbler-client. returning pid..\n", __FUNCTION__, __LINE__);
-    return get_process_pid (DIBBLER_CLIENT);
+    return get_process_pid (DIBBLER_CLIENT, NULL, true);
 
 }
 
@@ -428,7 +428,7 @@ int stop_dibbler (dhcp_params * params)
     char cmdarg[BUFLEN_32] = {0};
 
     snprintf(cmdarg, sizeof(cmdarg), "%s%s", DIBBLER_DFT_PATH, params->ifname);
-    pid = get_process_pid(DIBBLER_CLIENT, cmdarg);
+    pid = get_process_pid(DIBBLER_CLIENT, cmdarg, false);
 
     if (pid <= 0)
     {

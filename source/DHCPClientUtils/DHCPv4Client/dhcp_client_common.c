@@ -169,7 +169,10 @@ int find_strstr (char * basestr, int basestr_len, char * substr, int substr_len)
             for (; ((j < substr_len) && (i < basestr_len)); j ++, i++)
             {
                 if (basestr[i] != substr[j])
-                    continue;
+                {
+                    j=0;
+                    break;
+                }
 
                 if (j == substr_len - 1)
                     return SUCCESS;
@@ -262,7 +265,7 @@ static int check_proc_entry_for_pid (char * name, char * args)
                         if (chk_ret > 0)
                         {
                             cmdline[sizeof(cmdline)-1]='\0';
-                            DBG_PRINT("%s %d: comparing cmdline from proc:%s with %s\n", __FUNCTION__, __LINE__, cmdline, args);
+                            DBG_PRINT("%s %d: chk_ret: %d comparing cmdline from proc:%s with %s\n", __FUNCTION__, __LINE__,chk_ret, cmdline, args);
                             if (find_strstr(cmdline, sizeof(cmdline), args, strlen(args)) == SUCCESS)
                             {
                                 rval = pid;
@@ -297,13 +300,13 @@ static int check_proc_entry_for_pid (char * name, char * args)
  * get_process_pid ()
  * @description: checks pid of <exe> from /proc fs and returns pid
  * @params     : name - name of the exeutable file eg:udhcpc
-                 args - args can be argument for the program
-                 eg:"-ierouter0" for udhcpc - format as seen in /proc fs
+                 args - args can be argument for the program 
+                    eg:"-ierouter0" for udhcpc - format as seen in /proc fs
+                 waitForProcEntry - Wait for proc entry.
  * @return     : if executable is running, returns its pid, else return 0
  *
  */
-
-pid_t get_process_pid (char * name, char * args)
+pid_t get_process_pid (char * name, char * args, bool waitForProcEntry)
 {
     if (name == NULL)
     {
@@ -311,21 +314,28 @@ pid_t get_process_pid (char * name, char * args)
         return 0;
     }
 
-    int waitTime = RETURN_PID_TIMEOUT_IN_MSEC;
     int pid = 0;
+    if(waitForProcEntry)
+    {    
+        int waitTime = RETURN_PID_TIMEOUT_IN_MSEC;
 
-    while (waitTime > 1)
+        while (waitTime > 1)
+        {
+            pid = check_proc_entry_for_pid(name, args);
+
+            if (pid != 0)
+            {
+                break; 
+            }
+
+            usleep(RETURN_PID_INTERVAL_IN_MSEC * USECS_IN_MSEC);
+            waitTime -= RETURN_PID_INTERVAL_IN_MSEC;
+
+        }
+    }
+    else
     {
         pid = check_proc_entry_for_pid(name, args);
-
-        if (pid != 0)
-        {
-           break;
-        }
-
-        usleep(RETURN_PID_INTERVAL_IN_MSEC * USECS_IN_MSEC);
-        waitTime -= RETURN_PID_INTERVAL_IN_MSEC;
-
     }
 
     DBG_PRINT("%s %d: %s running, in pid %d\n", __FUNCTION__, __LINE__, name, pid);
@@ -410,7 +420,7 @@ static int parseArgs(const char *cmd, const char *args, char ***argv)
     }
     else
     {
-        strncpy(array[argIndex], cmdStr,sizeof(array[argIndex])-1);
+        strncpy(array[argIndex], cmdStr, strlen(cmdStr)+1);
         argIndex++;
     }
     inSpace = TRUE;
@@ -663,11 +673,6 @@ void free_opt_list_data (dhcp_opt_list * opt_list)
     {
         tmp_node = opt_list;
         opt_list = opt_list->next;
-        if (tmp_node->dhcp_opt_val)
-        {
-            // DHCPv4 send opt will have opt_val
-            free(tmp_node->dhcp_opt_val);
-        }
         free(tmp_node);
     }
 }
