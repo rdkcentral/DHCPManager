@@ -68,6 +68,22 @@
 #include "cosa_dhcpv6_dml.h"
 #include "cosa_dhcpv6_apis.h"
 
+#ifdef DHCPV6C_PSM_ENABLE
+#define PSM_DHCPMANAGER_DHCPV6C_CLIENTCOUNT                 "dmsb.dhcpmanager.dhcpv6.ClientNoOfEntries"
+#define PSM_DHCPMANAGER_DHCPV6C_CLIENTALIAS                 "dmsb.dhcpmanager.dhcpv6.Client.%d.Alias"
+#define PSM_DHCPMANAGER_DHCPV6C_REQADDR                     "dmsb.dhcpmanager.dhcpv6.Client.%d.ReqAddr"
+#define PSM_DHCPMANAGER_DHCPV6C_REQPREFIX                   "dmsb.dhcpmanager.dhcpv6.Client.%d.ReqPrefix"
+#define PSM_DHCPMANAGER_DHCPV6C_RAPIDCOMMIT                 "dmsb.dhcpmanager.dhcpv6.Client.%d.RapidCommit"
+#define PSM_DHCPMANAGER_DHCPV6C_T1                          "dmsb.dhcpmanager.dhcpv6.Client.%d.T1"
+#define PSM_DHCPMANAGER_DHCPV6C_T2                          "dmsb.dhcpmanager.dhcpv6.Client.%d.T2"
+#define PSM_DHCPMANAGER_DHCPV6C_REQUESTEDOPTIONS            "dmsb.dhcpmanager.dhcpv6.Client.%d.RequestedOptions"
+#define PSM_DHCPMANAGER_DHCPV6C_SUPPORTEDOPTIONS            "dmsb.dhcpmanager.dhcpv6.Client.%d.SupportedOptions"
+#define PSM_DHCPMANAGER_DHCPV6C_SENDOPTIONCOUNT             "dmsb.dhcpmanager.dhcpv6.Client.%d.SentOptNoOfEntries"
+#define PSM_DHCPMANAGER_DHCPV6C_SENDOPTIONALIAS             "dmsb.dhcpmanager.dhcpv6.Client.%d.SentOption.%d.Alias"
+#define PSM_DHCPMANAGER_DHCPV6C_SENDOPTIONTAG               "dmsb.dhcpmanager.dhcpv6.Client.%d.SentOption.%d.Tag"
+#define PSM_DHCPMANAGER_DHCPV6C_SENDOPTIONVALUE             "dmsb.dhcpmanager.dhcpv6.Client.%d.SentOption.%d.Value"
+#endif
+
 /*
   *   This is cosa middle layer definition
   *

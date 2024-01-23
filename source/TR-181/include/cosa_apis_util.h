@@ -170,3 +170,6 @@ int g_GetParamValueString(ANSC_HANDLE g_pDslhDmlAgent, char* prefixFullName, cha
 
 //int lm_get_host_by_mac(char *mac, LM_cmd_common_result_t *pHost);
 
+INT PsmWriteParameter( char *pParamName, char *pParamVal );
+
+INT PsmReadParameter( char *pParamName, char *pReturnVal, int returnValLength );

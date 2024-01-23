@@ -78,6 +78,82 @@
 //#include "cosa_apis_util.h"
 //#include "cosa_apis_busutil.h"
 
+// for PSM access
+extern ANSC_HANDLE bus_handle;
+extern char g_Subsystem[32];
+// PSM access MACRO
+#define _PSM_WRITE_PARAM(_PARAM_NAME) { \
+        errno_t rc = -1; \
+        rc = sprintf_s(param_name, sizeof(param_name), _PARAM_NAME, instancenum); \
+        if(rc < EOK) { \
+            ERR_CHK(rc); \
+        } \
+        retPsmSet = PSM_Set_Record_Value2(bus_handle,g_Subsystem, param_name, ccsp_string, param_value); \
+        if (retPsmSet != CCSP_SUCCESS) { \
+            AnscTraceFlow(("%s Error %d writing %s %s\n", __FUNCTION__, retPsmSet, param_name, param_value));\
+        } \
+        else \
+        { \
+            /*AnscTraceFlow(("%s: retPsmSet == CCSP_SUCCESS writing %s = %s \n", __FUNCTION__,param_name,param_value)); */\
+        } \
+        _ansc_memset(param_name, 0, sizeof(param_name)); \
+        _ansc_memset(param_value, 0, sizeof(param_value)); \
+    }
+
+#define _PSM_READ_PARAM(_PARAM_NAME) { \
+        errno_t rc = -1; \
+        _ansc_memset(param_name, 0, sizeof(param_name)); \
+        rc = sprintf_s(param_name, sizeof(param_name), _PARAM_NAME, instancenum); \
+        if(rc < EOK) { \
+            ERR_CHK(rc); \
+        } \
+        retPsmGet = PSM_Get_Record_Value2(bus_handle,g_Subsystem, param_name, NULL, &param_value); \
+        if (retPsmGet != CCSP_SUCCESS) { \
+            AnscTraceFlow(("%s Error %d reading %s %s\n", __FUNCTION__, retPsmGet, param_name, param_value));\
+        } \
+        else { \
+            /*AnscTraceFlow(("%s: retPsmGet == CCSP_SUCCESS reading %s = \n%s\n", __FUNCTION__,param_name, param_value)); */\
+        } \
+    }
+
+#define _PSM_WRITE_TBL_PARAM(_PARAM_NAME) { \
+        errno_t rc = -1; \
+        rc = sprintf_s(param_name, sizeof(param_name), _PARAM_NAME, tblInstancenum, instancenum); \
+        if(rc < EOK) { \
+            ERR_CHK(rc); \
+        } \
+        retPsmSet = PSM_Set_Record_Value2(bus_handle,g_Subsystem, param_name, ccsp_string, param_value); \
+        if (retPsmSet != CCSP_SUCCESS) { \
+            AnscTraceFlow(("%s Error %d writing %s %s\n", __FUNCTION__, retPsmSet, param_name, param_value));\
+            /*printf("%s Error %d writing %s %s\n", __FUNCTION__, retPsmSet, param_name, param_value);*/\
+        } \
+        else \
+        { \
+            /*AnscTraceFlow(("%s: retPsmGet == CCSP_SUCCESS writing %s = %s \n", __FUNCTION__,param_name,param_value));*/ \
+            /*printf("%s: retPsmSet == CCSP_SUCCESS writing %s = %s \n", __FUNCTION__,param_name,param_value);*/ \
+        } \
+        _ansc_memset(param_name, 0, sizeof(param_name)); \
+        _ansc_memset(param_value, 0, sizeof(param_value)); \
+    }
+
+#define _PSM_READ_TBL_PARAM(_PARAM_NAME) { \
+        errno_t rc = -1; \
+        _ansc_memset(param_name, 0, sizeof(param_name)); \
+        rc = sprintf_s(param_name, sizeof(param_name), _PARAM_NAME, tblInstancenum, instancenum); \
+        if(rc < EOK) { \
+            ERR_CHK(rc); \
+        } \
+        retPsmGet = PSM_Get_Record_Value2(bus_handle,g_Subsystem, param_name, NULL, &param_value); \
+        if (retPsmGet != CCSP_SUCCESS) { \
+            AnscTraceFlow(("%s Error %d reading %s %s\n", __FUNCTION__, retPsmGet, param_name, param_value));\
+            /*printf("%s Error %d reading %s %s\n", __FUNCTION__, retPsmGet, param_name, param_value);*/\
+        } \
+        else { \
+            /*AnscTraceFlow(("%s: retPsmGet == CCSP_SUCCESS reading %s = \n%s\n", __FUNCTION__,param_name, param_value)); */\
+            /*printf("%s: retPsmGet == CCSP_SUCCESS reading %s = \n%s\n", __FUNCTION__,param_name, param_value);*/ \
+        } \
+    }
+
 typedef  ANSC_HANDLE
 (*PFN_COSADM_CREATE)
     (

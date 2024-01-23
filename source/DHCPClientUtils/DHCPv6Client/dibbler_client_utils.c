@@ -34,6 +34,7 @@
 
 extern token_t dhcp_sysevent_token;
 extern int dhcp_sysevent_fd;
+static void generate_client_duid_conf(char path[],char *ifname);
 
 /*
  * return_dibbler_pid ()
@@ -232,7 +233,12 @@ static int dibbler_client_prepare_config (dibbler_client_info * client_info)
 
                         if (opt_list->dhcp_opt == DHCPV6_OPT_23)
                         {
-                            snprintf (args, BUFLEN_128, "\n %s \n", "        option dns-server");
+                            snprintf (args, BUFLEN_128, "\n %s \n", "    option dns-server");
+                            fputs(args, fout);
+                        }
+                        else if (opt_list->dhcp_opt == DHCPV6_OPT_24)
+                        {
+                            snprintf (args, BUFLEN_128, "\n %s \n", "   option domain");
                             fputs(args, fout);
                         }
                         else if (opt_list->dhcp_opt == DHCPV6_OPT_95)
@@ -347,11 +353,89 @@ static int dibbler_client_prepare_config (dibbler_client_info * client_info)
         return FAILURE;
     }
 
-    DBG_PRINT("%s %d: sucessfully Updated %s file with Request Options \n", __FUNCTION__, __LINE__, DIBBLER_TEMPLATE_CONFIG_FILE);
+    DBG_PRINT("%s %d: sucessfully Updated %s/%s file with Request Options \n", __FUNCTION__, __LINE__, file_path, DIBBLER_TEMPLATE_CONFIG_FILE);
     return SUCCESS;
 
 }
 
+#define DUID_CLIENT "%s/client-duid"
+#if defined (DUID_UUID_ENABLE)
+
+#define DUID_TYPE "0004"  /* duid-type duid-uuid 4 */
+
+#else
+
+#define DUID_TYPE "00:03:"  /* duid-type duid-ll 3 */
+#define HW_TYPE "00:01:"    /* hw type is always 1 */
+
+#endif
+
+static void generate_client_duid_conf(char path[],char *ifname)
+{
+    char duid[256]            = {0};
+    char file_path[64]        = {0};
+    char interface_mac[64]    = {0};
+    char client_duid_path[64] = {0};
+#if defined (DUID_UUID_ENABLE)
+    char uuid[128]            = {0};
+    FILE *fp_uuid_proc        = NULL;
+#endif
+    FILE *fp_duid             = NULL;
+    FILE *fp_mac_addr_table   = NULL;
+
+    sprintf(client_duid_path,DUID_CLIENT,path);
+    fp_duid = fopen(client_duid_path, "r");
+    syscfg_init();
+    if( fp_duid == NULL )
+    {
+/* Since we pass the interface name as a argument, We don't need to get wan interface and process them only*/
+#if defined (DUID_UUID_ENABLE)
+        /* Removed syscfg support becasue of multiple dibbler instance environment*/
+        snprintf(file_path, sizeof(file_path), "cat /proc/sys/kernel/random/uuid | tr -d - | tr -d '\t\n\r'");
+        fp_uuid_proc = popen(file_path, "r");
+        if(fp_uuid_proc == NULL){
+            DBG_PRINT("Failed to open proc entry");
+        }
+        else{
+            fgets(uuid, sizeof(uuid), fp_uuid_proc);
+            pclose(fp_uuid_proc);
+        }
+#endif
+        sprintf(file_path, "/sys/class/net/%s/address", ifname);
+        fp_mac_addr_table = fopen(file_path, "r");
+        if(fp_mac_addr_table == NULL)
+        {
+             DBG_PRINT("Failed to open mac address table");
+        }
+        else
+        {
+            fread(interface_mac, sizeof(interface_mac),1, fp_mac_addr_table);
+            fclose(fp_mac_addr_table);
+        }
+
+        fp_duid = fopen(client_duid_path, "w");
+
+        if(fp_duid)
+        {
+            sprintf(duid, DUID_TYPE);
+#if defined (DUID_UUID_ENABLE)
+            sprintf(duid+4, uuid);
+#else
+            sprintf(duid+6, HW_TYPE);
+            sprintf(duid+12, interface_mac);
+#endif
+            fprintf(fp_duid, "%s", duid);
+            fclose(fp_duid);
+        }
+    }
+     else
+    {
+        fclose(fp_duid);
+        DBG_PRINT("dibbler client-duid file exist");
+    }
+
+    return;
+}
 
 /*
  * start_dibbler ()
@@ -383,6 +467,8 @@ pid_t start_dibbler (dhcp_params * params, dhcp_opt_list * req_opt_list, dhcp_op
         DBG_PRINT("%s %d: Unable to get DHCPv6 REQ OPT.\n", __FUNCTION__, __LINE__);
         return FAILURE;
     }
+
+    generate_client_duid_conf(client_info.config_path,params->ifname);
 
     DBG_PRINT("%s %d: Starting dibbler with config %s\n", __FUNCTION__, __LINE__, client_info.config_path);
 

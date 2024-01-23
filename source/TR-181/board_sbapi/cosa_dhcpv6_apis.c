@@ -84,6 +84,7 @@
 #include "util.h"
 #include "ifl.h"
 #include <libnet.h>
+#include "dibbler_client_utils.h"
 
 extern void* g_pDslhDmlAgent;
 extern ANSC_HANDLE bus_handle;
@@ -102,8 +103,29 @@ extern int executeCmd(char *cmd);
 #define BUFF_LEN_128  128
 #define BUFF_LEN_256  256
 
+#define GUEST_INTERFACE_NAME "brlan1"
+char GUEST_PREVIOUS_IP[128]     = {0};
+char GUEST_PREVIOUS_PREFIX[128] = {0};
+int  brlan1_prefix_changed      = 0;
+
+#define IP6_ADDR_ADD(ipaddr,iface)   {\
+   if ((strlen(ipaddr) > 0) && (strlen(iface) > 0))\
+   {\
+       v_secure_system("ip -6 addr add %s/64 dev %s valid_lft forever preferred_lft forever",ipaddr,iface);\
+   }\
+}\
+
+#define IP6_ADDR_DEL(ipaddr,iface)   {\
+   if ((strlen(ipaddr) > 0) && (strlen(iface) > 0))\
+   {\
+       v_secure_system("ip -6 addr del %s/64 dev %s",ipaddr,iface);\
+   }\
+}\
+
 extern int executeCmd(char *cmd);
 extern int CheckAndGetDevicePropertiesEntry( char *pOutput, int size, char *sDevicePropContent );
+ANSC_STATUS syscfg_set_bool(const char* name, int value);
+ANSC_STATUS syscfg_set_string(const char* name, const char* value);
 
 #include "ipc_msg.h"
 #if defined SUCCESS
@@ -1107,13 +1129,29 @@ BOOL tagPermitted(int tag)
 static struct {
     pthread_t          dbgthrdc;
     pthread_t          dbgthrds;
+    pthread_t          dbgthrd_rtadv;
 }g_be_ctx;
 
+#ifdef RA_MONITOR_SUPPORT
+typedef struct
+{
+    char managedFlag;
+    char otherFlag;
+    char ra_Ifname[64];
+} desiredRtAdvInfo;
+static desiredRtAdvInfo *rtAdvInfo;
+
+#define IPv6_RT_MON_NOTIFY_CMD "kill -10 `pidof ipv6rtmon`"
+#endif // RA_MONITOR_SUPPORT
 static void * dhcpv6c_dbg_thrd(void * in);
 
 #ifdef DHCPV6_SERVER_SUPPORT
 extern void * dhcpv6s_dbg_thrd(void * in);
 #endif
+
+#ifdef RA_MONITOR_SUPPORT
+static void * rtadv_dbg_thread(void * in);
+#endif // RA_MONITOR_SUPPORT
 
 extern COSARepopulateTableProc            g_COSARepopulateTable;
 
@@ -1923,6 +1961,27 @@ CosaDmlDhcpv6SMsgHandler
         #endif
     }
 
+#ifdef RA_MONITOR_SUPPORT
+    FILE *fp     = NULL;
+    /* Start RA listening utility(ipv6rtmon) */
+    fp = popen("/usr/bin/ipv6rtmon &", "r");
+    if(!fp)
+    {
+        CcspTraceWarning(("[%s-%d]Failed to satrt ipv6rtmon.\n", __FUNCTION__, __LINE__))
+    }
+    else
+    {
+        pclose(fp);
+    }
+
+    /* Spawning thread for assessing Router Advertisement message from FIFO file written by ipv6rtmon daemon */
+    if ( !mkfifo(RA_COMMON_FIFO, 0666) || errno == EEXIST )
+    {
+        if (pthread_create(&g_be_ctx.dbgthrd_rtadv, NULL, rtadv_dbg_thread, NULL)  || pthread_detach(g_be_ctx.dbgthrd_rtadv))
+            CcspTraceWarning(("%s error in creating rtadv_dbg_thread\n", __FUNCTION__));
+    }
+#endif // RA_MONITOR_SUPPORT
+
     //CosaDmlStartDHCP6Client();
 //    dhcp v6 client is now initialized in service_wan, no need to initialize from PandM
     #if 0
@@ -2166,7 +2225,23 @@ CosaDmlDhcpv6cGetNumberOfEntries
     )
 {
     UNREFERENCED_PARAMETER(hContext);
+#ifdef DHCPV6C_PSM_ENABLE
+    int retPsmGet        = CCSP_SUCCESS;
+    char param_name[512] = {0};
+    char* param_value    = NULL;
+
+    retPsmGet = PSM_Get_Record_Value2(bus_handle,g_Subsystem, PSM_DHCPMANAGER_DHCPV6C_CLIENTCOUNT, NULL, &param_value);
+    if (retPsmGet != CCSP_SUCCESS) {
+        CcspTraceError(("%s Error %d writing %s %s\n", __FUNCTION__, retPsmGet, param_name, param_value));
+        return 0;
+    }
+    else
+    {
+        return atoi(param_value);
+    }
+#else
     return 1;
+#endif
 }
 
 /*
@@ -2213,6 +2288,107 @@ CosaDmlDhcpv6cGetEntry
     )
 {
     UNREFERENCED_PARAMETER(hContext);
+
+#ifdef DHCPV6C_PSM_ENABLE
+    char param_name[256]  = {0};
+    char param_value[256] = {0};
+    int retPsmGet = CCSP_SUCCESS;
+    /* Cfg Memebers */
+    pEntry->Cfg.InstanceNumber = ulIndex;
+    pEntry->Cfg.bEnabled = FALSE;
+
+    _ansc_sprintf(param_name, PSM_DHCPMANAGER_DHCPV6C_CLIENTALIAS, (INT)ulIndex);
+    retPsmGet = PsmReadParameter(param_name, param_value, sizeof(param_value));
+    if (retPsmGet == CCSP_SUCCESS)
+    {
+         STRCPY_S_NOCLOBBER((CHAR *)pEntry->Cfg.Alias, sizeof(pEntry->Cfg.Alias), param_value);
+    }
+
+    _ansc_memset(param_name, 0, sizeof(param_name));
+    _ansc_memset(param_value, 0, sizeof(param_value));
+    _ansc_sprintf(param_name, PSM_DHCPMANAGER_DHCPV6C_REQADDR, (INT)ulIndex);
+    retPsmGet = PsmReadParameter(param_name, param_value, sizeof(param_value));
+    if (retPsmGet == CCSP_SUCCESS)
+    {
+        if (strcmp("TRUE",param_value) == 0)
+        {
+            pEntry->Cfg.RequestAddresses = TRUE;
+        }
+        else
+        {
+            pEntry->Cfg.RequestAddresses = FALSE;
+        }
+    }
+
+    _ansc_memset(param_name, 0, sizeof(param_name));
+    _ansc_memset(param_value, 0, sizeof(param_value));
+    _ansc_sprintf(param_name, PSM_DHCPMANAGER_DHCPV6C_REQPREFIX, (INT)ulIndex);
+    retPsmGet = PsmReadParameter(param_name, param_value, sizeof(param_value));
+    if (retPsmGet == CCSP_SUCCESS)
+    {
+        if (strcmp("TRUE",param_value) == 0)
+        {
+            pEntry->Cfg.RequestPrefixes = TRUE;
+        }
+        else
+        {
+            pEntry->Cfg.RequestPrefixes = FALSE;
+        }
+    }
+
+    _ansc_memset(param_name, 0, sizeof(param_name));
+    _ansc_memset(param_value, 0, sizeof(param_value));
+    _ansc_sprintf(param_name, PSM_DHCPMANAGER_DHCPV6C_RAPIDCOMMIT, (INT)ulIndex);
+    retPsmGet = PsmReadParameter(param_name, param_value, sizeof(param_value));
+    if (retPsmGet == CCSP_SUCCESS)
+    {
+        if (strcmp("TRUE",param_value) == 0)
+        {
+            pEntry->Cfg.RapidCommit = TRUE;
+        }
+        else
+        {
+            pEntry->Cfg.RapidCommit = FALSE;
+        }
+    }
+
+    _ansc_memset(param_name, 0, sizeof(param_name));
+    _ansc_memset(param_value, 0, sizeof(param_value));
+    _ansc_sprintf(param_name, PSM_DHCPMANAGER_DHCPV6C_T1, (INT)ulIndex);
+    retPsmGet = PsmReadParameter(param_name, param_value, sizeof(param_value));
+    if (retPsmGet == CCSP_SUCCESS)
+    {
+        pEntry->Cfg.SuggestedT1 = atoi(param_value);
+    }
+
+    _ansc_memset(param_name, 0, sizeof(param_name));
+    _ansc_memset(param_value, 0, sizeof(param_value));
+    _ansc_sprintf(param_name, PSM_DHCPMANAGER_DHCPV6C_T2, (INT)ulIndex);
+    retPsmGet = PsmReadParameter(param_name, param_value, sizeof(param_value));
+    if (retPsmGet == CCSP_SUCCESS)
+    {
+        pEntry->Cfg.SuggestedT2 = atoi(param_value);
+    }
+
+    _ansc_memset(param_name, 0, sizeof(param_name));
+    _ansc_memset(param_value, 0, sizeof(param_value));
+    _ansc_sprintf(param_name, PSM_DHCPMANAGER_DHCPV6C_REQUESTEDOPTIONS, (INT)ulIndex);
+    retPsmGet = PsmReadParameter(param_name, param_value, sizeof(param_value));
+    if (retPsmGet == CCSP_SUCCESS)
+    {
+        STRCPY_S_NOCLOBBER((CHAR *)pEntry->Cfg.RequestedOptions, sizeof(pEntry->Cfg.RequestedOptions), param_value);
+    }
+
+    _ansc_memset(param_name, 0, sizeof(param_name));
+    _ansc_memset(param_value, 0, sizeof(param_value));
+    _ansc_sprintf(param_name, PSM_DHCPMANAGER_DHCPV6C_SUPPORTEDOPTIONS, (INT)ulIndex);
+    retPsmGet = PsmReadParameter(param_name, param_value, sizeof(param_value));
+    if (retPsmGet == CCSP_SUCCESS)
+    {
+        STRCPY_S_NOCLOBBER((CHAR *)pEntry->Info.SupportedOptions, sizeof(pEntry->Info.SupportedOptions), param_value);
+    }
+#else
+
     UtopiaContext utctx = {0};
     char buf[256] = {0};
     char out[256] = {0};
@@ -2277,6 +2453,9 @@ CosaDmlDhcpv6cGetEntry
     Utopia_RawGet(&utctx,NULL,buf,out,sizeof(out));
     pEntry->Cfg.RapidCommit = (out[0] == '1') ? TRUE:FALSE;
 
+    Utopia_Free(&utctx,0);
+#endif
+
     /*Info members*/
     if (pEntry->Cfg.bEnabled)
         pEntry->Info.Status = COSA_DML_DHCP_STATUS_Enabled;
@@ -2287,8 +2466,6 @@ CosaDmlDhcpv6cGetEntry
 
     _get_client_duid(pEntry->Info.DUID, sizeof(pEntry->Info.DUID));
 
-    Utopia_Free(&utctx,0);
-    
     AnscCopyMemory(&g_dhcpv6_client, pEntry, sizeof(g_dhcpv6_client));
 
     if (pEntry->Cfg.bEnabled)
@@ -2382,16 +2559,24 @@ iface wan0 {
 #define CLIENT_CONF_LOCATION  "/etc/dibbler/client.conf"
 #define TMP_SERVER_CONF "/tmp/.dibbler_server_conf"
 #define SERVER_CONF_LOCATION  "/etc/dibbler/server.conf"
+#define CLIENT_NOTIFY "/etc/dibbler/client-notify.sh"
 
 static int _prepare_client_conf(PCOSA_DML_DHCPCV6_CFG       pCfg)
 {
-    FILE * fp = fopen(TMP_CLIENT_CONF, "w+");
+    FILE * fp = fopen(DIBBLER_TMP_CONFIG_FILE, "w+");
     char line[256] = {0};
 
     if (fp)
     {
         /*we need this to get IANA IAPD info from dibbler*/
-        fprintf(fp, "notify-scripts\n");
+        fprintf(fp, "log-level 8\n");
+        fprintf(fp, "log-mode full\n");
+        fprintf(fp, "duid-type duid-llt\n");
+        fprintf(fp, "script \"%s\" \n",CLIENT_NOTIFY);
+#ifndef CONFIGURABLE_OPTIONS
+        fprintf(fp, "reconfigure-accept 1\n");
+#endif
+        fprintf(fp, "downlink-prefix-ifaces \"none\" \n");
 
         fprintf(fp, "iface %s {\n", pCfg->Interface);
 
@@ -2404,14 +2589,22 @@ static int _prepare_client_conf(PCOSA_DML_DHCPCV6_CFG       pCfg)
 
             if (pCfg->SuggestedT1)
             {
-                snprintf(line, sizeof(line), "    t1 %lu\n", pCfg->SuggestedT1);
+                snprintf(line, sizeof(line), "       t1 %lu\n", pCfg->SuggestedT1);
                 fprintf(fp, "%s", line);
+            }
+	    else
+	    {
+                fprintf(fp, "       t1 0\n");
             }
 
             if (pCfg->SuggestedT2)
             {
-                snprintf(line, sizeof(line), "    t2 %lu\n", pCfg->SuggestedT2);
+                snprintf(line, sizeof(line), "       t2 %lu\n", pCfg->SuggestedT2);
                 fprintf(fp, "%s", line);
+            }
+	    else
+            {
+                fprintf(fp, "       t2 0\n");
             }
 
             fprintf(fp, "    }\n");
@@ -2423,27 +2616,36 @@ static int _prepare_client_conf(PCOSA_DML_DHCPCV6_CFG       pCfg)
 
             if (pCfg->SuggestedT1)
             {
-                snprintf(line, sizeof(line), "    t1 %lu\n", pCfg->SuggestedT1);
+                snprintf(line, sizeof(line), "       t1 %lu\n", pCfg->SuggestedT1);
                 fprintf(fp, "%s", line);
+            }
+	    else
+            {
+                fprintf(fp, "       t1 0\n");
             }
 
             if (pCfg->SuggestedT2)
             {
-                snprintf(line, sizeof(line), "    t2 %lu\n", pCfg->SuggestedT2);
+                snprintf(line, sizeof(line), "       t2 %lu\n", pCfg->SuggestedT2);
                 fprintf(fp, "%s", line);
+            }
+	    else
+            {
+                fprintf(fp, "       t2 0\n");
             }
 
             fprintf(fp, "    }\n");
         }
-
+#ifndef CONFIGURABLE_OPTIONS
+        fprintf(fp, "    option dns-server\n");
+        fprintf(fp, "    option domain\n");
+#else
+        fprintf(fp, "    option\n");
+#endif
         fprintf(fp, "}\n");
 
         fclose(fp);
     }
-
-    /*we will copy the updated conf file at once*/
-    if (rename(TMP_CLIENT_CONF, CLIENT_CONF_LOCATION))
-        CcspTraceWarning(("%s rename failed %s\n", __FUNCTION__, strerror(errno)));
 
     return 0;
 }
@@ -2931,6 +3133,7 @@ CosaDmlDhcpv6cGetNumberOfSentOption
     )
 {
     UNREFERENCED_PARAMETER(hContext);
+#ifndef DHCPV6C_PSM_ENABLE 
     UNREFERENCED_PARAMETER(ulClientInstanceNumber);
     UtopiaContext utctx = {0};
     char out[256];
@@ -2950,6 +3153,19 @@ CosaDmlDhcpv6cGetNumberOfSentOption
 
     return g_sent_option_num;
 
+#else /* DHCPV6C_PSM_ENABLE */
+    int retPsmGet = CCSP_SUCCESS;
+    char param_name[256]  = {0};
+    char param_value[256] = {0};
+
+    _ansc_sprintf(param_name, PSM_DHCPMANAGER_DHCPV6C_SENDOPTIONCOUNT, (INT)ulClientInstanceNumber);
+    retPsmGet = PsmReadParameter(param_name, param_value, sizeof(param_value));
+    if (retPsmGet == CCSP_SUCCESS) {
+       return atoi(param_value);
+    }
+    else
+      return 0;
+#endif /* DHCPV6C_PSM_ENABLE */
 }
 
 #define CLIENT_SENT_OPTIONS_FILE "/tmp/.dibbler-info/client_sent_options"
@@ -2988,6 +3204,7 @@ CosaDmlDhcpv6cGetSentOption
     )
 {
     UNREFERENCED_PARAMETER(hContext);
+#ifndef DHCPV6C_PSM_ENABLE
     UNREFERENCED_PARAMETER(ulClientInstanceNumber);
     UtopiaContext utctx = {0};
     char out[256];
@@ -3032,10 +3249,41 @@ CosaDmlDhcpv6cGetSentOption
     if ((int)ulIndex == g_sent_option_num-1)
         _write_dibbler_sent_option_file();
 
+#else /* DHCPV6C_PSM_ENABLE */
+    int retPsmGet = CCSP_SUCCESS;
+    char param_value[256] = {0};
+    char param_name[256]= {0};
+    pEntry->InstanceNumber = ulIndex;
+    pEntry->bEnabled = TRUE;
+
+    _ansc_sprintf(param_name, PSM_DHCPMANAGER_DHCPV6C_SENDOPTIONALIAS, (INT)ulClientInstanceNumber, (INT)ulIndex);
+    retPsmGet = PsmReadParameter(param_name, param_value, sizeof(param_value));
+    if (retPsmGet == CCSP_SUCCESS)
+    {
+        STRCPY_S_NOCLOBBER((CHAR *)pEntry->Alias, sizeof(pEntry->Alias), param_value);
+    }
+
+    _ansc_memset(param_name, 0, sizeof(param_name));
+    _ansc_memset(param_value, 0, sizeof(param_value));
+    _ansc_sprintf(param_name, PSM_DHCPMANAGER_DHCPV6C_SENDOPTIONTAG, (INT)ulClientInstanceNumber, (INT)ulIndex);
+    retPsmGet = PsmReadParameter(param_name, param_value, sizeof(param_value));
+    if (retPsmGet == CCSP_SUCCESS)
+    {
+       pEntry->Tag = atoi(param_value);
+    }
+
+    _ansc_memset(param_name, 0, sizeof(param_name));
+    _ansc_memset(param_value, 0, sizeof(param_value));
+    _ansc_sprintf(param_name, PSM_DHCPMANAGER_DHCPV6C_SENDOPTIONVALUE, (INT)ulClientInstanceNumber, (INT)ulIndex);
+    retPsmGet = PsmReadParameter(param_name, param_value, sizeof(param_value));
+    if (retPsmGet == CCSP_SUCCESS)
+    {
+        STRCPY_S_NOCLOBBER((CHAR *)pEntry->Value, sizeof(pEntry->Value), param_value);
+    }
+#endif /* DHCPV6C_PSM_ENABLE */
 
     return ANSC_STATUS_SUCCESS;
 }
-
 
 ANSC_STATUS
 CosaDmlDhcpv6cGetSentOptionbyInsNum
@@ -7352,6 +7600,16 @@ int Get_Device_Mode()
 
 }
 
+static int format_time(char *time)
+{
+    if (time == NULL)
+        return -1;
+    for (int i = 0; i < (int)strlen(time); i++) {
+        if(time[i] == '\'') time[i] = ' ';
+    }
+    return 0;
+}
+
 /* This thread is added to handle the LnF interface IPv6 rule, because LnF is coming up late in XB6 devices.
 This thread can be generic to handle the operations depending on the interfaces. Other interface and their events can be register here later based on requirement */
 #if defined(CISCO_CONFIG_DHCPV6_PREFIX_DELEGATION) && defined(_CBR_PRODUCT_REQ_)
@@ -7405,6 +7663,10 @@ void enable_Ula_IPv6(char* ifname)
 void enable_IPv6(char* if_name)
 {
         FILE *fp = NULL;
+        char guest_v6pref[64] = {0};
+        char guest_globalIP[128] = {0};
+        int ret = 0;
+        unsigned int prefixLen = 0;
 
         CcspTraceInfo(("%s : Enabling ipv6 on iface %s\n",__FUNCTION__,if_name));
 
@@ -7431,6 +7693,40 @@ void enable_IPv6(char* if_name)
         #endif
         rule_add_va_arg("-6 iif %s lookup erouter",if_name);
 
+        commonSyseventGet("wan6_prefix", guest_v6pref, sizeof(guest_v6pref));
+        prefixLen=_ansc_strlen(guest_v6pref);
+        if( (guest_v6pref[prefixLen-1] == ':') && (guest_v6pref[prefixLen-2] == ':') ){
+            guest_v6pref[prefixLen-3] = '1' ;
+        }
+
+        sprintf(guest_v6pref+strlen(guest_v6pref), "/%d", 64);
+        if(brlan1_prefix_changed == 0)
+        {
+            commonSyseventGet("brlan1_IPv6_prefix", GUEST_PREVIOUS_PREFIX, sizeof(GUEST_PREVIOUS_PREFIX));
+        }
+        else
+              brlan1_prefix_changed = 0;
+
+        if (_ansc_strncmp(GUEST_PREVIOUS_PREFIX, guest_v6pref,strlen(GUEST_PREVIOUS_PREFIX)) != 0)
+        {
+            commonSyseventSet("brlan1_previous_ipv6_prefix", GUEST_PREVIOUS_PREFIX);
+            _ansc_strncpy(GUEST_PREVIOUS_PREFIX, guest_v6pref, sizeof(guest_v6pref));
+        }
+        commonSyseventSet("brlan1_IPv6_prefix", guest_v6pref);
+
+        ret = dhcpv6_assign_global_ip(guest_v6pref, GUEST_INTERFACE_NAME, guest_globalIP);
+        if ( ret != 0 ){
+            AnscTrace("error, assign global ip error.\n");
+        }
+        else{
+            commonSyseventSet("brlan1_ipaddr_v6", guest_globalIP);
+            if ( GUEST_PREVIOUS_IP[0] && (_ansc_strcmp(GUEST_PREVIOUS_IP, guest_globalIP ) != 0) ){
+                commonSyseventSet("brlan1_previous_ipaddr_v6", GUEST_PREVIOUS_IP);
+                 IP6_ADDR_DEL(GUEST_PREVIOUS_IP,GUEST_INTERFACE_NAME);
+                 _ansc_strcpy(GUEST_PREVIOUS_IP, guest_globalIP);
+            }
+            IP6_ADDR_ADD(guest_globalIP,GUEST_INTERFACE_NAME);
+        }
         #ifdef RDKB_EXTENDER_ENABLED
             if ( DEVICE_MODE_ROUTER == Get_Device_Mode() && access(ULA_ROUTE_SET, R_OK) == 0 )
             {
@@ -8238,6 +8534,7 @@ dhcpv6c_dbg_thrd(void * in)
             char action[64] = {0};
 	    int dataLen = 0;
 	    char preflen[12] = {0};
+	    BOOL bRestartFirewall = FALSE;
 #if defined(FEATURE_RDKB_CONFIGURABLE_WAN_INTERFACE)
             char IfaceName[64] = {0};
 #endif
@@ -8360,6 +8657,13 @@ dhcpv6c_dbg_thrd(void * in)
                         (PUCHAR)"Name",
                         (PUCHAR)COSA_DML_DHCPV6_CLIENT_IFNAME
                         );
+
+#if defined(FEATURE_RDKB_CONFIGURABLE_WAN_INTERFACE)
+                /* ToDo: Replace COSA_DML_DHCPV6_CLIENT_IFNAME with DATA-VLAN interface while integrating DHCPManager with WanManager*/
+		if (strcmp(IfaceName, COSA_DML_DHCPV6_CLIENT_IFNAME) != 0)
+                    continue;
+#endif
+ 
                 if (!strncmp(action, "add", 3))
                 {
                     CcspTraceInfo(("%s: add\n", __func__));
@@ -8750,6 +9054,7 @@ dhcpv6c_dbg_thrd(void * in)
                                                 {
                                                 ERR_CHK(rc);
                                                 }
+                                                commonSyseventGet("brlan1_ipaddr_v6", GUEST_PREVIOUS_IP, sizeof(GUEST_PREVIOUS_IP));
                                                 ifl_set_event(cmd, out1);
 
                                                 enable_IPv6(interface_name);
@@ -9267,12 +9572,84 @@ dhcpv6c_dbg_thrd(void * in)
                 }
                 else if (!strncmp(action, "del", 3))
                 {
-                    /*todo*/
+                    CcspTraceInfo(("%s: del\n", __func__));
+                    char previous_v6pref[128] = {0};
+                    char current_pref[128]    = {0};
+                    char buf[128]             = {0};
+                    char command[100]         = {0};
+                    char vldtime[64]          = {0};
+                    char prdtime[64]          = {0};
+
+                    syscfg_get(NULL, "ipv6_privacy_pref_lifetime", prdtime, sizeof(prdtime));
+                    syscfg_get(NULL, "ipv6_privacy_valid_lifetime", vldtime, sizeof(vldtime));
+                    strcpy(buf, v6pref);
+                    if ( pref_len >= 64 )
+                    {
+                        sprintf(v6pref+strlen(v6pref), "/%d", pref_len);
+                    }
+                    else
+                    {
+                        pref_len = 64;
+                        sprintf(v6pref+strlen(v6pref), "/%d", pref_len);
+                    }
+
+                    commonSyseventGet("previous_ipv6_prefix", previous_v6pref, sizeof(previous_v6pref));
+                    commonSyseventGet("ipv6_prefix", current_pref, sizeof(current_pref));
+
+                    if (strcmp(previous_v6pref, "") != 0 && strcmp(previous_v6pref, v6pref) == 0) { // Previous prefix expiry occurred
+                        CcspTraceInfo(("%s : Previous prefix %s got expired. Removing it from the bridge.\n", __FUNCTION__ , previous_v6pref));
+                        commonSyseventSet("previous_ipv6_prefix", "");
+                        commonSyseventSet("previous_ipv6_prefix_vldtime", "0");
+
+                        bRestartFirewall = TRUE;
+                        snprintf(command, sizeof(command)-1, "ip -6 addr del %s1/%d dev brlan0", buf, pref_len);
+                        CcspTraceInfo(("%s : Command \"%s\" executed\n", __FUNCTION__, command));
+                        system(command);
+
+                        memset(buf,0,sizeof(buf));
+                        commonSyseventGet("brlan1_previous_ipaddr_v6", buf, sizeof(buf));
+                        IP6_ADDR_DEL(buf,GUEST_INTERFACE_NAME);
+                    }
+                    else if (strcmp(current_pref, "") != 0 && strcmp(current_pref,v6pref) == 0) { // current prefix expiry occurred
+                        CcspTraceInfo(("%s : Current prefix %s got expired. Setting it as previous one.\n", __FUNCTION__ , v6pref));
+                        commonSyseventSet("previous_ipv6_prefix", v6pref);
+                        commonSyseventSet("previous_ipv6_prefix_vldtime", "0");
+
+                        bRestartFirewall = TRUE;
+                        strcpy(v6pref, "");
+
+                        commonSyseventSet(COSA_DML_DHCPV6C_PREF_SYSEVENT_NAME,v6pref);
+                        commonSyseventSet(COSA_DML_DHCPV6C_PREF_IAID_SYSEVENT_NAME,iapd_iaid);
+                        commonSyseventSet(COSA_DML_DHCPV6C_PREF_T1_SYSEVENT_NAME,iapd_t1);
+                        commonSyseventSet(COSA_DML_DHCPV6C_PREF_T2_SYSEVENT_NAME,iapd_t2);
+                        commonSyseventSet(COSA_DML_DHCPV6C_PREF_PRETM_SYSEVENT_NAME,iapd_pretm);
+                        commonSyseventSet(COSA_DML_DHCPV6C_PREF_VLDTM_SYSEVENT_NAME,iapd_vldtm);
+
+                    if (format_time(iapd_pretm) == 0 && format_time(iapd_vldtm) == 0) {
+                            CcspTraceInfo(("%s : Going to trim ' from preferred and valid lifetime, values are %s %s\n",__FUNCTION__,iapd_pretm,iapd_vldtm));
+                        }
+
+                        commonSyseventSet("ipv6_prefix_prdtime", iapd_pretm);
+                        commonSyseventSet("ipv6_prefix_vldtime", iapd_vldtm);
+                        commonSyseventSet("ipv6_prefix", v6pref);
+                        commonSyseventGet("brlan1_IPv6_prefix", GUEST_PREVIOUS_PREFIX, sizeof(GUEST_PREVIOUS_PREFIX));
+
+                        brlan1_prefix_changed = 1;
+                        commonSyseventSet("brlan1_IPv6_prefix", v6pref);
+
+                        memset(buf,0,sizeof(buf));
+                        commonSyseventGet("brlan1_previous_ipaddr_v6", buf, sizeof(buf));
+                        IP6_ADDR_DEL(buf,GUEST_INTERFACE_NAME);
+                    }
+                    if (bRestartFirewall) { // Needs firewall restart as deprecation of prefix occurred
+                        v_secure_system("sysevent set firewall-restart");
+                        bRestartFirewall = FALSE;
+                    }
                 }
 #if defined(CISCO_CONFIG_DHCPV6_PREFIX_DELEGATION) && (defined(_CBR_PRODUCT_REQ_) || defined(_BCI_FEATURE_REQ))
 
 #else
-		ifl_set_event("zebra-restart", "");
+                ifl_set_event("zebra-restart", "");
 #endif
                 if (pString)
                     AnscFreeMemory(pString);
@@ -9300,6 +9677,313 @@ EXIT:
 #endif
     return NULL;
 }
+
+ANSC_STATUS CosaDmlStartDhcpv6Client(ANSC_HANDLE hInsContext)
+{
+    PCOSA_CONTEXT_DHCPCV6_LINK_OBJECT pCxtLink      = (PCOSA_CONTEXT_DHCPCV6_LINK_OBJECT)hInsContext;
+    PCOSA_DML_DHCPCV6_FULL            pDhcpcv6      = NULL;
+    dhcp_params                       dhcpParams    = {0};
+#ifdef RA_MONITOR_SUPPORT
+    errno_t                           rc            = -1;
+    char                              cmd[256]      = {0};
+#else
+    INT                               sentOptCount  = -1;
+    INT                               sentOptIdx    = -1;
+    ULONG                             instanceNum   = -1;
+    dhcp_opt_list*                    send_opt_list = NULL;
+    dhcp_opt_list*                    req_opt_list  = NULL;
+    CHAR*                             reqOptions    = NULL;
+    CHAR*                             token         = NULL;
+    PCOSA_DML_DHCPCV6_SENT            pSentOption   = NULL;
+    PSINGLE_LINK_ENTRY                pSListEntry   = NULL;
+#endif // RA_MONITOR_SUPPORT
+
+    CcspTraceWarning(("IN CosaDmlStartDhcpv6Client\n"));
+    if (!pCxtLink)
+    {
+        CcspTraceError(("%s : pCxtLink is NULL",__FUNCTION__));
+        return ANSC_STATUS_FAILURE;
+    }
+
+    pDhcpcv6 = (PCOSA_DML_DHCPCV6_FULL)pCxtLink->hContext;
+    if (!pDhcpcv6)
+    {
+        CcspTraceError(("%s : pDhcpcv6 is NULL",__FUNCTION__));
+        return ANSC_STATUS_FAILURE;
+    }
+
+    memset(&dhcpParams, 0, sizeof(dhcp_params));
+    dhcpParams.ifname = (CHAR *)pDhcpcv6->Cfg.Interface;
+#ifdef RA_MONITOR_SUPPORT
+    rc = strcpy_s(rtAdvInfo[pDhcpcv6->Cfg.InstanceNumber-1].ra_Ifname, sizeof(rtAdvInfo[pDhcpcv6->Cfg.InstanceNumber].ra_Ifname), (CHAR *)pDhcpcv6->Cfg.Interface);
+    ERR_CHK(rc);
+    snprintf(cmd, sizeof(cmd), "echo 0 > /proc/sys/net/ipv6/conf/%s/disable_ipv6", pDhcpcv6->Cfg.Interface);
+    system(cmd);
+    snprintf(cmd, sizeof(cmd), "echo 0 > /proc/sys/net/ipv6/conf/%s/router_solicitations", pDhcpcv6->Cfg.Interface);
+    system(cmd);
+    snprintf(cmd, sizeof(cmd), "echo 2 > /proc/sys/net/ipv6/conf/%s/accept_ra", pDhcpcv6->Cfg.Interface);
+    system(cmd);
+    snprintf(cmd, sizeof(cmd), "/usr/bin/rdisc6 -r 6 %s", pDhcpcv6->Cfg.Interface);
+    system(cmd);
+    CcspTraceWarning(("Execute [%s]\n", cmd));
+#else
+    syscfg_set_commit(NULL, "NeedDibblerRestart", "false");
+    _prepare_client_conf(&pDhcpcv6->Cfg);
+
+    sentOptCount = CosaDmlDhcpv6cGetNumberOfSentOption(NULL, pDhcpcv6->Cfg.InstanceNumber);
+    for (sentOptIdx = 0; sentOptIdx < sentOptCount; sentOptIdx++)
+    {
+        pSListEntry = (PSINGLE_LINK_ENTRY)SentOption1_GetEntry(pCxtLink, sentOptIdx, &instanceNum);
+        if (pSListEntry)
+        {
+            pCxtLink            = ACCESS_COSA_CONTEXT_LINK_OBJECT(pSListEntry);
+            pSentOption         = (PCOSA_DML_DHCPCV6_SENT)pCxtLink->hContext;
+            if (pSentOption->bEnabled)
+            {
+                add_dhcpv4_opt_to_list(&send_opt_list, (INT)pSentOption->Tag, (CHAR *)pSentOption->Value);
+            }
+        }
+    }
+
+    reqOptions = strdup((CHAR *)pDhcpcv6->Cfg.RequestedOptions);
+    token = strtok(reqOptions, " , ");
+    while (token != NULL)
+    {
+        CcspTraceInfo(("token : %d\n", atoi(token)));
+        add_dhcpv4_opt_to_list(&req_opt_list, atoi(token), "");
+        token = strtok(NULL, " , ");
+    }
+
+    dhcpParams.ifType = WAN_LOCAL_IFACE;
+    start_dhcpv6_client(&dhcpParams, req_opt_list, send_opt_list);
+    free_opt_list_data (req_opt_list);
+    free_opt_list_data (send_opt_list);
+#endif // RA_MONITOR_SUPPORT
+
+    return ANSC_STATUS_SUCCESS;
+}
+
+
+ANSC_STATUS CosaDmlStopDhcpv6Client(ANSC_HANDLE hInsContext)
+{
+    PCOSA_CONTEXT_DHCPCV6_LINK_OBJECT pCxtLink      = (PCOSA_CONTEXT_DHCPCV6_LINK_OBJECT)hInsContext;
+    PCOSA_DML_DHCPCV6_FULL            pDhcpcv6      = NULL;
+    dhcp_params                       dhcpParams    = {0};
+
+    if (!pCxtLink)
+    {
+        CcspTraceError(("%s : pCxtLink is NULL",__FUNCTION__));
+        return ANSC_STATUS_FAILURE;
+    }
+
+    pDhcpcv6 = (PCOSA_DML_DHCPCV6_FULL)pCxtLink->hContext;
+    if (!pDhcpcv6)
+    {
+        CcspTraceError(("%s : pDhcpcv6 is NULL",__FUNCTION__));
+        return ANSC_STATUS_FAILURE;
+    }
+
+    dhcpParams.ifname = (CHAR *)pDhcpcv6->Cfg.Interface;
+    stop_dhcpv6_client(&dhcpParams);
+
+    return ANSC_STATUS_SUCCESS;
+}
+
+#ifdef RA_MONITOR_SUPPORT
+static void *
+rtadv_dbg_thread(void * in)
+{
+    UNREFERENCED_PARAMETER(in);
+    int fd = 0;
+    char msg[64] = {0};
+    char *buf = NULL;
+    fd_set rfds;
+    int clientCount = CosaDmlDhcpv6cGetNumberOfEntries(NULL);
+    rtAdvInfo = (desiredRtAdvInfo*) AnscAllocateMemory(sizeof(desiredRtAdvInfo) * clientCount);
+    char temp[5] = {0};
+    dhcp_params dhcpParams = {0};
+    char managedFlag;
+    char otherFlag;
+    char ra_Ifname[64] = {0};
+    /* Message format written to the FIFO by ipv6rtmon daemon would be either one of the below :
+             "ra-flags 0 0"
+             "ra-flags 0 1"
+             "ra-flags 1 0"
+       Possible values for managedFlag and otherFlag set by the daemon will ONLY be 0 or 1 and no other positive values.
+    */
+    const size_t ra_flags_len = 32; /* size of ra_flags message including terminating character */
+    int i = 0;
+    while (i < clientCount)
+        rtAdvInfo[i++].managedFlag = '-';
+
+    fd = open(RA_COMMON_FIFO, O_RDWR);
+    if (fd < 0)
+    {
+        CcspTraceError(("%s : Open failed for fifo file %s due to error %s.\n", __FUNCTION__, RA_COMMON_FIFO, strerror(errno)));
+        goto EXIT;
+    }
+    v_secure_system(IPv6_RT_MON_NOTIFY_CMD); /* SIGUSR1 for ipv6rtmon daemon upon creation of FIFO file from the thread. */
+    CcspTraceInfo(("%s : Inside %s %d\n", __FUNCTION__, __FUNCTION__, fd));
+
+    while (1)
+    {
+        int retCode = 0;
+
+        FD_ZERO(&rfds);
+        FD_SET(fd, &rfds);
+        retCode = select(fd+1, &rfds, NULL, NULL, NULL);
+
+        if (retCode < 0) {
+
+            if (errno == EINTR)
+                continue;
+
+            CcspTraceError(("%s -- select() returns error %s.\n", __FUNCTION__, strerror(errno)));
+            goto EXIT;
+        }
+        else if (retCode == 0)
+            continue;
+
+        if (FD_ISSET(fd, &rfds))
+        {
+            size_t ofst = 0;
+            memset(msg, 0, sizeof(msg));
+            while (ofst < ra_flags_len) {
+                ssize_t ret = read(fd, &msg[ofst], ra_flags_len - ofst);
+                if (ret < 0) {
+                    CcspTraceError(("%s : read() returned error %s after already reading %zu. Ignoring the message...\n", __FUNCTION__, strerror(errno), ret));
+                    continue;
+                }
+                ofst += ret;
+            }
+        }
+        else
+            continue;
+        if ((!strncmp(msg, "ra-flags", strlen("ra-flags"))) > 0) /*Ensure that message has "ra-flags" as the first substring. */
+        {
+            CcspTraceInfo(("%s: get message %s\n", __func__, msg));
+            int needEnable = 0;
+            buf = msg + strlen("ra-flags");
+            while (isblank(*buf))
+                buf++;
+
+            memset(temp, 0, sizeof(temp));
+            if ((syscfg_get(NULL, "tr_dhcpv6c_enabled", temp, sizeof(temp)) == 0) && (!strcmp(temp, "1")))
+                needEnable = 1;
+
+            if (sscanf(buf, "%c %c %s", &managedFlag, &otherFlag, ra_Ifname)) { /* Possible managedFlag and otherFlag values will be either 0 or 1 only. */
+             int index = 0;
+             while(index < clientCount)
+             {
+                 if(strcmp(rtAdvInfo[index].ra_Ifname,ra_Ifname) == 0)
+                     break;
+                 else
+                     index ++;
+              }
+               /* continue if interface is not found*/
+              if(index == clientCount)
+                  continue;
+                  /*continue if manage is 0 and other is 0 */
+              if(managedFlag == '0' && otherFlag == '0')
+              {
+                   syscfg_set_u_commit(NULL, "dibbler_requestAddress", 0 );
+                   syscfg_set_u_commit(NULL, "dibbler_requestPrefix", 0 );
+                   continue;
+              }
+                /* continue if the previous manage flag is same as current */
+              if (managedFlag == rtAdvInfo[index].managedFlag)
+                   continue;
+              rtAdvInfo[index].managedFlag = managedFlag;
+              rtAdvInfo[index].otherFlag = otherFlag;
+#if 0          /* Will revisit when we support sysevents based restart of dibbler*/
+               if (needDibblerRestart) {
+                   prev_Mflag_val[index] = '-';
+                   needDibblerRestart = FALSE;
+               }
+#endif
+              dhcpParams.ifname = rtAdvInfo[index].ra_Ifname;
+
+              stop_dhcpv6_client(&dhcpParams);
+              if(rtAdvInfo[index].managedFlag == '1')
+              {
+                  syscfg_set_u_commit(NULL, "dibbler_requestAddress", 1 );
+                  syscfg_set_u_commit(NULL, "dibbler_requestPrefix", 1 );
+               }
+               else if(rtAdvInfo[index].otherFlag == '1')
+               {
+                   syscfg_set_u_commit(NULL, "dibbler_requestAddress", 0 );
+                   syscfg_set_u_commit(NULL, "dibbler_requestPrefix", 1 );
+               }
+               sleep(0.4);
+               ULONG instanceNum;
+               PCOSA_DML_DHCPCV6_FULL pDhcpcv6        = NULL;
+               PCOSA_CONTEXT_DHCPCV6_LINK_OBJECT pDhcpv6CxtLink  = NULL;
+               PSINGLE_LINK_ENTRY  pSListEntry   = NULL;
+               pSListEntry = (PSINGLE_LINK_ENTRY)Client3_GetEntry(NULL,index,&instanceNum);
+               if (pSListEntry)
+               {
+                   pDhcpv6CxtLink      = ACCESS_COSA_CONTEXT_DHCPCV6_LINK_OBJECT(pSListEntry);
+                   pDhcpcv6            = (PCOSA_DML_DHCPCV6_FULL)pDhcpv6CxtLink->hContext;
+               }
+
+               if(rtAdvInfo[index].managedFlag == '1')
+               {
+                   pDhcpcv6->Cfg.RequestAddresses = TRUE;
+               }
+
+               if((rtAdvInfo[index].managedFlag == '1') || (rtAdvInfo[index].otherFlag == '1'))
+               {
+                   pDhcpcv6->Cfg.RequestPrefixes = TRUE;
+               }
+
+               if( ((rtAdvInfo[index].managedFlag == '1') || (rtAdvInfo[index].otherFlag == '1')) && (needEnable == 1) )
+               {
+                   syscfg_set_commit(NULL, "NeedDibblerRestart", "false");
+                   _prepare_client_conf(&pDhcpcv6->Cfg);
+                   int count = 0;
+                   PCOSA_DML_DHCPCV6_SENT pSentOption = NULL;
+                   dhcp_opt_list* send_opt_list = NULL;
+                   dhcp_opt_list* req_opt_list = NULL;
+                   PCOSA_CONTEXT_LINK_OBJECT       pCxtLink      = NULL;
+                   count = CosaDmlDhcpv6cGetNumberOfSentOption(NULL, instanceNum);
+                   for ( int ulIndex2 = 0; ulIndex2 < count; ulIndex2++ )
+                   {
+                       pSListEntry = (PSINGLE_LINK_ENTRY)SentOption1_GetEntry(pDhcpv6CxtLink, ulIndex2, &instanceNum);
+                       if (pSListEntry)
+                       {
+                           pCxtLink           = ACCESS_COSA_CONTEXT_LINK_OBJECT(pSListEntry);
+                           pSentOption         = (PCOSA_DML_DHCPCV6_SENT)pCxtLink->hContext;
+                           if (pSentOption->bEnabled)
+                           {
+                               add_dhcpv4_opt_to_list(&send_opt_list, (int)pSentOption->Tag, (CHAR *)pSentOption->Value);
+                           }
+                       }
+                   }
+                   char *tmpstr = NULL;
+                   tmpstr = strdup((CHAR *)pDhcpcv6->Cfg.RequestedOptions);
+                   char* token = strtok(tmpstr, " , ");
+                   while (token != NULL)
+                   {
+                       CcspTraceError(("token : %d\n", atoi(token)));
+                       add_dhcpv4_opt_to_list(&req_opt_list, atoi(token), "");
+                       token = strtok(NULL, " , ");
+                   }
+                   dhcpParams.ifType = WAN_LOCAL_IFACE;
+                   start_dhcpv6_client(&dhcpParams, req_opt_list, send_opt_list);
+                   free_opt_list_data (req_opt_list);
+                   free_opt_list_data (send_opt_list);
+               }
+            }
+        }
+    }
+EXIT:
+    if (fd >= 0) {
+        close(fd);
+    }
+    return NULL;
+}
+#endif // RA_MONITOR_SUPPORT
+
 #if defined(FEATURE_RDKB_WAN_MANAGER)
 static int send_dhcp_data_to_wanmanager (ipc_dhcpv6_data_t *dhcpv6_data)
 {

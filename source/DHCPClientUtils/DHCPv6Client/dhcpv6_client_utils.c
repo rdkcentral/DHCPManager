@@ -28,6 +28,7 @@
 token_t dhcp_sysevent_token;
 int dhcp_sysevent_fd;
 
+#ifndef CONFIGURABLE_OPTIONS
 static int get_dhcpv6_opt_list (dhcp_opt_list ** req_opt_list, dhcp_opt_list ** send_opt_list)
 {
     char dslite_enable[BUFLEN_16] = {0};
@@ -83,6 +84,7 @@ static int get_dhcpv6_opt_list (dhcp_opt_list ** req_opt_list, dhcp_opt_list ** 
     return SUCCESS;
 
 }
+#endif
 
 pid_t return_dhcp6_client_pid (){
 
@@ -99,7 +101,7 @@ pid_t return_dhcp6_client_pid (){
  * @return     : returns the pid of the dibbler client program else return error code on failure
  *
  */
-pid_t start_dhcpv6_client (dhcp_params * params)
+pid_t start_dhcpv6_client (dhcp_params * params, dhcp_opt_list * req_opt_list, dhcp_opt_list * send_opt_list)
 {
     char * sysevent_name = DHCP_SYSEVENT_NAME;
 
@@ -123,10 +125,7 @@ pid_t start_dhcpv6_client (dhcp_params * params)
         DBG_PRINT("%s %d: Fail to open sysevent.\n", __FUNCTION__, __LINE__);
     }
 
-    // init part
-    dhcp_opt_list * req_opt_list = NULL;
-    dhcp_opt_list * send_opt_list = NULL;
-
+#ifndef CONFIGURABLE_OPTIONS
     DBG_PRINT("%s %d: Collecting DHCP GET/SEND Request\n", __FUNCTION__, __LINE__);
     if ((params->ifType == WAN_LOCAL_IFACE) && (get_dhcpv6_opt_list(&req_opt_list, &send_opt_list)) == FAILURE)
     {
@@ -134,6 +133,7 @@ pid_t start_dhcpv6_client (dhcp_params * params)
         sysevent_close(dhcp_sysevent_fd, dhcp_sysevent_token);
         return pid;
     }
+#endif
 
     // building args and starting dhcpv4 client
     DBG_PRINT("%s %d: Starting Dibbler Clients\n", __FUNCTION__, __LINE__);
@@ -142,12 +142,9 @@ pid_t start_dhcpv6_client (dhcp_params * params)
 #endif
     //exit part
     DBG_PRINT("%s %d: freeing all allocated resources\n", __FUNCTION__, __LINE__);
-    free_opt_list_data (req_opt_list);
-    free_opt_list_data (send_opt_list);
     sysevent_close(dhcp_sysevent_fd, dhcp_sysevent_token);
 
     return pid;
-
 }
 
 /*

@@ -345,6 +345,17 @@ int _datetime_to_secs(char * p_dt);
 /**********************************************************************
                 FUNCTION PROTOTYPES
 **********************************************************************/
+ANSC_STATUS
+CosaDmlStartDhcpv6Client
+    (
+        ANSC_HANDLE hInsContext
+    );
+
+ANSC_STATUS
+CosaDmlStopDhcpv6Client
+    (
+        ANSC_HANDLE hInsContext
+    );
 
 ANSC_STATUS
 CosaDmlDhcpv6Init

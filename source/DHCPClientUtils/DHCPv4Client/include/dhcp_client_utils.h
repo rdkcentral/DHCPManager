@@ -116,7 +116,7 @@ typedef struct dhcp_opt {
 pid_t start_dhcpv4_client (dhcp_params * params,dhcp_opt_list * req_opt_list,dhcp_opt_list * send_opt_list);
 int stop_dhcpv4_client (dhcp_params * params);
 int stop_udhcpc (dhcp_params * params);
-pid_t start_dhcpv6_client (dhcp_params * params);
+pid_t start_dhcpv6_client (dhcp_params * params, dhcp_opt_list * req_opt_list,dhcp_opt_list * send_opt_list);
 int stop_dhcpv6_client (dhcp_params * params);
 pid_t start_exe(char * exe, char * args);
 pid_t start_exe2(char * exe, char * args);

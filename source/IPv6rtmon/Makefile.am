@@ -1,8 +1,8 @@
 ##########################################################################
-# If not stated otherwise in this file or this component's LICENSE
+# If not stated otherwise in this file or this component's Licenses.txt
 # file the following copyright and licenses apply:
 #
-# Copyright 2020 RDK Management
+# Copyright 2024 Deutsche Telekom AG.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,20 +16,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 ##########################################################################
+bin_PROGRAMS = ipv6rtmon
 
-SUBDIRS = DHCPMgrInterface DHCPMgrUtils IPv6rtmon TR-181
+AM_LDFLAGS =  -lsecure_wrapper
 
-
-if DHCP_SERVER_SUPPORT
-SUBDIRS += DHCPServerUtils
-endif
-
-if DHCP_CLIENT_SUPPORT
-SUBDIRS += DHCPClientUtils
-endif
-
-if RA_MONITOR_SUPPORT
-SUBDIRS += IPv6rtmon
-endif
-
-SUBDIRS += DHCPMgrSsp
+ipv6rtmon_SOURCES = ipv6rtmon.c

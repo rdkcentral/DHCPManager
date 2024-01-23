@@ -887,7 +887,9 @@ Client3_GetParamStringValue
 {
     PCOSA_CONTEXT_DHCPCV6_LINK_OBJECT pCxtLink          = (PCOSA_CONTEXT_DHCPCV6_LINK_OBJECT)hInsContext;
     PCOSA_DML_DHCPCV6_FULL            pDhcpc            = (PCOSA_DML_DHCPCV6_FULL)pCxtLink->hContext;
+#ifdef DHCPV6C_COMS
     PUCHAR                          pString           = NULL;
+#endif
 
     /* check the parameter name and return the corresponding value */
     if (strcmp(ParamName, "Alias") == 0)
@@ -904,6 +906,7 @@ Client3_GetParamStringValue
 
     if (strcmp(ParamName, "Interface") == 0)
     {
+#ifdef DHCPV6C_COMS
         /* collect value */
         pString = CosaUtilGetFullPathNameByKeyword
                     (
@@ -923,6 +926,9 @@ Client3_GetParamStringValue
         }
 
         return 0;
+#else
+	return  update_pValue(pValue,pUlSize, (char*)pDhcpc->Cfg.Interface);
+#endif
     }
 
     if (strcmp(ParamName, "DUID") == 0)
@@ -1000,13 +1006,21 @@ Client3_SetParamBoolValue
 #ifdef DHCPV6_CLIENT_SUPPORT
         if (bValue == TRUE)
         {
-            //dhcpv6_client_service_enable();
+#ifdef DHCPV6C_COMS
+	        dhcpv6_client_service_enable();
             dhcpv6_client_enabled = 1;
+#else
+            CosaDmlStartDhcpv6Client(hInsContext);
+#endif
         }
         else
         {
-            //dhcpv6_client_service_disable();
+#ifdef DHCPV6C_COMS
+            dhcpv6_client_service_disable();
             dhcpv6_client_enabled = 0;
+#else
+            CosaDmlStopDhcpv6Client(hInsContext);
+#endif
         }
 #endif
 
@@ -1055,8 +1069,10 @@ Client3_SetParamBoolValue
     /* CcspTraceWarning(("Unsupported parameter '%s'\n", ParamName)); */
    
 #ifdef DHCPV6_CLIENT_SUPPORT 
-    //dhcpv6_client_service_disable();
+#ifdef DHCPV6C_COMS
+    dhcpv6_client_service_disable();
     dhcpv6_client_enabled = 0;
+#endif
 #endif
 
     return FALSE;
@@ -1356,12 +1372,14 @@ Client3_Commit
     }
     else
     {
+#ifdef DHCPV6C_COMS
         returnStatus = CosaDmlDhcpv6cSetCfg(NULL, &pDhcpc->Cfg);
 
         if ( returnStatus != ANSC_STATUS_SUCCESS)
         {
             CosaDmlDhcpv6cGetCfg(NULL, &pDhcpc->Cfg);
         }
+#endif
     }
 
     return returnStatus;

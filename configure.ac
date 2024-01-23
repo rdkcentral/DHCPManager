@@ -228,6 +228,9 @@ AC_ARG_ENABLE([bci_support],
 esac],[bci_support=false])
 AM_CONDITIONAL(BCI_SUPPORT, test x"$bci_support" = x"true")
 
+# Check ra_monitor_support
+AM_CONDITIONAL([RA_MONITOR_SUPPORT], [test "$RA_MONITOR_SUPPORT" = "yes"])
+
 # Checks for header files.
 AC_CHECK_HEADERS([stdlib.h string.h unistd.h])
 
@@ -254,6 +257,7 @@ AC_CONFIG_FILES(
         source/DHCPClientUtils/DHCPv4Client/service_udhcpc/Makefile
         source/DHCPClientUtils/DHCPv6Client/Makefile
         source/DHCPMgrUtils/Makefile
+        source/IPv6rtmon/Makefile
         source/TR-181/board_sbapi/Makefile
         source/TR-181/middle_layer_src/Makefile
         source/TR-181/Makefile

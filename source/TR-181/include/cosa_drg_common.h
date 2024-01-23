@@ -65,6 +65,7 @@ int commonSyseventGet(char* key, char* value, int valLen);
 int commonSyseventClose();
 
 #define CCSP_COMMON_FIFO "/tmp/ccsp_common_fifo"
+#define RA_COMMON_FIFO   "/tmp/ra_common_fifo"
 
 #endif
 #endif

@@ -35,6 +35,10 @@
 #include "ifl.h"
 #include <sys/ioctl.h>
 
+#ifdef DHCPV6C_PSM_ENABLE
+#include "ccsp_psm_helper.h"
+#endif //DHCPV6C_PSM_ENABLE
+
 #define UNUSED(x) (void)(x)
 #define PARTNER_ID_LEN 64
 typedef int (*CALLBACK_FUNC_NAME)(void *);
@@ -975,3 +979,47 @@ int lm_get_host_by_mac(char *mac, LM_cmd_common_result_t *pHost){
        return -1;
 }
 */
+
+#ifdef DHCPV6C_PSM_ENABLE
+INT PsmWriteParameter( char *pParamName, char *pParamVal )
+{
+    INT     retPsmSet  = CCSP_SUCCESS;
+
+    if( ( NULL == pParamName) || ( NULL == pParamVal ) )
+    {
+        CcspTraceError(("%s Invalid Input Parameters\n", __FUNCTION__));
+        return CCSP_FAILURE;
+    }
+
+    retPsmSet = PSM_Set_Record_Value2(bus_handle, g_Subsystem, pParamName, ccsp_string, pParamVal);
+    if (retPsmSet != CCSP_SUCCESS)
+    {
+        AnscTraceFlow(("%s Error %d writing %s %s\n", __FUNCTION__, retPsmSet, pParamName, pParamVal));
+    }
+
+    return retPsmSet;
+}
+
+INT PsmReadParameter( char *pParamName, char *pReturnVal, int returnValLength )
+{
+    INT     retPsmGet     = CCSP_SUCCESS;
+    CHAR   *param_value   = NULL;
+
+    if( ( NULL == pParamName) || ( NULL == pReturnVal ) || ( 0 >= returnValLength ) )
+    {
+        CcspTraceError(("%s Invalid Input Parameters\n", __FUNCTION__));
+        return CCSP_FAILURE;
+    }
+
+    retPsmGet = PSM_Get_Record_Value2(bus_handle, g_Subsystem, pParamName, NULL, &param_value);
+    if (retPsmGet != CCSP_SUCCESS) {
+        CcspTraceError(("%s Error %d reading %s\n", __FUNCTION__, retPsmGet, pParamName));
+    }
+    else {
+        snprintf(pReturnVal, returnValLength, "%s", param_value);
+        ((CCSP_MESSAGE_BUS_INFO *)bus_handle)->freefunc(param_value);
+    }
+
+    return retPsmGet;
+}
+#endif //DHCPV6C_PSM_ENABLE

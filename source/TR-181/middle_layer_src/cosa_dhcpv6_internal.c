@@ -430,7 +430,7 @@ CosaDhcpv6BackendGetDhcpv6Info
         }
 
         DHCPV6_CLIENT_SET_DEFAULTVALUE(pDhcpc);
-        returnStatus = CosaDmlDhcpv6cGetEntry(NULL, ulIndex, pDhcpc);
+        returnStatus = CosaDmlDhcpv6cGetEntry(NULL, ulIndex+1, pDhcpc);
         if ( returnStatus != ANSC_STATUS_SUCCESS )
         {
             AnscFreeMemory(pDhcpc);
@@ -561,7 +561,7 @@ CosaDhcpv6BackendGetDhcpv6Info
                             (
                                 NULL, 
                                 pDhcpc->Cfg.InstanceNumber, 
-                                ulIndex2, 
+                                ulIndex2+1,
                                 pSentOption
                             );
             if ( returnStatus != ANSC_STATUS_SUCCESS )
