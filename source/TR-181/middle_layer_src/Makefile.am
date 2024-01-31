@@ -31,6 +31,7 @@ libCcspDhcpMgr_middle_layer_src_la_CPPFLAGS = -I$(top_srcdir)/source/TR-181/incl
                                               -I$(top_srcdir)/source/DHCPMgrUtils/include \
                                               -I$(top_srcdir)/source/DHCPMgrInterface/include \
                                               -I$(top_srcdir)/source/DHCPClientUtils/DHCPv4Client/include \
+                                              -I$(top_srcdir)/source/DHCPServerUtils/utils/include \
                                               -I$(top_srcdir)/source/DHCPServerUtils/DHCPv4Server/include \
                                               -I$(top_srcdir)/source/DHCPClientUtils/DHCPv6Client/include \
                                               -I$(top_srcdir)/source/DHCPClientUtils/DHCPv6Server/include

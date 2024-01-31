@@ -73,6 +73,7 @@
 #include "plugin_main_apis.h"
 #include "ccsp_psm_helper.h"
 #include "safec_lib_common.h"
+#include "util.h"
 
 extern void * g_pDslhDmlAgent;
 
@@ -169,7 +170,6 @@ CosaDeviceControlInitialize
     errno_t                         rc              = -1;
 
     /* Initiation all functions */
-    CosaDmlDcInit(NULL, NULL);
 
     ulLmCnt = CosaDmlLanMngm_GetNumberOfEntries();
 
@@ -284,15 +284,14 @@ CosaDeviceControlInitialize
     pMyObject->bResetChanged = 0;
     pMyObject->bFactoryResetChanged = 0;
 
+    /*CosaDmlDcInit(NULL, NULL);
     CosaDmlDcGetWanAddressMode((ANSC_HANDLE)pMyObject, &pMyObject->WanAddrMode);
     CosaDmlDcGetMsoRemoteMgmtEnable((ANSC_HANDLE)pMyObject, &pMyObject->EnableMsoRemoteMgmt);
     CosaDmlDcGetCusadminRemoteMgmtEnable((ANSC_HANDLE)pMyObject, &pMyObject->EnableCusadminRemoteMgmt);
 
     CosaDmlDcGetHTTPPort ((ANSC_HANDLE)pMyObject, &pMyObject->HTTPPort );
     CosaDmlDcGetHTTPSPort((ANSC_HANDLE)pMyObject, &pMyObject->HTTPSPort);
-    CosaDmlDcGetReinitMacThreshold((ANSC_HANDLE)pMyObject, &pMyObject->ReinitMacThreshold);
-    //CosaDmlDcGetGuestPassword(NULL, pMyObject->GuestPassword);
-    //pMyObject->NoOfGuests = CosaDmlDcGetNoOfGuests();
+    CosaDmlDcGetReinitMacThreshold((ANSC_HANDLE)pMyObject, &pMyObject->ReinitMacThreshold);*/
 
     return ANSC_STATUS_SUCCESS;
 }
