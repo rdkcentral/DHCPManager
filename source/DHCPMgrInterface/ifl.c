@@ -543,9 +543,17 @@ ifl_ret ifl_get_event (char* event, char* value, int valueLength)
     ifl_unlock(trtLock, IFL_LOCK_TYPE_MUTEX_WAIT);
 
     if (tResrc)
-    {   // check return
-        sysevent_get(tResrc->se_fd, tResrc->se_tok, event, value, valueLength);
-        IFL_LOG_INFO("SE_GET(%d) %s: %s", tResrc->se_fd, event, value);
+    {
+        int sys_ret = 0;
+        if ((sys_ret = sysevent_get(tResrc->se_fd, tResrc->se_tok, event, value, valueLength)))
+        {
+            IFL_LOG_ERROR("SE_GET(%d) %s: %s (err:%d)",  tResrc->se_fd, event, value, sys_ret);
+            ret = IFL_SYSEVENT_ERROR;
+        }
+        else
+        {
+            IFL_LOG_INFO("SE_GET(%d) %s: %s", tResrc->se_fd, event, value);
+        }
     }
     else
     {
@@ -570,9 +578,17 @@ ifl_ret ifl_set_event (char* event, char* value)
     ifl_unlock(trtLock, IFL_LOCK_TYPE_MUTEX_WAIT);
 
     if (tResrc)
-    {   // check return
-        sysevent_set(tResrc->se_fd, tResrc->se_tok, event, value, 0);
-        IFL_LOG_INFO("SE_SET(%d) %s: %s", tResrc->se_fd, event, value);
+    {
+        int sys_ret = 0;
+        if ((sys_ret = sysevent_set(tResrc->se_fd, tResrc->se_tok, event, value, 0)))
+        {
+            IFL_LOG_ERROR("SE_SET(%d) %s: %s (err:%d)",  tResrc->se_fd, event, value, sys_ret);
+            ret = IFL_SYSEVENT_ERROR;
+        }
+        else
+        {
+            IFL_LOG_INFO("SE_SET(%d) %s: %s", tResrc->se_fd, event, value);
+        }
     }
     else
     {

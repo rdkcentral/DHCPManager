@@ -89,6 +89,7 @@ extern void* g_vBus_handle;
 const char* const g_cComponent_id = "ccsp.servicedhcp";
 
 static char dnsOption[8] = "";
+static int  err_counter  = 0;
 
 extern void copy_command_output(FILE *, char *, int);
 extern void print_with_uptime(const char*);
@@ -711,8 +712,34 @@ int dhcp_server_start (char *input)
     ifl_get_event("bridge_mode", l_cBridge_Mode,
                          sizeof(l_cBridge_Mode));
     //LAN Status DHCP
-    ifl_get_event( "lan_status-dhcp", l_cLanStatusDhcp, sizeof(l_cLanStatusDhcp));
-    DHCPMGR_LOG_INFO("SERVICE DHCP: lan_status-dhcp value: %s", l_cLanStatusDhcp);
+    {
+       ifl_ret ret = ifl_get_event( "lan_status-dhcp", l_cLanStatusDhcp, sizeof(l_cLanStatusDhcp));
+       DHCPMGR_LOG_INFO("SERVICE DHCP: lan_status-dhcp value: %s", l_cLanStatusDhcp);
+
+       if (IFL_SYSEVENT_ERROR == ret || strncmp(l_cLanStatusDhcp, "started", 7))
+       {
+           err_counter++;
+
+           if (access("/tmp/DHCPMgr_restarted.txt", F_OK))
+           {
+               if (err_counter > 2)
+               {
+                   DHCPMGR_LOG_WARNING("Restarting DHCP Mgr due to sysevent server error !!!");
+                   copy_file("/rdklogs/logs/DHCPMGRLog.txt.0", "/tmp/DHCPMgr_restarted.txt");
+                   exit(0);
+               }
+               else
+               {
+                   DHCPMGR_LOG_INFO("Giving one more chance for sysevent to recover...!");
+               }
+           }
+           else
+           {
+               DHCPMGR_LOG_WARNING("Skip restarting DHCP Mgr...\n");
+           }
+       }
+    }
+    /***/
 
     if (strncmp(l_cLanStatusDhcp, "started", 7) && ( 0 == atoi(l_cBridge_Mode) ) )
     {
@@ -1503,6 +1530,18 @@ void lan_status_change(char *input)
         ifl_get_event( "lan-status", l_cLan_Status, sizeof(l_cLan_Status));
         DHCPMGR_LOG_INFO("SERVICE DHCP : Inside lan status change with lan-status:%s", l_cLan_Status);
         DHCPMGR_LOG_INFO("SERVICE DHCP : Current lan status is:%s", l_cLan_Status);
+        if (!l_cLan_Status[0])
+        {
+            int fd = -1;
+            if ((fd = open("/tmp/lan-status-is-NULL", O_CREAT|O_WRONLY|O_TRUNC)) < 0)
+            {
+                DHCPMGR_LOG_ERROR("Failed to open(%s) file!", "/tmp/lan-status-is-NULL");
+            }
+            else
+            {
+                close(fd);
+            }
+        }
 
         syscfg_get(NULL, "dhcp_server_enabled", l_cDhcp_Server_Enabled, sizeof(l_cDhcp_Server_Enabled));
         if (!strncmp(l_cDhcp_Server_Enabled, "0", 1))

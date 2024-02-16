@@ -54,6 +54,7 @@ typedef enum _ifl_ret {
     IFL_LOCK_BUSY              = 0x0200,
     IFL_UNLOCK_ERROR           = 0x0400,
     IFL_DEADLOCK               = 0x0800,
+    IFL_SYSEVENT_ERROR         = 0x1000,
     IFL_ERROR                  = 0xFFFF
 } ifl_ret;
 
