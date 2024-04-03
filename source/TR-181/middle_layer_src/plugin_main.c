@@ -99,7 +99,7 @@ char*                              g_SubsystemPrefix;
 COSARegisterCallBackAfterInitDmlProc  g_RegisterCallBackAfterInitDml;
 COSARepopulateTableProc            g_COSARepopulateTable;
 
-//void *                       g_pDslhDmlAgent;
+void *                       g_pDslhDmlAgent;
 extern ANSC_HANDLE     g_MessageBusHandle_Irep;
 extern char            g_SubSysPrefix_Irep[32];
 PCOSA_BACKEND_MANAGER_OBJECT g_pCosaBEManager;

@@ -82,7 +82,7 @@ extern "C"{
  *  COSA stands for "Cisco Open Service Architecture"
  *
  ***************************************************************************/
-void *                       g_pDslhDmlAgent;
+extern void *                       g_pDslhDmlAgent;
 int ANSC_EXPORT_API
 COSA_Init
     (
