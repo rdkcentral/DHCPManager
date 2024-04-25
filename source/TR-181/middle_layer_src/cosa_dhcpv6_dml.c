@@ -1000,12 +1000,12 @@ Client3_SetParamBoolValue
 #ifdef DHCPV6_CLIENT_SUPPORT
         if (bValue == TRUE)
         {
-            dhcpv6_client_service_enable();
+            //dhcpv6_client_service_enable();
             dhcpv6_client_enabled = 1;
         }
         else
         {
-            dhcpv6_client_service_disable();
+            //dhcpv6_client_service_disable();
             dhcpv6_client_enabled = 0;
         }
 #endif
@@ -1055,7 +1055,7 @@ Client3_SetParamBoolValue
     /* CcspTraceWarning(("Unsupported parameter '%s'\n", ParamName)); */
    
 #ifdef DHCPV6_CLIENT_SUPPORT 
-    dhcpv6_client_service_disable();
+    //dhcpv6_client_service_disable();
     dhcpv6_client_enabled = 0;
 #endif
 

@@ -1869,7 +1869,7 @@ void getpooloption_from_utopia( PUCHAR uniqueName, PUCHAR table1Name, ULONG tabl
 static int _prepare_client_conf(PCOSA_DML_DHCPCV6_CFG       pCfg);
 static int _dibbler_client_operation(char * arg);
 
-static COSA_DML_DHCPCV6_FULL  g_dhcpv6_client;
+static COSA_DML_DHCPCV6_FULL  g_dhcpv6_client = {.Cfg.bEnabled = 0};
 
 #ifdef DHCPV6_SERVER_SUPPORT
 extern int _dibbler_server_operation(char * arg);
@@ -2253,11 +2253,11 @@ CosaDmlDhcpv6cGetEntry
     memset(pEntry->Cfg.RequestedOptions, 0, sizeof(pEntry->Cfg.RequestedOptions));
     Utopia_RawGet(&utctx,NULL,buf,(char*)pEntry->Cfg.RequestedOptions,sizeof(pEntry->Cfg.RequestedOptions));
 
-    rc = strcpy_s(buf, sizeof(buf), SYSCFG_FORMAT_DHCP6C"_enabled");
+    /*rc = strcpy_s(buf, sizeof(buf), SYSCFG_FORMAT_DHCP6C"_enabled");
     ERR_CHK(rc);
     memset(out, 0, sizeof(out));
     Utopia_RawGet(&utctx,NULL,buf,out,sizeof(out));
-    pEntry->Cfg.bEnabled = (out[0] == '1') ? TRUE:FALSE;
+    pEntry->Cfg.bEnabled = (out[0] == '1') ? TRUE:FALSE;*/
 
     rc = strcpy_s(buf, sizeof(buf), SYSCFG_FORMAT_DHCP6C"_iana_enabled");
     ERR_CHK(rc);
@@ -2605,11 +2605,11 @@ CosaDmlDhcpv6cSetCfg
 
     if (pCfg->bEnabled != g_dhcpv6_client.Cfg.bEnabled)
     {
-        rc = strcpy_s(buf, sizeof(buf), SYSCFG_FORMAT_DHCP6C"_enabled");
+        /*rc = strcpy_s(buf, sizeof(buf), SYSCFG_FORMAT_DHCP6C"_enabled");
         ERR_CHK(rc);
         out[0] = pCfg->bEnabled ? '1':'0';
         out[1] = 0;
-        Utopia_RawSet(&utctx,NULL,buf,out);
+        Utopia_RawSet(&utctx,NULL,buf,out);*/
         need_to_restart_service = 1;
     }
 
@@ -2649,11 +2649,12 @@ CosaDmlDhcpv6cSetCfg
     if (need_to_restart_service)
     {
         if ( pCfg->bEnabled != g_dhcpv6_client.Cfg.bEnabled &&  !pCfg->bEnabled )
-            _dibbler_client_operation("stop");
+            dhcpv6_client_service_stop();
         else if (pCfg->bEnabled != g_dhcpv6_client.Cfg.bEnabled &&  pCfg->bEnabled )
         {
             _prepare_client_conf(pCfg);
-            _dibbler_client_operation("restart");
+            dhcpv6_client_service_stop();
+            dhcpv6_client_service_start();
         }
         else if (pCfg->bEnabled == g_dhcpv6_client.Cfg.bEnabled && !pCfg->bEnabled)
         {
@@ -2662,7 +2663,8 @@ CosaDmlDhcpv6cSetCfg
         else if (pCfg->bEnabled == g_dhcpv6_client.Cfg.bEnabled && pCfg->bEnabled)
         {
             _prepare_client_conf(pCfg);
-            _dibbler_client_operation("restart");
+            dhcpv6_client_service_stop();
+            dhcpv6_client_service_start();
         }
     }
 
