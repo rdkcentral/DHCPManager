@@ -7719,7 +7719,11 @@ void enable_IPv6(char* if_name)
             AnscTrace("error, assign global ip error.\n");
         }
         else{
-            commonSyseventSet("brlan1_ipaddr_v6", guest_globalIP);
+#if defined (_XB6_PRODUCT_REQ_) && !defined (_XB7_PRODUCT_REQ_) && defined (_COSA_BCM_ARM_)
+            commonSyseventSet("brlan1_ipaddr_v6", guest_v6pref);
+#else
+	    commonSyseventSet("brlan1_ipaddr_v6", guest_globalIP);
+#endif
             if ( GUEST_PREVIOUS_IP[0] && (_ansc_strcmp(GUEST_PREVIOUS_IP, guest_globalIP ) != 0) ){
                 commonSyseventSet("brlan1_previous_ipaddr_v6", GUEST_PREVIOUS_IP);
                  IP6_ADDR_DEL(GUEST_PREVIOUS_IP,GUEST_INTERFACE_NAME);
