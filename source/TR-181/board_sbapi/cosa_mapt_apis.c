@@ -376,12 +376,14 @@ CosaDmlMaptApplyConfig
   MAPT_LOG_INFO("Ip routes modified successfully.");
 
   // override udp timeout for mapt
+  MAPT_LOG_INFO("Set nf_conntrack_udp_timeout to 30 seconds for MAPT!");
   if ( v_secure_system("sysctl -w net.netfilter.nf_conntrack_udp_timeout=30") )
   {
        MAPT_LOG_ERROR("Failed to set nf_conntrack_udp_timeout!");
   }
 
-  if ( v_secure_system("sysctl -w net.netfilter.nf_conntrack_udp_timeout_stream=30") )
+  MAPT_LOG_INFO("Set nf_conntrack_udp_timeout_stream to 120 seconds for MAPT!");
+  if ( v_secure_system("sysctl -w net.netfilter.nf_conntrack_udp_timeout_stream=120") )
   {
        MAPT_LOG_ERROR("Failed to set nf_conntrack_udp_timeout_stream!");
   }
