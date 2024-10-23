@@ -21,7 +21,9 @@ AM_LDFLAGS = -lpthread -lz -lnanomsg
 
 bin_PROGRAMS = udhcpc_response_handler
 
-udhcpc_response_handler_CPPFLAGS = -I${PKG_CONFIG_SYSROOT_DIR}$(includedir)/dbus-1.0 -I${PKG_CONFIG_SYSROOT_DIR}$(libdir)/dbus-1.0/include -I$(top_srcdir)/source/DHCPServerUtils/utils/include
+udhcpc_response_handler_CPPFLAGS = -I${PKG_CONFIG_SYSROOT_DIR}$(includedir)/dbus-1.0 \
+                                   -I${PKG_CONFIG_SYSROOT_DIR}$(libdir)/dbus-1.0/include \
+                                   -I$(top_srcdir)/source/DHCPServerUtils/utils/include
 
 udhcpc_response_handler_SOURCES = service_udhcpc.c
 

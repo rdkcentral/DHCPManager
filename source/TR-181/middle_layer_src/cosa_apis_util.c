@@ -34,6 +34,7 @@
 #include "cJSON.h"
 #include "ifl.h"
 #include <sys/ioctl.h>
+#include "util.h"
 
 #ifdef DHCPV6C_PSM_ENABLE
 #include "ccsp_psm_helper.h"
@@ -164,7 +165,7 @@ CosaGetParamValueUlong
     {
         if (ANSC_STATUS_FAILURE == RdkBus_GetParamValues(ETH_COMPONENT_NAME, ETH_DBUS_PATH, pParamName, acTmpReturnValue))
         {
-            CcspTraceError(("[%s][%d]Failed to get param value\n", __FUNCTION__, __LINE__));
+            DHCPMGR_LOG_ERROR("[%s][%d]Failed to get param value\n", __FUNCTION__, __LINE__);
             return 0;
         }
         result = strtoul(acTmpReturnValue, NULL, 10);
@@ -244,7 +245,7 @@ CosaGetParamValueString
     {
         if (ANSC_STATUS_FAILURE == RdkBus_GetParamValues(ETH_COMPONENT_NAME, ETH_DBUS_PATH, pParamName, acTmpReturnValue))
         {
-            CcspTraceError(("[%s][%d]Failed to get param value\n", __FUNCTION__, __LINE__));
+            DHCPMGR_LOG_ERROR("[%s][%d]Failed to get param value\n", __FUNCTION__, __LINE__);
             return -1;
         }
         strncpy(pBuffer, acTmpReturnValue, strlen(acTmpReturnValue));
@@ -519,7 +520,7 @@ static int openCommonSyseventConnection() {
         //commonSyseventFd = s_sysevent_connect(&commonSyseventToken);
         if (IFL_SUCCESS != ifl_init_ctx("cosa_apis_util", IFL_CTX_STATIC))
         {
-            CcspTraceError(("Failed to init ifl ctx for cosa_apis_util"));
+            DHCPMGR_LOG_ERROR("Failed to init ifl ctx for cosa_apis_util");
         }
         else
         {
@@ -641,14 +642,14 @@ int writeToJson(char *data, char *file)
 {
     if (file == NULL || data == NULL)
     {
-        CcspTraceWarning(("%s : %d Invalid input parameter", __FUNCTION__,__LINE__));
+        DHCPMGR_LOG_WARNING("%s : %d Invalid input parameter", __FUNCTION__,__LINE__);
         return -1;
     }
     FILE *fp;
     fp = fopen(file, "w");
     if (fp == NULL )
     {
-        CcspTraceWarning(("%s : %d Failed to open file %s\n", __FUNCTION__,__LINE__,file));
+        DHCPMGR_LOG_WARNING("%s : %d Failed to open file %s\n", __FUNCTION__,__LINE__,file);
         return -1;
     }
 
@@ -675,7 +676,7 @@ ANSC_STATUS UpdateJsonParamLegacy
          fileRead = fopen( PARTNERS_INFO_FILE, "r" );
          if( fileRead == NULL )
          {
-                 CcspTraceWarning(("%s-%d : Error in opening JSON file\n" , __FUNCTION__, __LINE__ ));
+                 DHCPMGR_LOG_WARNING("%s-%d : Error in opening JSON file\n" , __FUNCTION__, __LINE__ );
                  return ANSC_STATUS_FAILURE;
          }
 
@@ -683,7 +684,7 @@ ANSC_STATUS UpdateJsonParamLegacy
          len = ftell( fileRead );
          /* Argument cannot be negative*/
          if(len < 0) {
-               CcspTraceWarning(("%s-%d : Error in file handle\n" , __FUNCTION__, __LINE__ ));
+               DHCPMGR_LOG_WARNING("%s-%d : Error in file handle\n" , __FUNCTION__, __LINE__ );
                fclose( fileRead );
                return ANSC_STATUS_FAILURE;
          }
@@ -694,7 +695,7 @@ ANSC_STATUS UpdateJsonParamLegacy
                 memset( data, 0, ( sizeof(char) * (len + 1) ));
                 int chk_ret = fread( data, 1, len, fileRead );
                 if(chk_ret <=0){
-                 CcspTraceWarning(("%s-%d : Failed to read the data from file \n", __FUNCTION__, __LINE__));
+                 DHCPMGR_LOG_WARNING("%s-%d : Failed to read the data from file \n", __FUNCTION__, __LINE__);
                  fclose( fileRead );
                  free(data);
                  return ANSC_STATUS_FAILURE;
@@ -702,7 +703,7 @@ ANSC_STATUS UpdateJsonParamLegacy
          }
          else
          {
-                 CcspTraceWarning(("%s-%d : Memory allocation failed \n", __FUNCTION__, __LINE__));
+                 DHCPMGR_LOG_WARNING("%s-%d : Memory allocation failed \n", __FUNCTION__, __LINE__);
                  fclose( fileRead );
                  return ANSC_STATUS_FAILURE;
          }
@@ -712,7 +713,7 @@ ANSC_STATUS UpdateJsonParamLegacy
          data[len]='\0';
          if ( data == NULL )
          {
-                CcspTraceWarning(("%s-%d : fileRead failed \n", __FUNCTION__, __LINE__));
+                DHCPMGR_LOG_WARNING("%s-%d : fileRead failed \n", __FUNCTION__, __LINE__);
                 return ANSC_STATUS_FAILURE;
          }
          else if ( strlen(data) != 0)
@@ -720,7 +721,7 @@ ANSC_STATUS UpdateJsonParamLegacy
                  json = cJSON_Parse( data );
                  if( !json )
                  {
-                         CcspTraceWarning((  "%s : json file parser error : [%d]\n", __FUNCTION__,__LINE__));
+                         DHCPMGR_LOG_WARNING(  "%s : json file parser error : [%d]\n", __FUNCTION__,__LINE__);
                          free(data);
                          return ANSC_STATUS_FAILURE;
                  }
@@ -733,25 +734,25 @@ ANSC_STATUS UpdateJsonParamLegacy
                                  {
                                          cJSON_ReplaceItemInObject(partnerObj, pKey, cJSON_CreateString(pValue));
                                          cJsonOut = cJSON_Print(json);
-                                         CcspTraceWarning(( "Updated json content is %s\n", cJsonOut));
+                                         DHCPMGR_LOG_WARNING( "Updated json content is %s\n", cJsonOut);
                                          configUpdateStatus = writeToJson(cJsonOut, PARTNERS_INFO_FILE);
                                          free(cJsonOut);
                                          if ( !configUpdateStatus)
                                          {
-                                                 CcspTraceWarning(( "Updated Value for %s partner\n",PartnerId));
-                                                 CcspTraceWarning(( "Param:%s - Value:%s\n",pKey,pValue));
+                                                 DHCPMGR_LOG_WARNING( "Updated Value for %s partner\n",PartnerId);
+                                                 DHCPMGR_LOG_WARNING( "Param:%s - Value:%s\n",pKey,pValue);
                                          }
                                          else
                                         {
-                                                 CcspTraceWarning(( "Failed to update value for %s partner\n",PartnerId));
-                                                 CcspTraceWarning(( "Param:%s\n",pKey));
+                                                 DHCPMGR_LOG_WARNING( "Failed to update value for %s partner\n",PartnerId);
+                                                 DHCPMGR_LOG_WARNING( "Param:%s\n",pKey);
                                                  cJSON_Delete(json);
                                                  return ANSC_STATUS_FAILURE;
                                         }
                                  }
                                 else
                                 {
-                                        CcspTraceWarning(("%s - OBJECT  Value is NULL %s\n", pKey,__FUNCTION__ ));
+                                        DHCPMGR_LOG_WARNING("%s - OBJECT  Value is NULL %s\n", pKey,__FUNCTION__ );
                                         cJSON_Delete(json);
                                         return ANSC_STATUS_FAILURE;
                                 }
@@ -759,7 +760,7 @@ ANSC_STATUS UpdateJsonParamLegacy
                          }
                          else
                          {
-                                CcspTraceWarning(("%s - PARTNER ID OBJECT Value is NULL\n", __FUNCTION__ ));
+                                DHCPMGR_LOG_WARNING("%s - PARTNER ID OBJECT Value is NULL\n", __FUNCTION__ );
                                 cJSON_Delete(json);
                                 return ANSC_STATUS_FAILURE;
                          }
@@ -768,7 +769,7 @@ ANSC_STATUS UpdateJsonParamLegacy
           }
           else
           {
-                CcspTraceWarning(("PARTNERS_INFO_FILE %s is empty\n", PARTNERS_INFO_FILE));
+                DHCPMGR_LOG_WARNING("PARTNERS_INFO_FILE %s is empty\n", PARTNERS_INFO_FILE);
                 /* Resource leak*/
                 if (data)
                    free(data);
@@ -796,7 +797,7 @@ ANSC_STATUS UpdateJsonParam
          fileRead = fopen( BOOTSTRAP_INFO_FILE, "r" );
          if( fileRead == NULL )
          {
-                 CcspTraceWarning(("%s-%d : Error in opening JSON file\n" , __FUNCTION__, __LINE__ ));
+                 DHCPMGR_LOG_WARNING("%s-%d : Error in opening JSON file\n" , __FUNCTION__, __LINE__ );
                  return ANSC_STATUS_FAILURE;
          }
 
@@ -804,7 +805,7 @@ ANSC_STATUS UpdateJsonParam
          len = ftell( fileRead );
          /* Argument cannot be negative*/
          if (len < 0) {
-             CcspTraceWarning(("%s-%d : Error in File handle\n" , __FUNCTION__, __LINE__ ));
+             DHCPMGR_LOG_WARNING("%s-%d : Error in File handle\n" , __FUNCTION__, __LINE__ );
              fclose( fileRead );
              return ANSC_STATUS_FAILURE;
          }
@@ -815,7 +816,7 @@ ANSC_STATUS UpdateJsonParam
                 memset( data, 0, ( sizeof(char) * (len + 1) ));
                 int chk_ret = fread( data, 1, len, fileRead );
                 if(chk_ret <= 0){
-                 CcspTraceWarning(("%s-%d : Failed to read the data from file \n", __FUNCTION__, __LINE__));
+                 DHCPMGR_LOG_WARNING("%s-%d : Failed to read the data from file \n", __FUNCTION__, __LINE__);
                  fclose( fileRead );
                  free(data);
                  return ANSC_STATUS_FAILURE;
@@ -823,7 +824,7 @@ ANSC_STATUS UpdateJsonParam
          }
          else
          {
-                 CcspTraceWarning(("%s-%d : Memory allocation failed \n", __FUNCTION__, __LINE__));
+                 DHCPMGR_LOG_WARNING("%s-%d : Memory allocation failed \n", __FUNCTION__, __LINE__);
                  fclose( fileRead );
                  return ANSC_STATUS_FAILURE;
          }
@@ -833,7 +834,7 @@ ANSC_STATUS UpdateJsonParam
          data[len] = '\0';
          if ( data == NULL )
          {
-                CcspTraceWarning(("%s-%d : fileRead failed \n", __FUNCTION__, __LINE__));
+                DHCPMGR_LOG_WARNING("%s-%d : fileRead failed \n", __FUNCTION__, __LINE__);
                 return ANSC_STATUS_FAILURE;
          }
          else if ( strlen(data) != 0)
@@ -841,7 +842,7 @@ ANSC_STATUS UpdateJsonParam
                  json = cJSON_Parse( data );
                  if( !json )
                  {
-                         CcspTraceWarning((  "%s : json file parser error : [%d]\n", __FUNCTION__,__LINE__));
+                         DHCPMGR_LOG_WARNING(  "%s : json file parser error : [%d]\n", __FUNCTION__,__LINE__);
                          free(data);
                          return ANSC_STATUS_FAILURE;
                  }
@@ -858,24 +859,24 @@ ANSC_STATUS UpdateJsonParam
                                          cJSON_ReplaceItemInObject(paramObj, "UpdateSource", cJSON_CreateString(pSource));
 
                                          cJsonOut = cJSON_Print(json);
-                                         CcspTraceWarning(( "Updated json content is %s\n", cJsonOut));
+                                         DHCPMGR_LOG_WARNING( "Updated json content is %s\n", cJsonOut);
                                          configUpdateStatus = writeToJson(cJsonOut, BOOTSTRAP_INFO_FILE);
                                          free(cJsonOut);
                                          if ( !configUpdateStatus)
                                          {
-                                                 CcspTraceWarning(( "Bootstrap config update: %s, %s, %s, %s \n", pKey, pValue, PartnerId, pSource));
+                                                 DHCPMGR_LOG_WARNING( "Bootstrap config update: %s, %s, %s, %s \n", pKey, pValue, PartnerId, pSource);
                                          }
                                          else
                                         {
-                                                 CcspTraceWarning(( "Failed to update value for %s partner\n",PartnerId));
-                                                 CcspTraceWarning(( "Param:%s\n",pKey));
+                                                 DHCPMGR_LOG_WARNING( "Failed to update value for %s partner\n",PartnerId);
+                                                 DHCPMGR_LOG_WARNING( "Param:%s\n",pKey);
                                                  cJSON_Delete(json);
                                                  return ANSC_STATUS_FAILURE;
                                         }
                                  }
                                 else
                                 {
-                                        CcspTraceWarning(("%s - OBJECT  Value is NULL %s\n", pKey,__FUNCTION__ ));
+                                        DHCPMGR_LOG_WARNING("%s - OBJECT  Value is NULL %s\n", pKey,__FUNCTION__ );
                                         cJSON_Delete(json);
                                         return ANSC_STATUS_FAILURE;
                                 }
@@ -883,7 +884,7 @@ ANSC_STATUS UpdateJsonParam
                          }
                          else
                          {
-                                CcspTraceWarning(("%s - PARTNER ID OBJECT Value is NULL\n", __FUNCTION__ ));
+                                DHCPMGR_LOG_WARNING("%s - PARTNER ID OBJECT Value is NULL\n", __FUNCTION__ );
                                 cJSON_Delete(json);
                                 return ANSC_STATUS_FAILURE;
                          }
@@ -892,7 +893,7 @@ ANSC_STATUS UpdateJsonParam
           }
           else
           {
-                CcspTraceWarning(("BOOTSTRAP_INFO_FILE %s is empty\n", BOOTSTRAP_INFO_FILE));
+                DHCPMGR_LOG_WARNING("BOOTSTRAP_INFO_FILE %s is empty\n", BOOTSTRAP_INFO_FILE);
                 free(data);
                 return ANSC_STATUS_FAILURE;
           }
@@ -967,7 +968,7 @@ int lm_get_host_by_mac(char *mac, LM_cmd_common_result_t *pHost){
                                         strncpy(pHost->data.host.l1IfName, ucEntryNameValue, sizeof(pHost->data.host.l1IfName));
                                         pHost->result=0;
                                 }else{
-                                        CcspTraceError(("%s failed to get ucEntryParamName = %s\n",__FUNCTION__,ucEntryParamName));
+                                        DHCPMGR_LOG_ERROR("%s failed to get ucEntryParamName = %s\n",__FUNCTION__,ucEntryParamName);
                                }
 
                             break;
@@ -987,14 +988,14 @@ INT PsmWriteParameter( char *pParamName, char *pParamVal )
 
     if( ( NULL == pParamName) || ( NULL == pParamVal ) )
     {
-        CcspTraceError(("%s Invalid Input Parameters\n", __FUNCTION__));
+        DHCPMGR_LOG_ERROR("%s Invalid Input Parameters\n", __FUNCTION__);
         return CCSP_FAILURE;
     }
 
     retPsmSet = PSM_Set_Record_Value2(bus_handle, g_Subsystem, pParamName, ccsp_string, pParamVal);
     if (retPsmSet != CCSP_SUCCESS)
     {
-        AnscTraceFlow(("%s Error %d writing %s %s\n", __FUNCTION__, retPsmSet, pParamName, pParamVal));
+        DHCPMGR_LOG_INFO("%s Error %d writing %s %s\n", __FUNCTION__, retPsmSet, pParamName, pParamVal);
     }
 
     return retPsmSet;
@@ -1007,13 +1008,13 @@ INT PsmReadParameter( char *pParamName, char *pReturnVal, int returnValLength )
 
     if( ( NULL == pParamName) || ( NULL == pReturnVal ) || ( 0 >= returnValLength ) )
     {
-        CcspTraceError(("%s Invalid Input Parameters\n", __FUNCTION__));
+        DHCPMGR_LOG_ERROR("%s Invalid Input Parameters\n", __FUNCTION__);
         return CCSP_FAILURE;
     }
 
     retPsmGet = PSM_Get_Record_Value2(bus_handle, g_Subsystem, pParamName, NULL, &param_value);
     if (retPsmGet != CCSP_SUCCESS) {
-        CcspTraceError(("%s Error %d reading %s\n", __FUNCTION__, retPsmGet, pParamName));
+        DHCPMGR_LOG_ERROR("%s Error %d reading %s\n", __FUNCTION__, retPsmGet, pParamName);
     }
     else {
         snprintf(pReturnVal, returnValLength, "%s", param_value);

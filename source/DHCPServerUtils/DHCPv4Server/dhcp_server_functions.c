@@ -39,7 +39,6 @@
 
 #include "safec_lib_common.h"
 #include "secure_wrapper.h"
-#include "ccsp_trace.h"
 #include "ifl.h"
 
 #define HOSTS_FILE              "/etc/hosts"
@@ -807,7 +806,7 @@ void UpdateConfigListintoConfFile(FILE *l_fLocal_Dhcp_ConfFile)
         }
         else
         {
-                printf("Not able to set the value as sysevent set is null");
+                DHCPMGR_LOG_INFO("Not able to set the value as sysevent set is null");
         }
 
     }
@@ -837,7 +836,7 @@ void UpdateConfList(char *confTok, int ct)
     char dhcp_dyn_conf_change[1024] = {0};
     strncpy(conf, confTok, sizeof(conf)-1);
     snprintf(dhcp_dyn_conf_change, sizeof(conf), "dhcp_dyn_conf_change_%d",ct);
-    printf("sysevent set dhcp_dyn_conf_change_%d: %s\n",ct,conf);
+    DHCPMGR_LOG_INFO("sysevent set dhcp_dyn_conf_change_%d: %s\n",ct,conf);
     ifl_set_event( dhcp_dyn_conf_change , conf);
 }
 
@@ -886,7 +885,7 @@ enum interface IsInterfaceExists(char *confTok, char * confInf, int* inst)
             }
             else
             {
-                printf("event not present in the list hence update it\n");
+                DHCPMGR_LOG_INFO("event not present in the list hence update it\n");
             }
         }
     }
@@ -912,14 +911,14 @@ void UpdateDhcpConfChangeBasedOnEvent()
     switch(inf)
     {
         case ExistWithSameRange:
-            printf("No change\n");
+            DHCPMGR_LOG_INFO("No change\n");
             break;
         case ExistWithDifferentRange:
-            printf("upadte the list\n");
+            DHCPMGR_LOG_INFO("upadte the list\n");
             UpdateConfList(confToken,instance);
             break;
         case NotExists:
-            printf("add to list\n");
+            DHCPMGR_LOG_INFO("add to list\n");
             AddConfList(confToken);
             break;
     }
@@ -1117,14 +1116,14 @@ int prepare_dhcp_conf (char *input)
                 fp = fopen(TMP_RESOLVE_CONF,"w");
                 if (NULL == fp)
                 {
-                    perror("Error in opening resolv.conf file in write mode");
+                    DHCPMGR_LOG_ERROR("Error in opening resolv.conf file in write mode");
                     fclose(l_fLocal_Dhcp_ConfFile);
                     return -1;
                 }
 
                 while (NULL != tok)
                 {
-                    printf ("\n tok :%s \n",tok);
+                    DHCPMGR_LOG_INFO ("\n tok :%s \n",tok);
                     fprintf(fp,"nameserver %s\n",tok);
                     tok = strtok(NULL, ",");
                 }

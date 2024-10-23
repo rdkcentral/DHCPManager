@@ -55,7 +55,7 @@
 
 #include "ssp_global.h"
 #include "safec_lib_common.h"
-
+#include "util.h"
 
 ANSC_HANDLE                 bus_handle               = NULL;
 extern char                 g_Subsystem[32];
@@ -76,7 +76,7 @@ ssp_Mbi_MessageBusEngage
 
     if ( ! component_id || ! path )
     {
-        CcspTraceError((" !!! ssp_Mbi_MessageBusEngage: component_id or path is NULL !!!\n"));
+        DHCPMGR_LOG_ERROR(" !!! ssp_Mbi_MessageBusEngage: component_id or path is NULL !!!\n");
         return ANSC_STATUS_FAILURE;
     }
 
@@ -93,12 +93,12 @@ ssp_Mbi_MessageBusEngage
 
     if ( returnStatus != ANSC_STATUS_SUCCESS )
     {
-        CcspTraceError((" !!! SSD Message Bus Init ERROR !!!\n"));
+        DHCPMGR_LOG_ERROR(" !!! SSD Message Bus Init ERROR !!!\n");
 
         return returnStatus;
     }
 
-    CcspTraceInfo(("INFO: bus_handle: 0x%p \n", bus_handle));
+    DHCPMGR_LOG_INFO("INFO: bus_handle: 0x%p \n", bus_handle);
     g_MessageBusHandle_Irep = bus_handle;
     char *pSubsystem = g_Subsystem;
     rc =  strcpy_s(g_SubSysPrefix_Irep,sizeof(g_SubSysPrefix_Irep), pSubsystem);
@@ -140,7 +140,7 @@ ssp_Mbi_MessageBusEngage
 
     if ( returnStatus != CCSP_Message_Bus_OK )
     {
-         CcspTraceError((" !!! CCSP_Message_Bus_Register_Event: CurrentSessionIDSignal ERROR returnStatus: %lu!!!\n", returnStatus));
+         DHCPMGR_LOG_ERROR(" !!! CCSP_Message_Bus_Register_Event: CurrentSessionIDSignal ERROR returnStatus: %lu!!!\n", returnStatus);
 
         return returnStatus;
     }

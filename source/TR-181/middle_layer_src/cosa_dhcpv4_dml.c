@@ -81,6 +81,7 @@
 #include "safec_lib_common.h"
 #include "cosa_apis_util.h"
 #include "cosa_webconfig_api.h"
+#include "util.h"
 
 #ifdef DHCPV4_CLIENT_SUPPORT
 #include "service_dhcpv4_client.h"
@@ -131,7 +132,7 @@ CosaDmlDhcpsARPing
             if ( g_currentBsUpdate == DSLH_CWMP_BS_UPDATE_firmware ||   \
                  (g_currentBsUpdate == DSLH_CWMP_BS_UPDATE_rfcUpdate && (strcmp(requestorStr, BS_SOURCE_RFC_STR) != 0))) \
             {                                                           \
-                CcspTraceWarning(("Do NOT allow override of param: %s bsUpdate = %lu, requestor = %s\n", paramName, g_currentBsUpdate, requestorStr)); \
+                DHCPMGR_LOG_WARNING("Do NOT allow override of param: %s bsUpdate = %lu, requestor = %s\n", paramName, g_currentBsUpdate, requestorStr); \
                 return FALSE;                                           \
             }                                                           \
         })
@@ -140,7 +141,7 @@ CosaDmlDhcpsARPing
 #define IS_UPDATE_ALLOWED_IN_JSON(paramName, requestorStr, UpdateSource) ({ \
             if ((strcmp(requestorStr, BS_SOURCE_RFC_STR) == 0) && (strcmp(UpdateSource, BS_SOURCE_WEBPA_STR) == 0)) \
             {                                                           \
-                CcspTraceWarning(("Do NOT allow override of param: %s requestor = %lu updateSource = %s\n", paramName, g_currentWriteEntity, UpdateSource)); \
+                DHCPMGR_LOG_WARNING("Do NOT allow override of param: %s requestor = %lu updateSource = %s\n", paramName, g_currentWriteEntity, UpdateSource); \
                 return FALSE;                                           \
             }                                                           \
         })
@@ -259,7 +260,7 @@ DHCPv4_GetParamBoolValue
     UNREFERENCED_PARAMETER(pBool);
     /* check the parameter name and return the corresponding value */
 
-    /* CcspTraceWarning(("Unsupported parameter '%s'\n", ParamName)); */
+    /* DHCPMGR_LOG_WARNING("Unsupported parameter '%s'\n", ParamName); */
     return FALSE;
 }
 
@@ -307,7 +308,7 @@ DHCPv4_GetParamIntValue
 
     /* check the parameter name and return the corresponding value */
 
-    /* CcspTraceWarning(("Unsupported parameter '%s'\n", ParamName)); */
+    /* DHCPMGR_LOG_WARNING("Unsupported parameter '%s'\n", ParamName); */
     return FALSE;
 }
 
@@ -354,7 +355,7 @@ DHCPv4_GetParamUlongValue
     UNREFERENCED_PARAMETER(puLong);
     /* check the parameter name and return the corresponding value */
 
-    /* CcspTraceWarning(("Unsupported parameter '%s'\n", ParamName)); */
+    /* DHCPMGR_LOG_WARNING("Unsupported parameter '%s'\n", ParamName); */
     return FALSE;
 }
 
@@ -412,7 +413,7 @@ DHCPv4_GetParamStringValue
 
     /* check the parameter name and return the corresponding value */
 
-    /* CcspTraceWarning(("Unsupported parameter '%s'\n", ParamName)); */
+    /* DHCPMGR_LOG_WARNING("Unsupported parameter '%s'\n", ParamName); */
     return -1;
 }
 
@@ -754,7 +755,7 @@ Client_GetParamBoolValue
         return TRUE;
     }
 
-    /* CcspTraceWarning(("Unsupported parameter '%s'\n", ParamName)); */
+    /* DHCPMGR_LOG_WARNING("Unsupported parameter '%s'\n", ParamName); */
 
     return FALSE;
 }
@@ -811,7 +812,7 @@ Client_GetParamIntValue
         return TRUE;
     }
 
-    /* CcspTraceWarning(("Unsupported parameter '%s'\n", ParamName)); */
+    /* DHCPMGR_LOG_WARNING("Unsupported parameter '%s'\n", ParamName); */
     return FALSE;
 }
 
@@ -924,7 +925,7 @@ Client_GetParamUlongValue
         return TRUE;
     }
 
-    /* CcspTraceWarning(("Unsupported parameter '%s'\n", ParamName)); */
+    /* DHCPMGR_LOG_WARNING("Unsupported parameter '%s'\n", ParamName); */
     return FALSE;
 }
 
@@ -1082,7 +1083,7 @@ return  update_pValue(pValue,pUlSize, pDhcpc->Cfg.Interface);
         return 0;
     }
 
-    /* CcspTraceWarning(("Unsupported parameter '%s'\n", ParamName)); */
+    /* DHCPMGR_LOG_WARNING("Unsupported parameter '%s'\n", ParamName); */
     return -1;
 }
 
@@ -1172,7 +1173,7 @@ Client_SetParamBoolValue
         return  TRUE;
     }
 
-    /* CcspTraceWarning(("Unsupported parameter '%s'\n", ParamName)); */
+    /* DHCPMGR_LOG_WARNING("Unsupported parameter '%s'\n", ParamName); */
 
 #ifdef DHCPV4_CLIENT_SUPPORT
 //    serv_dhcp_deinit();
@@ -1228,7 +1229,7 @@ Client_SetParamIntValue
 
     /* check the parameter name and set the corresponding value */
 
-    /* CcspTraceWarning(("Unsupported parameter '%s'\n", ParamName)); */
+    /* DHCPMGR_LOG_WARNING("Unsupported parameter '%s'\n", ParamName); */
     return FALSE;
 }
 
@@ -1276,7 +1277,7 @@ Client_SetParamUlongValue
 
     /* check the parameter name and set the corresponding value */
 
-    /* CcspTraceWarning(("Unsupported parameter '%s'\n", ParamName)); */
+    /* DHCPMGR_LOG_WARNING("Unsupported parameter '%s'\n", ParamName); */
     return FALSE;
 }
 
@@ -1359,7 +1360,7 @@ Client_SetParamStringValue
         return TRUE;
     }
 
-    /* CcspTraceWarning(("Unsupported parameter '%s'\n", ParamName)); */
+    /* DHCPMGR_LOG_WARNING("Unsupported parameter '%s'\n", ParamName); */
     return FALSE;
 }
 
@@ -1868,7 +1869,7 @@ SentOption_GetParamBoolValue
     }
 
 
-    /* CcspTraceWarning(("Unsupported parameter '%s'\n", ParamName)); */
+    /* DHCPMGR_LOG_WARNING("Unsupported parameter '%s'\n", ParamName); */
     return FALSE;
 }
 
@@ -1912,7 +1913,7 @@ SentOption_GetParamIntValue
 {
     /* check the parameter name and return the corresponding value */
 
-    /* CcspTraceWarning(("Unsupported parameter '%s'\n", ParamName)); */
+    /* DHCPMGR_LOG_WARNING("Unsupported parameter '%s'\n", ParamName); */
     UNREFERENCED_PARAMETER(hInsContext);
     UNREFERENCED_PARAMETER(ParamName);
     UNREFERENCED_PARAMETER(pInt);
@@ -1971,7 +1972,7 @@ SentOption_GetParamUlongValue
     }
 
 
-    /* CcspTraceWarning(("Unsupported parameter '%s'\n", ParamName)); */
+    /* DHCPMGR_LOG_WARNING("Unsupported parameter '%s'\n", ParamName); */
     return FALSE;
 }
 
@@ -2038,7 +2039,7 @@ SentOption_GetParamStringValue
         return  update_pValue(pValue,pUlSize, (char*)pDhcpSendOption->Value);
     }
 
-    /* CcspTraceWarning(("Unsupported parameter '%s'\n", ParamName)); */
+    /* DHCPMGR_LOG_WARNING("Unsupported parameter '%s'\n", ParamName); */
     return -1;
 }
 
@@ -2092,7 +2093,7 @@ SentOption_SetParamBoolValue
         return TRUE;
     }
 
-    /* CcspTraceWarning(("Unsupported parameter '%s'\n", ParamName)); */
+    /* DHCPMGR_LOG_WARNING("Unsupported parameter '%s'\n", ParamName); */
     return FALSE;
 }
 
@@ -2140,7 +2141,7 @@ SentOption_SetParamIntValue
 
     /* check the parameter name and set the corresponding value */
 
-    /* CcspTraceWarning(("Unsupported parameter '%s'\n", ParamName)); */
+    /* DHCPMGR_LOG_WARNING("Unsupported parameter '%s'\n", ParamName); */
     return FALSE;
 }
 
@@ -2195,7 +2196,7 @@ SentOption_SetParamUlongValue
     }
 
 
-    /* CcspTraceWarning(("Unsupported parameter '%s'\n", ParamName)); */
+    /* DHCPMGR_LOG_WARNING("Unsupported parameter '%s'\n", ParamName); */
     return FALSE;
 }
 
@@ -2275,7 +2276,7 @@ SentOption_SetParamStringValue
         return TRUE;
     }
 
-    /* CcspTraceWarning(("Unsupported parameter '%s'\n", ParamName)); */
+    /* DHCPMGR_LOG_WARNING("Unsupported parameter '%s'\n", ParamName); */
     return FALSE;
 }
 
@@ -2825,7 +2826,7 @@ ReqOption_GetParamBoolValue
     }
 
 
-    /* CcspTraceWarning(("Unsupported parameter '%s'\n", ParamName)); */
+    /* DHCPMGR_LOG_WARNING("Unsupported parameter '%s'\n", ParamName); */
     return FALSE;
 }
 
@@ -2873,7 +2874,7 @@ ReqOption_GetParamIntValue
 
     /* check the parameter name and return the corresponding value */
 
-    /* CcspTraceWarning(("Unsupported parameter '%s'\n", ParamName)); */
+    /* DHCPMGR_LOG_WARNING("Unsupported parameter '%s'\n", ParamName); */
     return FALSE;
 }
 
@@ -2936,7 +2937,7 @@ ReqOption_GetParamUlongValue
     }
 
 
-    /* CcspTraceWarning(("Unsupported parameter '%s'\n", ParamName)); */
+    /* DHCPMGR_LOG_WARNING("Unsupported parameter '%s'\n", ParamName); */
     return FALSE;
 }
 
@@ -3007,7 +3008,7 @@ ReqOption_GetParamStringValue
     }
 
 
-    /* CcspTraceWarning(("Unsupported parameter '%s'\n", ParamName)); */
+    /* DHCPMGR_LOG_WARNING("Unsupported parameter '%s'\n", ParamName); */
     return -1;
 }
 
@@ -3062,7 +3063,7 @@ ReqOption_SetParamBoolValue
     }
 
 
-    /* CcspTraceWarning(("Unsupported parameter '%s'\n", ParamName)); */
+    /* DHCPMGR_LOG_WARNING("Unsupported parameter '%s'\n", ParamName); */
     return FALSE;
 }
 
@@ -3110,7 +3111,7 @@ ReqOption_SetParamIntValue
 
     /* check the parameter name and set the corresponding value */
 
-    /* CcspTraceWarning(("Unsupported parameter '%s'\n", ParamName)); */
+    /* DHCPMGR_LOG_WARNING("Unsupported parameter '%s'\n", ParamName); */
     return FALSE;
 }
 
@@ -3173,7 +3174,7 @@ ReqOption_SetParamUlongValue
     }
 
 
-    /* CcspTraceWarning(("Unsupported parameter '%s'\n", ParamName)); */
+    /* DHCPMGR_LOG_WARNING("Unsupported parameter '%s'\n", ParamName); */
     return FALSE;
 }
 
@@ -3242,7 +3243,7 @@ ReqOption_SetParamStringValue
     }
 
 
-    /* CcspTraceWarning(("Unsupported parameter '%s'\n", ParamName)); */
+    /* DHCPMGR_LOG_WARNING("Unsupported parameter '%s'\n", ParamName); */
     return FALSE;
 }
 
@@ -3545,7 +3546,7 @@ Server_GetParamBoolValue
         return TRUE;
     }
 
-    /* CcspTraceWarning(("Unsupported parameter '%s'\n", ParamName)); */
+    /* DHCPMGR_LOG_WARNING("Unsupported parameter '%s'\n", ParamName); */
 
     return FALSE;
 }
@@ -3594,7 +3595,7 @@ Server_GetParamIntValue
 
     /* check the parameter name and return the corresponding value */
 
-    /* CcspTraceWarning(("Unsupported parameter '%s'\n", ParamName)); */
+    /* DHCPMGR_LOG_WARNING("Unsupported parameter '%s'\n", ParamName); */
     return FALSE;
 }
 
@@ -3641,7 +3642,7 @@ Server_GetParamUlongValue
     UNREFERENCED_PARAMETER(puLong);
     /* check the parameter name and return the corresponding value */
 
-    /* CcspTraceWarning(("Unsupported parameter '%s'\n", ParamName)); */
+    /* DHCPMGR_LOG_WARNING("Unsupported parameter '%s'\n", ParamName); */
     return FALSE;
 }
 
@@ -3699,17 +3700,17 @@ Server_GetParamStringValue
 
     if (strcmp(ParamName, "StaticClientsData") == 0)
     {
-        CcspTraceWarning(("Data Get Not supported\n"));
+        DHCPMGR_LOG_WARNING("Data Get Not supported\n");
         return 0;
     }
 
     if (strcmp(ParamName, "Lan") == 0)
     {
-        CcspTraceWarning(("Data Get Not supported\n"));
+        DHCPMGR_LOG_WARNING("Data Get Not supported\n");
         return 0;
     }
 
-    /* CcspTraceWarning(("Unsupported parameter '%s'\n", ParamName)); */
+    /* DHCPMGR_LOG_WARNING("Unsupported parameter '%s'\n", ParamName); */
     return -1;
 }
 
@@ -3778,7 +3779,7 @@ Server_SetParamBoolValue
         return TRUE;
     }
 
-    /* CcspTraceWarning(("Unsupported parameter '%s'\n", ParamName)); */
+    /* DHCPMGR_LOG_WARNING("Unsupported parameter '%s'\n", ParamName); */
     return FALSE;
 }
 
@@ -3826,7 +3827,7 @@ Server_SetParamIntValue
 
     /* check the parameter name and set the corresponding value */
 
-    /* CcspTraceWarning(("Unsupported parameter '%s'\n", ParamName)); */
+    /* DHCPMGR_LOG_WARNING("Unsupported parameter '%s'\n", ParamName); */
     return FALSE;
 }
 
@@ -3874,7 +3875,7 @@ Server_SetParamUlongValue
 
     /* check the parameter name and set the corresponding value */
 
-    /* CcspTraceWarning(("Unsupported parameter '%s'\n", ParamName)); */
+    /* DHCPMGR_LOG_WARNING("Unsupported parameter '%s'\n", ParamName); */
     return FALSE;
 }
 
@@ -3953,11 +3954,11 @@ Server_SetParamStringValue
             }
             if (NULL != pStaticClients)
             {
-                CcspTraceWarning(("pStaticClients->entries_count is %zu\n", pStaticClients->entries_count));
-                CcspTraceWarning(("pStaticClients->subdoc_name is %s\n", pStaticClients->subdoc_name));
-                CcspTraceWarning(("pStaticClients->version is %lu\n", (unsigned long)pStaticClients->version));
-                CcspTraceWarning(("pStaticClients->transaction_id is %d\n", pStaticClients->transaction_id));
-                CcspTraceWarning(("StaticClients configuration received\n"));
+                DHCPMGR_LOG_WARNING("pStaticClients->entries_count is %zu\n", pStaticClients->entries_count);
+                DHCPMGR_LOG_WARNING("pStaticClients->subdoc_name is %s\n", pStaticClients->subdoc_name);
+                DHCPMGR_LOG_WARNING("pStaticClients->version is %lu\n", (unsigned long)pStaticClients->version);
+                DHCPMGR_LOG_WARNING("pStaticClients->transaction_id is %d\n", pStaticClients->transaction_id);
+                DHCPMGR_LOG_WARNING("StaticClients configuration received\n");
 
                 execData *execDataStaticClients = NULL ;
 
@@ -3981,11 +3982,11 @@ Server_SetParamStringValue
                     execDataStaticClients->freeResources = FreeResources_StaticClients;
                     PushBlobRequest(execDataStaticClients);
 
-                    CcspTraceWarning(("PushBlobRequest complete\n"));
+                    DHCPMGR_LOG_WARNING("PushBlobRequest complete\n");
                 }
                 else
                 {
-                    CcspTraceWarning(("execData memory allocation failed\n"));
+                    DHCPMGR_LOG_WARNING("execData memory allocation failed\n");
                     macbindingdoc_destroy(pStaticClients);
                     return FALSE;
 
@@ -4002,7 +4003,7 @@ Server_SetParamStringValue
                 free(decodeMsg);
                 decodeMsg = NULL;
             }
-            CcspTraceWarning(("Corrupted StaticClientsData value\n"));
+            DHCPMGR_LOG_WARNING("Corrupted StaticClientsData value\n");
             return FALSE;
         }
         return TRUE;
@@ -4043,11 +4044,11 @@ Server_SetParamStringValue
             if (NULL != pLanInfo)
             {
                 pLanInfo->entries_count = 1;// Assigned 1 by default.
-                CcspTraceWarning(("pLanInfo->entries_count is %zu\n", pLanInfo->entries_count));
-                CcspTraceWarning(("pLanInfo->subdoc_name is %s\n", pLanInfo->subdoc_name));
-                CcspTraceWarning(("pLanInfo->version is %lu\n", (unsigned long)pLanInfo->version));
-                CcspTraceWarning(("pLanInfo->transaction_id is %d\n", pLanInfo->transaction_id));
-                CcspTraceWarning(("Lan configuration received\n"));
+                DHCPMGR_LOG_WARNING("pLanInfo->entries_count is %zu\n", pLanInfo->entries_count);
+                DHCPMGR_LOG_WARNING("pLanInfo->subdoc_name is %s\n", pLanInfo->subdoc_name);
+                DHCPMGR_LOG_WARNING("pLanInfo->version is %lu\n", (unsigned long)pLanInfo->version);
+                DHCPMGR_LOG_WARNING("pLanInfo->transaction_id is %d\n", pLanInfo->transaction_id);
+                DHCPMGR_LOG_WARNING("Lan configuration received\n");
 
                 execData *execDataLan = NULL;
 
@@ -4071,11 +4072,11 @@ Server_SetParamStringValue
                     execDataLan->freeResources = FreeResources_Lan;
                     PushBlobRequest(execDataLan);
 
-                    CcspTraceWarning(("PushBlobRequest complete\n"));
+                    DHCPMGR_LOG_WARNING("PushBlobRequest complete\n");
                 }
                 else
                 {
-                    CcspTraceWarning(("execData memory allocation failed\n"));
+                    DHCPMGR_LOG_WARNING("execData memory allocation failed\n");
                     landoc_destroy(pLanInfo);
                     return FALSE;
 
@@ -4092,7 +4093,7 @@ Server_SetParamStringValue
                 free(decodeMsg);
                 decodeMsg = NULL;
             }
-            CcspTraceWarning(("Corrupted StaticClientsData value\n"));
+            DHCPMGR_LOG_WARNING("Corrupted StaticClientsData value\n");
             return FALSE;
         }
         return TRUE;
@@ -4100,7 +4101,7 @@ Server_SetParamStringValue
 
     }
 
-    /* CcspTraceWarning(("Unsupported parameter '%s'\n", ParamName)); */
+    /* DHCPMGR_LOG_WARNING("Unsupported parameter '%s'\n", ParamName); */
     return FALSE;
 }
 
@@ -4523,7 +4524,7 @@ X_CISCO_COM_StaticAddress_GetParamBoolValue
     UNREFERENCED_PARAMETER(ParamName);
     UNREFERENCED_PARAMETER(pBool);
 
-    /* CcspTraceWarning(("Unsupported parameter '%s'\n", ParamName)); */
+    /* DHCPMGR_LOG_WARNING("Unsupported parameter '%s'\n", ParamName); */
     return FALSE;
 }
 
@@ -4569,7 +4570,7 @@ X_CISCO_COM_StaticAddress_GetParamIntValue
     UNREFERENCED_PARAMETER(ParamName);
     UNREFERENCED_PARAMETER(pInt);
 
-    /* CcspTraceWarning(("Unsupported parameter '%s'\n", ParamName)); */
+    /* DHCPMGR_LOG_WARNING("Unsupported parameter '%s'\n", ParamName); */
     return FALSE;
 }
 
@@ -4623,7 +4624,7 @@ X_CISCO_COM_StaticAddress_GetParamUlongValue
         return TRUE;
     }
 
-    /* CcspTraceWarning(("Unsupported parameter '%s'\n", ParamName)); */
+    /* DHCPMGR_LOG_WARNING("Unsupported parameter '%s'\n", ParamName); */
     return FALSE;
 }
 
@@ -4725,7 +4726,7 @@ X_CISCO_COM_StaticAddress_GetParamStringValue
         return  update_pValue(pValue,pUlSize,pEntry->DeviceName);
     }
 
-    /* CcspTraceWarning(("Unsupported parameter '%s'\n", ParamName)); */
+    /* DHCPMGR_LOG_WARNING("Unsupported parameter '%s'\n", ParamName); */
     return -1;
 }
 
@@ -4770,7 +4771,7 @@ X_CISCO_COM_StaticAddress_SetParamBoolValue
     UNREFERENCED_PARAMETER(hInsContext);
     UNREFERENCED_PARAMETER(ParamName);
     UNREFERENCED_PARAMETER(bValue);
-    /* CcspTraceWarning(("Unsupported parameter '%s'\n", ParamName)); */
+    /* DHCPMGR_LOG_WARNING("Unsupported parameter '%s'\n", ParamName); */
     return FALSE;
 }
 
@@ -4816,7 +4817,7 @@ X_CISCO_COM_StaticAddress_SetParamIntValue
     UNREFERENCED_PARAMETER(ParamName);
     UNREFERENCED_PARAMETER(iValue);
 
-    /* CcspTraceWarning(("Unsupported parameter '%s'\n", ParamName)); */
+    /* DHCPMGR_LOG_WARNING("Unsupported parameter '%s'\n", ParamName); */
     return FALSE;
 }
 
@@ -4871,7 +4872,7 @@ X_CISCO_COM_StaticAddress_SetParamUlongValue
         return TRUE;
     }
 
-    /* CcspTraceWarning(("Unsupported parameter '%s'\n", ParamName)); */
+    /* DHCPMGR_LOG_WARNING("Unsupported parameter '%s'\n", ParamName); */
     return FALSE;
 }
 
@@ -4957,7 +4958,7 @@ X_CISCO_COM_StaticAddress_SetParamStringValue
 
         if(rc != 6)
         {
-            CcspTraceWarning(("MAC Address not proerly formatted \n"));
+            DHCPMGR_LOG_WARNING("MAC Address not proerly formatted \n");
             return FALSE;
         }
 
@@ -4984,7 +4985,7 @@ X_CISCO_COM_StaticAddress_SetParamStringValue
         return TRUE;
 
     }
-    /* CcspTraceWarning(("Unsupported parameter '%s'\n", ParamName)); */
+    /* DHCPMGR_LOG_WARNING("Unsupported parameter '%s'\n", ParamName); */
     return FALSE;
 }
 
@@ -5091,7 +5092,7 @@ X_CISCO_COM_StaticAddress_Validate
     rc = sscanf(strIP,"%d.%d.%d.%d",ip,ip+1,ip+2,ip+3);
     if(rc != 4)
     {
-        CcspTraceWarning(("Static IP Address is not properly formatted \n"));
+        DHCPMGR_LOG_WARNING("Static IP Address is not properly formatted \n");
         safec_rc = STRCPY_S_NOCLOBBER(pReturnParamName, *puLength ,"Yiaddr");
         if(safec_rc != EOK)
         {
@@ -5104,7 +5105,7 @@ X_CISCO_COM_StaticAddress_Validate
     {
         if((ip[i] == 0) || (ip[i] == 255))
         {
-            CcspTraceWarning(("Static IP Address can not be a network address or multicast \n"));
+            DHCPMGR_LOG_WARNING("Static IP Address can not be a network address or multicast \n");
             safec_rc = STRCPY_S_NOCLOBBER(pReturnParamName, *puLength , "Yiaddr");
             if(safec_rc != EOK)
             {
@@ -5540,7 +5541,7 @@ Pool_DelEntry
     */
     if(pPool->Cfg.InstanceNumber == 1)
     {
-        AnscTraceFlow(("%s: pool instance %lu is not allowed to delete\n", __FUNCTION__, pPool->Cfg.InstanceNumber));
+        DHCPMGR_LOG_INFO("%s: pool instance %lu is not allowed to delete\n", __FUNCTION__, pPool->Cfg.InstanceNumber);
         return ANSC_STATUS_FAILURE;
     }
 
@@ -5548,7 +5549,7 @@ Pool_DelEntry
     {
         if(!pPool->Cfg.bAllowDelete)
         {
-            AnscTraceFlow(("%s: pool instance %lu is not allowed to delete\n", __FUNCTION__, pPool->Cfg.InstanceNumber));
+            DHCPMGR_LOG_INFO("%s: pool instance %lu is not allowed to delete\n", __FUNCTION__, pPool->Cfg.InstanceNumber);
             return ANSC_STATUS_FAILURE;
         }
 
@@ -5671,7 +5672,7 @@ Pool_GetParamBoolValue
         return TRUE;
     }
 
-    /* CcspTraceWarning(("Unsupported parameter '%s'\n", ParamName)); */
+    /* DHCPMGR_LOG_WARNING("Unsupported parameter '%s'\n", ParamName); */
     return FALSE;
 }
 
@@ -5733,7 +5734,7 @@ Pool_GetParamIntValue
         return TRUE;
     }
 
-    /* CcspTraceWarning(("Unsupported parameter '%s'\n", ParamName)); */
+    /* DHCPMGR_LOG_WARNING("Unsupported parameter '%s'\n", ParamName); */
     return FALSE;
 }
 
@@ -5845,7 +5846,7 @@ Pool_GetParamUlongValue
         return TRUE;
     }
 
-    /* CcspTraceWarning(("Unsupported parameter '%s'\n", ParamName)); */
+    /* DHCPMGR_LOG_WARNING("Unsupported parameter '%s'\n", ParamName); */
     return FALSE;
 }
 
@@ -5957,8 +5958,8 @@ Pool_GetParamStringValue
                     (PUCHAR)"Name",
                     (PUCHAR)pPool->Cfg.Interface
                     );
-            AnscTraceFlow(("%s: interface %s\n", __FUNCTION__, pPool->Cfg.Interface));
-            AnscTraceFlow(("%s: pString %s\n", __FUNCTION__, pString));
+            DHCPMGR_LOG_INFO("%s: interface %s\n", __FUNCTION__, pPool->Cfg.Interface);
+            DHCPMGR_LOG_INFO("%s: pString %s\n", __FUNCTION__, pString);
             if ( pString )
             {
                 int ret = update_pValue(pValue,pUlSize, (char*)pString);
@@ -6080,14 +6081,14 @@ Pool_GetParamStringValue
             CosaDmlDhcpsGetPoolCfg(NULL,&tmpCfg);
             snprintf(pValue,sizeof(tmpCfg.DomainName),"%s", tmpCfg.DomainName);
         }else {
-            CcspTraceWarning(("%s: pPool->Cfg.DomainName: %s  0x%1x 0x%1x 0x%1x 0x%1x, sizeof: %zu\n",
+            DHCPMGR_LOG_WARNING("%s: pPool->Cfg.DomainName: %s  0x%1x 0x%1x 0x%1x 0x%1x, sizeof: %zu\n",
                               __FUNCTION__, pPool->Cfg.DomainName, (signed) (pPool->Cfg.DomainName[0]),
                               (signed) (pPool->Cfg.DomainName[1]), (signed) (pPool->Cfg.DomainName[2]),
-                              (signed) (pPool->Cfg.DomainName[3]), sizeof(pPool->Cfg.DomainName)));
+                              (signed) (pPool->Cfg.DomainName[3]), sizeof(pPool->Cfg.DomainName));
             bValidDomainName = validateNFixDomainName(pPool->Cfg.DomainName, sizeof(pPool->Cfg.DomainName));
             snprintf(pValue,sizeof(pPool->Cfg.DomainName),"%s", pPool->Cfg.DomainName);
-            CcspTraceWarning(("%s: DomainName: %s, InstanceNumber: %lu, bValidDomainName: %d\n",
-                              __FUNCTION__, pValue, pPool->Cfg.InstanceNumber, bValidDomainName));
+            DHCPMGR_LOG_WARNING("%s: DomainName: %s, InstanceNumber: %lu, bValidDomainName: %d\n",
+                              __FUNCTION__, pValue, pPool->Cfg.InstanceNumber, bValidDomainName);
         }
         return 0;
     }
@@ -6115,7 +6116,7 @@ Pool_GetParamStringValue
         }
     }
 
-    /* CcspTraceWarning(("Unsupported parameter '%s'\n", ParamName)); */
+    /* DHCPMGR_LOG_WARNING("Unsupported parameter '%s'\n", ParamName); */
     return -1;
 }
 
@@ -6161,7 +6162,7 @@ Pool_SetParamBoolValue
     PCOSA_DML_DHCPS_POOL_FULL       pPool            = (PCOSA_DML_DHCPS_POOL_FULL)pCxtLink->hContext;
     BOOL bridgeInd = FALSE;
 
-    AnscTraceFlow(("%s: ParamName = %s\n", __FUNCTION__, ParamName));
+    DHCPMGR_LOG_INFO("%s: ParamName = %s\n", __FUNCTION__, ParamName);
     /* Unchecked return value*/
     if((ANSC_STATUS_SUCCESS == is_usg_in_bridge_mode(&bridgeInd)) &&
        ( TRUE == bridgeInd ))
@@ -6172,7 +6173,7 @@ Pool_SetParamBoolValue
     {
         if (Dhcpv4_Lan_MutexTryLock() != 0)
         {
-            CcspTraceWarning(("%s not supported already macbinding blob update is inprogress \n",ParamName));
+            DHCPMGR_LOG_WARNING("%s not supported already macbinding blob update is inprogress \n",ParamName);
             return FALSE;
         }
 
@@ -6221,7 +6222,7 @@ Pool_SetParamBoolValue
         return TRUE;
     }
 
-    /* CcspTraceWarning(("Unsupported parameter '%s'\n", ParamName)); */
+    /* DHCPMGR_LOG_WARNING("Unsupported parameter '%s'\n", ParamName); */
     return FALSE;
 }
 
@@ -6272,7 +6273,7 @@ Pool_SetParamIntValue
         return(FALSE);
     if (Dhcpv4_Lan_MutexTryLock() != 0)
     {
-        CcspTraceWarning(("%s not supported already macbinding blob update is inprogress \n",ParamName));
+        DHCPMGR_LOG_WARNING("%s not supported already macbinding blob update is inprogress \n",ParamName);
         return FALSE;
     }
 
@@ -6315,7 +6316,7 @@ Pool_SetParamIntValue
     }
 
     Dhcpv4_Lan_MutexUnLock();
-    /* CcspTraceWarning(("Unsupported parameter '%s'\n", ParamName)); */
+    /* DHCPMGR_LOG_WARNING("Unsupported parameter '%s'\n", ParamName); */
     return FALSE;
 }
 
@@ -6459,21 +6460,21 @@ Pool_SetParamUlongValue
             return(FALSE);
 
         if (ntohl(uValue) == ntohl(pPool->Cfg.MaxAddress.Value)) {
-            CcspTraceError(("MinAddress equals MaxAddress 0x%08u\n", ntohl(uValue)));
+            DHCPMGR_LOG_ERROR("MinAddress equals MaxAddress 0x%08u\n", ntohl(uValue));
             return(FALSE);
         }
         if (ntohl(uValue) < ntohl(gw)) {
-            CcspTraceError(("MinAddress should be greater than gateway address\n"));
+            DHCPMGR_LOG_ERROR("MinAddress should be greater than gateway address\n");
             return(FALSE);
         }
         if (Dhcpv4_Lan_MutexTryLock() != 0)
         {
-            CcspTraceWarning(("%s not supported already macbinding blob update is inprogress \n",ParamName));
+            DHCPMGR_LOG_WARNING("%s not supported already macbinding blob update is inprogress \n",ParamName);
             return FALSE;
         }
 
         pPool->Cfg.MinAddress.Value  = uValue;
-        CcspTraceWarning(("RDKB_LAN_CONFIG_CHANGED: MinAddress of DHCP Range Changed ...\n"));
+        DHCPMGR_LOG_WARNING("RDKB_LAN_CONFIG_CHANGED: MinAddress of DHCP Range Changed ...\n");
 
         rc = STRCPY_S_NOCLOBBER( pPool->Cfg.MinAddressUpdateSource, sizeof(pPool->Cfg.MinAddressUpdateSource), requestorStr );
         if(rc != EOK)
@@ -6529,17 +6530,17 @@ Pool_SetParamUlongValue
             return(FALSE);
         }
         if (ntohl(uValue) == ntohl(pPool->Cfg.MinAddress.Value)) {
-            CcspTraceError(("MinAddress equals MaxAddress 0x%08u\n", ntohl(uValue)));
+            DHCPMGR_LOG_ERROR("MinAddress equals MaxAddress 0x%08u\n", ntohl(uValue));
             return(FALSE);
         }
         if (Dhcpv4_Lan_MutexTryLock() != 0)
         {
-            CcspTraceWarning(("%s not supported already macbinding blob update is inprogress \n",ParamName));
+            DHCPMGR_LOG_WARNING("%s not supported already macbinding blob update is inprogress \n",ParamName);
             return FALSE;
         }
 
         pPool->Cfg.MaxAddress.Value  = uValue;
-        CcspTraceWarning(("RDKB_LAN_CONFIG_CHANGED: MaxAddress of DHCP Range Changed ...\n"));
+        DHCPMGR_LOG_WARNING("RDKB_LAN_CONFIG_CHANGED: MaxAddress of DHCP Range Changed ...\n");
 
         rc = STRCPY_S_NOCLOBBER( pPool->Cfg.MaxAddressUpdateSource, sizeof(pPool->Cfg.MaxAddressUpdateSource), requestorStr );
         if(rc != EOK)
@@ -6554,7 +6555,7 @@ Pool_SetParamUlongValue
         inet_ntop(AF_INET, &(pPool->Cfg.MaxAddress.Value) , buff, INET_ADDRSTRLEN);
 
         if( pPool->Cfg.MaxAddress.Dot[3] < 2 ){
-            CcspTraceError(("Last octet of end ip is less than 2 \n"));
+            DHCPMGR_LOG_ERROR("Last octet of end ip is less than 2 \n");
             Dhcpv4_Lan_MutexUnLock();
             return(FALSE);
         }
@@ -6570,7 +6571,7 @@ Pool_SetParamUlongValue
     {
         if (Dhcpv4_Lan_MutexTryLock() != 0)
         {
-            CcspTraceWarning(("%s not supported already macbinding blob update is inprogress \n",ParamName));
+            DHCPMGR_LOG_WARNING("%s not supported already macbinding blob update is inprogress \n",ParamName);
             return FALSE;
         }
 
@@ -6581,7 +6582,7 @@ Pool_SetParamUlongValue
     }
 
 
-    /* CcspTraceWarning(("Unsupported parameter '%s'\n", ParamName)); */
+    /* DHCPMGR_LOG_WARNING("Unsupported parameter '%s'\n", ParamName); */
     return FALSE;
 }
 
@@ -6629,7 +6630,7 @@ Pool_SetParamStringValue
     BOOL bridgeInd = FALSE;
     errno_t                         rc                = -1;
 
-    AnscTraceFlow(("%s: ParamName %s, \npString %s\n", __FUNCTION__, ParamName, pString));
+    DHCPMGR_LOG_INFO("%s: ParamName %s, \npString %s\n", __FUNCTION__, ParamName, pString);
     is_usg_in_bridge_mode(&bridgeInd);
     if(bridgeInd)
         return(FALSE);
@@ -6684,11 +6685,11 @@ Pool_SetParamStringValue
             if ( 0 == CosaGetParamValueString(ucEntryParamName, ucEntryNameValue, &ulEntryNameLen))
             {
 
-                AnscTraceFlow(("%s:paramName %s, paramValue %s\n", __FUNCTION__, ucEntryParamName, ucEntryNameValue));
+                DHCPMGR_LOG_INFO("%s:paramName %s, paramValue %s\n", __FUNCTION__, ucEntryParamName, ucEntryNameValue);
                 if(strlen(ucEntryNameValue) == 0)
                 {
                     // if the Name string is empty, return failure
-                    AnscTraceFlow(("%s: %s is empty, can't set \n", __FUNCTION__, ucEntryParamName));
+                    DHCPMGR_LOG_INFO("%s: %s is empty, can't set \n", __FUNCTION__, ucEntryParamName);
                     return FALSE;
                 }
                 rc = STRCPY_S_NOCLOBBER(pPool->Cfg.Interface, sizeof(pPool->Cfg.Interface), ucEntryNameValue);
@@ -6734,13 +6735,13 @@ Pool_SetParamStringValue
                     else
 #endif
                     {
-                        AnscTraceFlow(("%s: interface path wrong %s\n", __FUNCTION__, pString));
+                        DHCPMGR_LOG_INFO("%s: interface path wrong %s\n", __FUNCTION__, pString);
                         return FALSE;
                     }
             }
             else
             {
-                AnscTraceFlow(("%s: interface too long %s\n", __FUNCTION__, pString));
+                DHCPMGR_LOG_INFO("%s: interface too long %s\n", __FUNCTION__, pString);
                 return FALSE;
             }
         }
@@ -6824,7 +6825,7 @@ Pool_SetParamStringValue
         BOOL ret = FALSE;
         if (Dhcpv4_Lan_MutexTryLock() != 0)
         {
-            CcspTraceWarning(("%s not supported already macbinding blob update is inprogress \n",ParamName));
+            DHCPMGR_LOG_WARNING("%s not supported already macbinding blob update is inprogress \n",ParamName);
             return FALSE;
         }
 
@@ -6842,7 +6843,7 @@ Pool_SetParamStringValue
     }
 
 
-    /* CcspTraceWarning(("Unsupported parameter '%s'\n", ParamName)); */
+    /* DHCPMGR_LOG_WARNING("Unsupported parameter '%s'\n", ParamName); */
     return FALSE;
 }
 
@@ -6928,22 +6929,22 @@ Pool_Commit
     if( pPool->Cfg.InstanceNumber == 1 &&
         is_pool_invalid(hInsContext))
     {
-        AnscTraceFlow(("%s: not valid pool\n", __FUNCTION__));
+        DHCPMGR_LOG_INFO("%s: not valid pool\n", __FUNCTION__);
         return(ANSC_STATUS_FAILURE);
     }
     else
     {
-        AnscTraceFlow(("%s: valid pool, pPool->Cfg.InstanceNumber = %lu\n", __FUNCTION__, pPool->Cfg.InstanceNumber));
+        DHCPMGR_LOG_INFO("%s: valid pool, pPool->Cfg.InstanceNumber = %lu\n", __FUNCTION__, pPool->Cfg.InstanceNumber);
     }
     if (Dhcpv4_Lan_MutexTryLock() != 0)
     {
-        CcspTraceWarning(("%s not supported already macbinding blob update is inprogress \n",__FUNCTION__));
+        DHCPMGR_LOG_WARNING("%s not supported already macbinding blob update is inprogress \n",__FUNCTION__);
         return ANSC_STATUS_FAILURE;
     }
 
     if ( pCxtLink->bNew )
     {
-        AnscTraceFlow(("%s: new pool, add to SBAPI\n", __FUNCTION__));
+        DHCPMGR_LOG_INFO("%s: new pool, add to SBAPI\n", __FUNCTION__);
         returnStatus = CosaDmlDhcpsAddPool(NULL, pPool );
 
         if ( returnStatus == ANSC_STATUS_SUCCESS )
@@ -7236,7 +7237,7 @@ StaticAddress_Synchronize
     {
         ret = Dhcpv4_StaticClients_Synchronize();
         pDhcpv4->syncStaticClientsTable = FALSE;
-        CcspTraceWarning((" %s return %d \n",__FUNCTION__,ret));
+        DHCPMGR_LOG_WARNING(" %s return %d \n",__FUNCTION__,ret);
     }
     if (ret == 0)
     {
@@ -7379,11 +7380,11 @@ StaticAddress_DelEntry
 
     if (Dhcpv4_StaticClients_MutexTryLock() != 0)
     {
-        CcspTraceWarning(("%s not supported already macbinding blob update is inprogress \n",__FUNCTION__));
+        DHCPMGR_LOG_WARNING("%s not supported already macbinding blob update is inprogress \n",__FUNCTION__);
         return ANSC_STATUS_FAILURE;
     }
 
-    AnscTraceFlow(("%s: pool instance %lu, addr instance %lu\n", __FUNCTION__, pDhcsPool->Cfg.InstanceNumber, pDhcpStaticAddress->InstanceNumber));
+    DHCPMGR_LOG_INFO("%s: pool instance %lu, addr instance %lu\n", __FUNCTION__, pDhcsPool->Cfg.InstanceNumber, pDhcpStaticAddress->InstanceNumber);
     if ( !pCxtLink->bNew )
     {
         returnStatus = CosaDmlDhcpsDelSaddr( NULL, pDhcsPool->Cfg.InstanceNumber, pDhcpStaticAddress->InstanceNumber );
@@ -7458,7 +7459,7 @@ StaticAddress_GetParamBoolValue
     }
 
 
-    /* CcspTraceWarning(("Unsupported parameter '%s'\n", ParamName)); */
+    /* DHCPMGR_LOG_WARNING("Unsupported parameter '%s'\n", ParamName); */
     return FALSE;
 }
 
@@ -7506,7 +7507,7 @@ StaticAddress_GetParamIntValue
 
     /* check the parameter name and return the corresponding value */
 
-    /* CcspTraceWarning(("Unsupported parameter '%s'\n", ParamName)); */
+    /* DHCPMGR_LOG_WARNING("Unsupported parameter '%s'\n", ParamName); */
     return FALSE;
 }
 
@@ -7559,7 +7560,7 @@ StaticAddress_GetParamUlongValue
     }
 
 
-    /* CcspTraceWarning(("Unsupported parameter '%s'\n", ParamName)); */
+    /* DHCPMGR_LOG_WARNING("Unsupported parameter '%s'\n", ParamName); */
     return FALSE;
 }
 
@@ -7668,7 +7669,7 @@ StaticAddress_GetParamStringValue
         return  update_pValue(pValue,pUlSize, pDhcpStaticAddress->Comment);
     }
 
-    /* CcspTraceWarning(("Unsupported parameter '%s'\n", ParamName)); */
+    /* DHCPMGR_LOG_WARNING("Unsupported parameter '%s'\n", ParamName); */
     return -1;
 }
 
@@ -7727,7 +7728,7 @@ StaticAddress_SetParamBoolValue
     }
 
 
-    /* CcspTraceWarning(("Unsupported parameter '%s'\n", ParamName)); */
+    /* DHCPMGR_LOG_WARNING("Unsupported parameter '%s'\n", ParamName); */
     return FALSE;
 }
 
@@ -7774,7 +7775,7 @@ StaticAddress_SetParamIntValue
     UNREFERENCED_PARAMETER(iValue);
     /* check the parameter name and set the corresponding value */
 
-    /* CcspTraceWarning(("Unsupported parameter '%s'\n", ParamName)); */
+    /* DHCPMGR_LOG_WARNING("Unsupported parameter '%s'\n", ParamName); */
     return FALSE;
 }
 
@@ -7842,7 +7843,7 @@ StaticAddress_SetParamUlongValue
     }
 
 
-    /* CcspTraceWarning(("Unsupported parameter '%s'\n", ParamName)); */
+    /* DHCPMGR_LOG_WARNING("Unsupported parameter '%s'\n", ParamName); */
     return FALSE;
 }
 
@@ -7937,7 +7938,7 @@ StaticAddress_SetParamStringValue
 
         if(rc != 6)
         {
-            CcspTraceWarning(("MAC Address not proerly formatted \n"));
+            DHCPMGR_LOG_WARNING("MAC Address not proerly formatted \n");
             return FALSE;
         }
         memset(zeroMac, 0, sizeof(zeroMac));
@@ -7969,7 +7970,7 @@ StaticAddress_SetParamStringValue
         }
         else
         {
-            CcspTraceWarning(("'%s' value should be less than (%zu) charecters\n", ParamName, ( sizeof(pDhcpStaticAddress->DeviceName) - 1 )));
+            DHCPMGR_LOG_WARNING("'%s' value should be less than (%zu) charecters\n", ParamName, ( sizeof(pDhcpStaticAddress->DeviceName) - 1 ));
         }
     }
 
@@ -7988,11 +7989,11 @@ StaticAddress_SetParamStringValue
         }
         else
         {
-            CcspTraceWarning(("'%s' value should be less than (%zu) charecters\n", ParamName, ( sizeof(pDhcpStaticAddress->Comment) - 1 )));
+            DHCPMGR_LOG_WARNING("'%s' value should be less than (%zu) charecters\n", ParamName, ( sizeof(pDhcpStaticAddress->Comment) - 1 ));
         }
     }
 
-    /* CcspTraceWarning(("Unsupported parameter '%s'\n", ParamName)); */
+    /* DHCPMGR_LOG_WARNING("Unsupported parameter '%s'\n", ParamName); */
     return FALSE;
 }
 
@@ -8077,7 +8078,7 @@ StaticAddress_Validate
                 ipaddr = (ULONG)_ansc_inet_addr(ip_addr_str);
                 if (pDhcpStaAddr->Yiaddr.Value == ipaddr)
                 {
-                    CcspTraceWarning(("%s: Static IP Address already exists in the list; cannot add duplicate \n", __FUNCTION__));
+                    DHCPMGR_LOG_WARNING("%s: Static IP Address already exists in the list; cannot add duplicate \n", __FUNCTION__);
                     return FALSE;
                 }
 
@@ -8088,7 +8089,7 @@ StaticAddress_Validate
                     pDhcpStaAddr->Chaddr[4] == chAddr[4] &&
                     pDhcpStaAddr->Chaddr[5] == chAddr[5])
                 {
-                    CcspTraceWarning(("%s: MAC address already exists in the list; cannot add duplicate \n", __FUNCTION__));
+                    DHCPMGR_LOG_WARNING("%s: MAC address already exists in the list; cannot add duplicate \n", __FUNCTION__);
                     return FALSE;
                 }
             }
@@ -8162,7 +8163,7 @@ StaticAddress_Validate
         || IPv4Addr_IsNetworkAddr(ipaddr, gateway, netmask)
         || !IPv4Addr_IsSameNetwork(ipaddr, gateway, netmask))
     {
-        CcspTraceWarning(("%s: Invalid Static IP Address \n", __FUNCTION__));
+        DHCPMGR_LOG_WARNING("%s: Invalid Static IP Address \n", __FUNCTION__);
         _ansc_strcpy(pReturnParamName, "Yiaddr");
         return FALSE;
     }
@@ -8170,14 +8171,14 @@ StaticAddress_Validate
     /* Make sure Static IP Address is not same as our GW address */
     if((pDhcpStaAddr->Yiaddr.Value == pPool->Cfg.IPRouters[0].Value))
     {
-        CcspTraceWarning(("Static IP Address same as the GW \n"));
+        DHCPMGR_LOG_WARNING("Static IP Address same as the GW \n");
         _ansc_strcpy(pReturnParamName, "Yiaddr");
         return FALSE;
     }
 
     if((pDhcpStaAddr->Yiaddr.Value < pPool->Cfg.MinAddress.Value) || (pDhcpStaAddr->Yiaddr.Value > pPool->Cfg.MaxAddress.Value))
     {
-        CcspTraceWarning(("Static IP Address not in Range \n"));
+        DHCPMGR_LOG_WARNING("Static IP Address not in Range \n");
         _ansc_strcpy(pReturnParamName, "Yiaddr");
         return FALSE;
     }
@@ -8223,7 +8224,7 @@ StaticAddress_Commit
     errno_t   rc = -1;
     if (Dhcpv4_StaticClients_MutexTryLock() != 0)
     {
-        CcspTraceWarning(("%s not supported already macbinding blob update is inprogress \n",__FUNCTION__));
+        DHCPMGR_LOG_WARNING("%s not supported already macbinding blob update is inprogress \n",__FUNCTION__);
         return ANSC_STATUS_FAILURE;
     }
 
@@ -8479,10 +8480,10 @@ Option1_AddEntry
     errno_t                           rc                   = -1;
 
     /* We need ask from backend */
-    //printf("%s\n", __FUNCTION__);
+    //DHCPMGR_LOG_INFO("%s\n", __FUNCTION__);
     if(pPool->Cfg.InstanceNumber == 1)
     {
-        AnscTraceFlow(("%s: not supporting addinging option for pool 1.\n", __FUNCTION__));
+        DHCPMGR_LOG_INFO("%s: not supporting addinging option for pool 1.\n", __FUNCTION__);
         return (ANSC_HANDLE)ANSC_STATUS_FAILURE;
     }
 
@@ -8504,7 +8505,7 @@ Option1_AddEntry
     pCxtLink->hParentTable   = (ANSC_HANDLE)pCxtPoolLink;
     pCxtLink->bNew           = TRUE;
 
-    //printf("%s: pCxtPoolLink->maxInstanceOfOption = %d\n", __FUNCTION__, pCxtPoolLink->maxInstanceOfOption);
+    //DHCPMGR_LOG_INFO("%s: pCxtPoolLink->maxInstanceOfOption = %d\n", __FUNCTION__, pCxtPoolLink->maxInstanceOfOption);
     if ( !++pCxtPoolLink->maxInstanceOfOption )
     {
         pCxtPoolLink->maxInstanceOfOption = 1;
@@ -8528,7 +8529,7 @@ Option1_AddEntry
     pCxtLink->bNew = FALSE;
     CosaDhcpv4RegSetDhcpv4Info(pDhcpv4);
 
-    //printf("%s: option tag %d, option value %s\n", __FUNCTION__, pDhcpOption->Tag, pDhcpOption->Value);
+    //DHCPMGR_LOG_INFO("%s: option tag %d, option value %s\n", __FUNCTION__, pDhcpOption->Tag, pDhcpOption->Value);
     CosaDmlDhcpsAddOption(NULL, pPool->Cfg.InstanceNumber, pDhcpOption );
 
     return (ANSC_HANDLE)pCxtLink;
@@ -8582,11 +8583,11 @@ Option1_DelEntry
     PCOSA_DML_DHCPSV4_OPTION          pDhcpOption          = (PCOSA_DML_DHCPSV4_OPTION)pCxtLink->hContext;
 
 
-    AnscTraceFlow(("%s: pool instance %lu, option instance %lu\n", __FUNCTION__, pDhcpPool->Cfg.InstanceNumber, pDhcpOption->InstanceNumber));
-    //printf("%s: pool instance %d, option instance %d\n", __FUNCTION__, pDhcpPool->Cfg.InstanceNumber, pDhcpOption->InstanceNumber);
+    DHCPMGR_LOG_INFO("%s: pool instance %lu, option instance %lu\n", __FUNCTION__, pDhcpPool->Cfg.InstanceNumber, pDhcpOption->InstanceNumber);
+    //DHCPMGR_LOG_INFO("%s: pool instance %d, option instance %d\n", __FUNCTION__, pDhcpPool->Cfg.InstanceNumber, pDhcpOption->InstanceNumber);
     if(pDhcpPool->Cfg.InstanceNumber == 1)
     {
-        AnscTraceFlow(("%s: not supporting deleting option for pool 1.\n", __FUNCTION__));
+        DHCPMGR_LOG_INFO("%s: not supporting deleting option for pool 1.\n", __FUNCTION__);
         return ANSC_STATUS_FAILURE;
     }
     if ( !pCxtLink->bNew )
@@ -8599,7 +8600,7 @@ Option1_DelEntry
     }
 
     /* Firstly we del this entry */
-    //printf("%s: remove entry.\n", __FUNCTION__);
+    //DHCPMGR_LOG_INFO("%s: remove entry.\n", __FUNCTION__);
     if ( AnscSListPopEntryByLink(&pCxtPoolLink->OptionList, &pCxtLink->Linkage) )
     {
 //        PCOSA_DATAMODEL_DHCPV4            pDhcpv4              = (PCOSA_DATAMODEL_DHCPV4)g_Dhcpv4Object;
@@ -8664,7 +8665,7 @@ Option1_GetParamBoolValue
         return TRUE;
     }
 
-    /* CcspTraceWarning(("Unsupported parameter '%s'\n", ParamName)); */
+    /* DHCPMGR_LOG_WARNING("Unsupported parameter '%s'\n", ParamName); */
     return FALSE;
 }
 
@@ -8712,7 +8713,7 @@ Option1_GetParamIntValue
 
     /* check the parameter name and return the corresponding value */
 
-    /* CcspTraceWarning(("Unsupported parameter '%s'\n", ParamName)); */
+    /* DHCPMGR_LOG_WARNING("Unsupported parameter '%s'\n", ParamName); */
     return FALSE;
 }
 
@@ -8766,7 +8767,7 @@ Option1_GetParamUlongValue
         return TRUE;
     }
 
-    /* CcspTraceWarning(("Unsupported parameter '%s'\n", ParamName)); */
+    /* DHCPMGR_LOG_WARNING("Unsupported parameter '%s'\n", ParamName); */
     return FALSE;
 }
 
@@ -8833,7 +8834,7 @@ Option1_GetParamStringValue
         return  update_pValue(pValue,pUlSize, (char*)pDhcpOption->Value);
     }
 
-    /* CcspTraceWarning(("Unsupported parameter '%s'\n", ParamName)); */
+    /* DHCPMGR_LOG_WARNING("Unsupported parameter '%s'\n", ParamName); */
     return -1;
 }
 
@@ -8887,7 +8888,7 @@ Option1_SetParamBoolValue
         return TRUE;
     }
 
-    /* CcspTraceWarning(("Unsupported parameter '%s'\n", ParamName)); */
+    /* DHCPMGR_LOG_WARNING("Unsupported parameter '%s'\n", ParamName); */
     return FALSE;
 }
 
@@ -8935,7 +8936,7 @@ Option1_SetParamIntValue
 
     /* check the parameter name and set the corresponding value */
 
-    /* CcspTraceWarning(("Unsupported parameter '%s'\n", ParamName)); */
+    /* DHCPMGR_LOG_WARNING("Unsupported parameter '%s'\n", ParamName); */
     return FALSE;
 }
 
@@ -8990,7 +8991,7 @@ Option1_SetParamUlongValue
     }
 
 
-    /* CcspTraceWarning(("Unsupported parameter '%s'\n", ParamName)); */
+    /* DHCPMGR_LOG_WARNING("Unsupported parameter '%s'\n", ParamName); */
     return FALSE;
 }
 
@@ -9073,7 +9074,7 @@ Option1_SetParamStringValue
     }
 
 
-    /* CcspTraceWarning(("Unsupported parameter '%s'\n", ParamName)); */
+    /* DHCPMGR_LOG_WARNING("Unsupported parameter '%s'\n", ParamName); */
     return FALSE;
 }
 
@@ -9204,7 +9205,7 @@ Option1_Commit
     PCOSA_DATAMODEL_DHCPV4            pDhcpv4              = (PCOSA_DATAMODEL_DHCPV4)g_Dhcpv4Object;
     errno_t   rc = -1;
 
-    //printf("%s: %d \n", __FUNCTION__, pCxtLink->bNew);
+    //DHCPMGR_LOG_INFO("%s: %d \n", __FUNCTION__, pCxtLink->bNew);
     if ( pCxtLink->bNew )
     {
         returnStatus = CosaDmlDhcpsAddOption(NULL, pPool->Cfg.InstanceNumber, pDhcpOption );
@@ -9277,7 +9278,7 @@ Option1_Rollback
     PCOSA_DML_DHCPS_POOL_FULL         pPool             = (PCOSA_DML_DHCPS_POOL_FULL)pCxtPoolLink->hContext;
     errno_t  rc  = -1;
 
-    //printf("%s:\n", __FUNCTION__);
+    //DHCPMGR_LOG_INFO("%s:\n", __FUNCTION__);
     if ( pCxtPoolLink->AliasOfOption[0] )
     {
         rc = STRCPY_S_NOCLOBBER( pDhcpPoolOption->Alias, sizeof(pDhcpPoolOption->Alias), pCxtPoolLink->AliasOfOption );
@@ -9589,7 +9590,7 @@ Client2_GetParamBoolValue
     PClientContent = (PCOSA_DML_DHCPSV4_CLIENTCONTENT)CosaDhcpv4GetClientContentbyClient(hInsContext);
     /* Dereference null return value*/
     if (!PClientContent){
-        CcspTraceError(("PClientContent is NULL\n"));
+        DHCPMGR_LOG_ERROR("PClientContent is NULL\n");
         return FALSE;
     }
 
@@ -9614,7 +9615,7 @@ Client2_GetParamBoolValue
     }
 
 
-    /* CcspTraceWarning(("Unsupported parameter '%s'\n", ParamName)); */
+    /* DHCPMGR_LOG_WARNING("Unsupported parameter '%s'\n", ParamName); */
     return FALSE;
 }
 
@@ -9658,7 +9659,7 @@ Client2_GetParamIntValue
 {
     /* check the parameter name and return the corresponding value */
 
-    /* CcspTraceWarning(("Unsupported parameter '%s'\n", ParamName)); */
+    /* DHCPMGR_LOG_WARNING("Unsupported parameter '%s'\n", ParamName); */
     UNREFERENCED_PARAMETER(hInsContext);
     UNREFERENCED_PARAMETER(ParamName);
     UNREFERENCED_PARAMETER(pInt);
@@ -9706,7 +9707,7 @@ Client2_GetParamUlongValue
 {
     /* check the parameter name and return the corresponding value */
 
-    /* CcspTraceWarning(("Unsupported parameter '%s'\n", ParamName)); */
+    /* DHCPMGR_LOG_WARNING("Unsupported parameter '%s'\n", ParamName); */
     UNREFERENCED_PARAMETER(hInsContext);
     UNREFERENCED_PARAMETER(ParamName);
     UNREFERENCED_PARAMETER(puLong);
@@ -9801,7 +9802,7 @@ Client2_GetParamStringValue
     }
 
 
-    /* CcspTraceWarning(("Unsupported parameter '%s'\n", ParamName)); */
+    /* DHCPMGR_LOG_WARNING("Unsupported parameter '%s'\n", ParamName); */
     return -1;
 }
 
@@ -9845,7 +9846,7 @@ Client2_SetParamBoolValue
 {
     /* check the parameter name and set the corresponding value */
 
-    /* CcspTraceWarning(("Unsupported parameter '%s'\n", ParamName)); */
+    /* DHCPMGR_LOG_WARNING("Unsupported parameter '%s'\n", ParamName); */
     UNREFERENCED_PARAMETER(hInsContext);
     UNREFERENCED_PARAMETER(ParamName);
     UNREFERENCED_PARAMETER(bValue);
@@ -9893,7 +9894,7 @@ Client2_SetParamIntValue
 {
     /* check the parameter name and set the corresponding value */
 
-    /* CcspTraceWarning(("Unsupported parameter '%s'\n", ParamName)); */
+    /* DHCPMGR_LOG_WARNING("Unsupported parameter '%s'\n", ParamName); */
     UNREFERENCED_PARAMETER(hInsContext);
     UNREFERENCED_PARAMETER(ParamName);
     UNREFERENCED_PARAMETER(iValue);
@@ -9941,7 +9942,7 @@ Client2_SetParamUlongValue
 {
     /* check the parameter name and set the corresponding value */
 
-    /* CcspTraceWarning(("Unsupported parameter '%s'\n", ParamName)); */
+    /* DHCPMGR_LOG_WARNING("Unsupported parameter '%s'\n", ParamName); */
     UNREFERENCED_PARAMETER(hInsContext);
     UNREFERENCED_PARAMETER(ParamName);
     UNREFERENCED_PARAMETER(uValue);
@@ -9998,7 +9999,7 @@ Client2_SetParamStringValue
     }
 
 
-    /* CcspTraceWarning(("Unsupported parameter '%s'\n", ParamName)); */
+    /* DHCPMGR_LOG_WARNING("Unsupported parameter '%s'\n", ParamName); */
     return FALSE;
 }
 
@@ -10260,7 +10261,7 @@ IPv4Address2_GetParamBoolValue
 {
     /* check the parameter name and return the corresponding value */
 
-    /* CcspTraceWarning(("Unsupported parameter '%s'\n", ParamName)); */
+    /* DHCPMGR_LOG_WARNING("Unsupported parameter '%s'\n", ParamName); */
     UNREFERENCED_PARAMETER(hInsContext);
     UNREFERENCED_PARAMETER(ParamName);
     UNREFERENCED_PARAMETER(pBool);
@@ -10308,7 +10309,7 @@ IPv4Address2_GetParamIntValue
 {
     /* check the parameter name and return the corresponding value */
 
-    /* CcspTraceWarning(("Unsupported parameter '%s'\n", ParamName)); */
+    /* DHCPMGR_LOG_WARNING("Unsupported parameter '%s'\n", ParamName); */
     UNREFERENCED_PARAMETER(hInsContext);
     UNREFERENCED_PARAMETER(ParamName);
     UNREFERENCED_PARAMETER(pInt);
@@ -10366,7 +10367,7 @@ IPv4Address2_GetParamUlongValue
     }
 
 
-    /* CcspTraceWarning(("Unsupported parameter '%s'\n", ParamName)); */
+    /* DHCPMGR_LOG_WARNING("Unsupported parameter '%s'\n", ParamName); */
     return FALSE;
 }
 
@@ -10439,7 +10440,7 @@ IPv4Address2_GetParamStringValue
         return  update_pValue(pValue,pUlSize,  (char*)pIPAddress->X_CISCO_COM_LeaseTimeDuration);
     }
 
-    /* CcspTraceWarning(("Unsupported parameter '%s'\n", ParamName)); */
+    /* DHCPMGR_LOG_WARNING("Unsupported parameter '%s'\n", ParamName); */
     return -1;
 }
 
@@ -10590,7 +10591,7 @@ Option2_GetParamBoolValue
 {
     /* check the parameter name and return the corresponding value */
 
-    /* CcspTraceWarning(("Unsupported parameter '%s'\n", ParamName)); */
+    /* DHCPMGR_LOG_WARNING("Unsupported parameter '%s'\n", ParamName); */
     UNREFERENCED_PARAMETER(hInsContext);
     UNREFERENCED_PARAMETER(ParamName);
     UNREFERENCED_PARAMETER(pBool);
@@ -10638,7 +10639,7 @@ Option2_GetParamIntValue
 {
     /* check the parameter name and return the corresponding value */
 
-    /* CcspTraceWarning(("Unsupported parameter '%s'\n", ParamName)); */
+    /* DHCPMGR_LOG_WARNING("Unsupported parameter '%s'\n", ParamName); */
     UNREFERENCED_PARAMETER(hInsContext);
     UNREFERENCED_PARAMETER(ParamName);
     UNREFERENCED_PARAMETER(pInt);
@@ -10696,7 +10697,7 @@ Option2_GetParamUlongValue
     }
 
 
-    /* CcspTraceWarning(("Unsupported parameter '%s'\n", ParamName)); */
+    /* DHCPMGR_LOG_WARNING("Unsupported parameter '%s'\n", ParamName); */
     return FALSE;
 }
 
@@ -10757,7 +10758,7 @@ Option2_GetParamStringValue
     }
 
 
-    /* CcspTraceWarning(("Unsupported parameter '%s'\n", ParamName)); */
+    /* DHCPMGR_LOG_WARNING("Unsupported parameter '%s'\n", ParamName); */
     return -1;
 }
 

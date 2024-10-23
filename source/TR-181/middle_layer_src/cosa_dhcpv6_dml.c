@@ -74,6 +74,7 @@
 #include "safec_lib_common.h"
 #include "cosa_drg_common.h"
 #include "cosa_apis_util.h"
+#include "util.h"
 
 #ifdef DHCPV6_CLIENT_SUPPORT
 #include "service_dhcpv6_client.h"
@@ -203,7 +204,7 @@ DHCPv6_GetParamBoolValue
 {
     /* check the parameter name and return the corresponding value */
 
-    /* CcspTraceWarning(("Unsupported parameter '%s'\n", ParamName)); */
+    /* DHCPMGR_LOG_WARNING("Unsupported parameter '%s'\n", ParamName); */
     UNREFERENCED_PARAMETER(hInsContext);
     UNREFERENCED_PARAMETER(ParamName);
     UNREFERENCED_PARAMETER(pBool);
@@ -250,7 +251,7 @@ DHCPv6_GetParamIntValue
 {
     /* check the parameter name and return the corresponding value */
 
-    /* CcspTraceWarning(("Unsupported parameter '%s'\n", ParamName)); */
+    /* DHCPMGR_LOG_WARNING("Unsupported parameter '%s'\n", ParamName); */
     UNREFERENCED_PARAMETER(hInsContext);
     UNREFERENCED_PARAMETER(ParamName);
     UNREFERENCED_PARAMETER(pInt);
@@ -297,7 +298,7 @@ DHCPv6_GetParamUlongValue
 {
     /* check the parameter name and return the corresponding value */
 
-    /* CcspTraceWarning(("Unsupported parameter '%s'\n", ParamName)); */
+    /* DHCPMGR_LOG_WARNING("Unsupported parameter '%s'\n", ParamName); */
     UNREFERENCED_PARAMETER(hInsContext);
     UNREFERENCED_PARAMETER(ParamName);
     UNREFERENCED_PARAMETER(puLong);
@@ -353,7 +354,7 @@ DHCPv6_GetParamStringValue
 {
     /* check the parameter name and return the corresponding value */
 
-    /* CcspTraceWarning(("Unsupported parameter '%s'\n", ParamName)); */
+    /* DHCPMGR_LOG_WARNING("Unsupported parameter '%s'\n", ParamName); */
     UNREFERENCED_PARAMETER(hInsContext);
     UNREFERENCED_PARAMETER(ParamName);
     UNREFERENCED_PARAMETER(pValue);
@@ -715,7 +716,7 @@ Client3_GetParamBoolValue
     }
 
 
-    /* CcspTraceWarning(("Unsupported parameter '%s'\n", ParamName)); */
+    /* DHCPMGR_LOG_WARNING("Unsupported parameter '%s'\n", ParamName); */
     return FALSE;
 }
 
@@ -778,7 +779,7 @@ Client3_GetParamIntValue
     }
 
 
-    /* CcspTraceWarning(("Unsupported parameter '%s'\n", ParamName)); */
+    /* DHCPMGR_LOG_WARNING("Unsupported parameter '%s'\n", ParamName); */
     return FALSE;
 }
 
@@ -834,7 +835,7 @@ Client3_GetParamUlongValue
         return TRUE;
     }
 
-    /* CcspTraceWarning(("Unsupported parameter '%s'\n", ParamName)); */
+    /* DHCPMGR_LOG_WARNING("Unsupported parameter '%s'\n", ParamName); */
     return FALSE;
 }
 
@@ -951,7 +952,7 @@ Client3_GetParamStringValue
         return  update_pValue(pValue,pUlSize, (char*)pDhcpc->Cfg.RequestedOptions);
     }
 
-    /* CcspTraceWarning(("Unsupported parameter '%s'\n", ParamName)); */
+    /* DHCPMGR_LOG_WARNING("Unsupported parameter '%s'\n", ParamName); */
     return -1;
 }
 
@@ -1066,7 +1067,7 @@ Client3_SetParamBoolValue
         return  TRUE;
     }
 
-    /* CcspTraceWarning(("Unsupported parameter '%s'\n", ParamName)); */
+    /* DHCPMGR_LOG_WARNING("Unsupported parameter '%s'\n", ParamName); */
    
 #ifdef DHCPV6_CLIENT_SUPPORT 
 #ifdef DHCPV6C_COMS
@@ -1137,7 +1138,7 @@ Client3_SetParamIntValue
     }
 
 
-    /* CcspTraceWarning(("Unsupported parameter '%s'\n", ParamName)); */
+    /* DHCPMGR_LOG_WARNING("Unsupported parameter '%s'\n", ParamName); */
     return FALSE;
 }
 
@@ -1180,7 +1181,7 @@ Client3_SetParamUlongValue
     )
 {
 
-    /* CcspTraceWarning(("Unsupported parameter '%s'\n", ParamName)); */
+    /* DHCPMGR_LOG_WARNING("Unsupported parameter '%s'\n", ParamName); */
     UNREFERENCED_PARAMETER(hInsContext);
     UNREFERENCED_PARAMETER(ParamName);
     UNREFERENCED_PARAMETER(uValue);
@@ -1264,7 +1265,7 @@ Client3_SetParamStringValue
         return TRUE;
     }
 
-    /* CcspTraceWarning(("Unsupported parameter '%s'\n", ParamName)); */
+    /* DHCPMGR_LOG_WARNING("Unsupported parameter '%s'\n", ParamName); */
     return FALSE;
 }
 
@@ -1669,7 +1670,7 @@ Server2_GetParamBoolValue
 {
     /* check the parameter name and return the corresponding value */
 
-    /* CcspTraceWarning(("Unsupported parameter '%s'\n", ParamName)); */
+    /* DHCPMGR_LOG_WARNING("Unsupported parameter '%s'\n", ParamName); */
     UNREFERENCED_PARAMETER(hInsContext);
     UNREFERENCED_PARAMETER(ParamName);
     UNREFERENCED_PARAMETER(pBool);
@@ -1716,7 +1717,7 @@ Server2_GetParamIntValue
 {
     /* check the parameter name and return the corresponding value */
 
-    /* CcspTraceWarning(("Unsupported parameter '%s'\n", ParamName)); */
+    /* DHCPMGR_LOG_WARNING("Unsupported parameter '%s'\n", ParamName); */
     UNREFERENCED_PARAMETER(hInsContext);
     UNREFERENCED_PARAMETER(ParamName);
     UNREFERENCED_PARAMETER(pInt);
@@ -1763,7 +1764,7 @@ Server2_GetParamUlongValue
 {
     /* check the parameter name and return the corresponding value */
 
-    /* CcspTraceWarning(("Unsupported parameter '%s'\n", ParamName)); */
+    /* DHCPMGR_LOG_WARNING("Unsupported parameter '%s'\n", ParamName); */
     UNREFERENCED_PARAMETER(hInsContext);
     UNREFERENCED_PARAMETER(ParamName);
     UNREFERENCED_PARAMETER(puLong);
@@ -1840,7 +1841,7 @@ Server2_GetParamStringValue
     }
 
 
-    /* CcspTraceWarning(("Unsupported parameter '%s'\n", ParamName)); */
+    /* DHCPMGR_LOG_WARNING("Unsupported parameter '%s'\n", ParamName); */
     return -1;
 }
 
@@ -2154,7 +2155,7 @@ SentOption1_GetParamBoolValue
     }
 
 
-    /* CcspTraceWarning(("Unsupported parameter '%s'\n", ParamName)); */
+    /* DHCPMGR_LOG_WARNING("Unsupported parameter '%s'\n", ParamName); */
     return FALSE;
 }
 
@@ -2198,7 +2199,7 @@ SentOption1_GetParamIntValue
 {
     /* check the parameter name and return the corresponding value */
 
-    /* CcspTraceWarning(("Unsupported parameter '%s'\n", ParamName)); */
+    /* DHCPMGR_LOG_WARNING("Unsupported parameter '%s'\n", ParamName); */
     UNREFERENCED_PARAMETER(hInsContext);
     UNREFERENCED_PARAMETER(ParamName);
     UNREFERENCED_PARAMETER(pInt);
@@ -2256,7 +2257,7 @@ SentOption1_GetParamUlongValue
     }
 
 
-    /* CcspTraceWarning(("Unsupported parameter '%s'\n", ParamName)); */
+    /* DHCPMGR_LOG_WARNING("Unsupported parameter '%s'\n", ParamName); */
     return FALSE;
 }
 
@@ -2323,7 +2324,7 @@ SentOption1_GetParamStringValue
         return  update_pValue(pValue,pUlSize, (char*)pDhcpSentOption->Value);
     }
 
-    /* CcspTraceWarning(("Unsupported parameter '%s'\n", ParamName)); */
+    /* DHCPMGR_LOG_WARNING("Unsupported parameter '%s'\n", ParamName); */
     return -1;
 }
 
@@ -2377,7 +2378,7 @@ SentOption1_SetParamBoolValue
         return TRUE;
     }
 
-    /* CcspTraceWarning(("Unsupported parameter '%s'\n", ParamName)); */
+    /* DHCPMGR_LOG_WARNING("Unsupported parameter '%s'\n", ParamName); */
     return FALSE;
 }
 
@@ -2421,7 +2422,7 @@ SentOption1_SetParamIntValue
 {
     /* check the parameter name and set the corresponding value */
 
-    /* CcspTraceWarning(("Unsupported parameter '%s'\n", ParamName)); */
+    /* DHCPMGR_LOG_WARNING("Unsupported parameter '%s'\n", ParamName); */
     UNREFERENCED_PARAMETER(hInsContext);
     UNREFERENCED_PARAMETER(ParamName);
     UNREFERENCED_PARAMETER(iValue);
@@ -2479,7 +2480,7 @@ SentOption1_SetParamUlongValue
     }
 
 
-    /* CcspTraceWarning(("Unsupported parameter '%s'\n", ParamName)); */
+    /* DHCPMGR_LOG_WARNING("Unsupported parameter '%s'\n", ParamName); */
     return FALSE;
 }
 
@@ -2561,7 +2562,7 @@ SentOption1_SetParamStringValue
     }
 
 
-    /* CcspTraceWarning(("Unsupported parameter '%s'\n", ParamName)); */
+    /* DHCPMGR_LOG_WARNING("Unsupported parameter '%s'\n", ParamName); */
     return FALSE;
 }
 
@@ -3059,7 +3060,7 @@ ReceivedOption_GetParamBoolValue
 {
     /* check the parameter name and return the corresponding value */
 
-    /* CcspTraceWarning(("Unsupported parameter '%s'\n", ParamName)); */
+    /* DHCPMGR_LOG_WARNING("Unsupported parameter '%s'\n", ParamName); */
     UNREFERENCED_PARAMETER(hInsContext);
     UNREFERENCED_PARAMETER(ParamName);
     UNREFERENCED_PARAMETER(pBool);
@@ -3106,7 +3107,7 @@ ReceivedOption_GetParamIntValue
 {
     /* check the parameter name and return the corresponding value */
 
-    /* CcspTraceWarning(("Unsupported parameter '%s'\n", ParamName)); */
+    /* DHCPMGR_LOG_WARNING("Unsupported parameter '%s'\n", ParamName); */
     UNREFERENCED_PARAMETER(hInsContext);
     UNREFERENCED_PARAMETER(ParamName);
     UNREFERENCED_PARAMETER(pInt);
@@ -3163,7 +3164,7 @@ ReceivedOption_GetParamUlongValue
     }
 
 
-    /* CcspTraceWarning(("Unsupported parameter '%s'\n", ParamName)); */
+    /* DHCPMGR_LOG_WARNING("Unsupported parameter '%s'\n", ParamName); */
     return FALSE;
 }
 
@@ -3229,7 +3230,7 @@ ReceivedOption_GetParamStringValue
         return  update_pValue(pValue,pUlSize, (char*)pDhcpcRecv->Server);
     }
 
-    /* CcspTraceWarning(("Unsupported parameter '%s'\n", ParamName)); */
+    /* DHCPMGR_LOG_WARNING("Unsupported parameter '%s'\n", ParamName); */
     return -1;
 }
 
@@ -3288,7 +3289,7 @@ dhcp6c_mapt_mape_GetParamBoolValue
         return TRUE;
     }
 
-    /* CcspTraceWarning(("Unsupported parameter '%s'\n", ParamName)); */
+    /* DHCPMGR_LOG_WARNING("Unsupported parameter '%s'\n", ParamName); */
     return FALSE;
 }
 
@@ -3390,7 +3391,7 @@ dhcp6c_mapt_mape_GetParamUlongValue
         return TRUE;
     }
 
-    /* CcspTraceWarning(("Unsupported parameter '%s'\n", ParamName)); */
+    /* DHCPMGR_LOG_WARNING("Unsupported parameter '%s'\n", ParamName); */
     return FALSE;
 }
 
@@ -3553,7 +3554,7 @@ dhcp6c_mapt_mape_GetParamStringValue
 #endif
     }
 
-    /* CcspTraceWarning(("Unsupported parameter '%s'\n", ParamName)); */
+    /* DHCPMGR_LOG_WARNING("Unsupported parameter '%s'\n", ParamName); */
     return -1;
 }
 #endif
@@ -3625,7 +3626,7 @@ Server3_GetParamBoolValue
     }
 
 
-    /* CcspTraceWarning(("Unsupported parameter '%s'\n", ParamName)); */
+    /* DHCPMGR_LOG_WARNING("Unsupported parameter '%s'\n", ParamName); */
     return FALSE;
 }
 
@@ -3669,7 +3670,7 @@ Server3_GetParamIntValue
 {
     /* check the parameter name and return the corresponding value */
 
-    /* CcspTraceWarning(("Unsupported parameter '%s'\n", ParamName)); */
+    /* DHCPMGR_LOG_WARNING("Unsupported parameter '%s'\n", ParamName); */
     UNREFERENCED_PARAMETER(hInsContext);
     UNREFERENCED_PARAMETER(ParamName);
     UNREFERENCED_PARAMETER(pInt);
@@ -3725,7 +3726,7 @@ Server3_GetParamUlongValue
         return TRUE;
     }
 
-    /* CcspTraceWarning(("Unsupported parameter '%s'\n", ParamName)); */
+    /* DHCPMGR_LOG_WARNING("Unsupported parameter '%s'\n", ParamName); */
     return FALSE;
 }
 
@@ -3778,7 +3779,7 @@ Server3_GetParamStringValue
 {
     /* check the parameter name and return the corresponding value */
 
-    /* CcspTraceWarning(("Unsupported parameter '%s'\n", ParamName)); */
+    /* DHCPMGR_LOG_WARNING("Unsupported parameter '%s'\n", ParamName); */
     UNREFERENCED_PARAMETER(hInsContext);
     UNREFERENCED_PARAMETER(ParamName);
     UNREFERENCED_PARAMETER(pValue);
@@ -3847,7 +3848,7 @@ Server3_SetParamBoolValue
     }
 
 
-    /* CcspTraceWarning(("Unsupported parameter '%s'\n", ParamName)); */
+    /* DHCPMGR_LOG_WARNING("Unsupported parameter '%s'\n", ParamName); */
     return FALSE;
 }
 
@@ -3891,7 +3892,7 @@ Server3_SetParamIntValue
 {
     /* check the parameter name and set the corresponding value */
 
-    /* CcspTraceWarning(("Unsupported parameter '%s'\n", ParamName)); */
+    /* DHCPMGR_LOG_WARNING("Unsupported parameter '%s'\n", ParamName); */
     UNREFERENCED_PARAMETER(hInsContext);
     UNREFERENCED_PARAMETER(ParamName);
     UNREFERENCED_PARAMETER(iValue);
@@ -3954,7 +3955,7 @@ Server3_SetParamUlongValue
     }
 
 
-    /* CcspTraceWarning(("Unsupported parameter '%s'\n", ParamName)); */
+    /* DHCPMGR_LOG_WARNING("Unsupported parameter '%s'\n", ParamName); */
     return FALSE;
 }
 
@@ -3998,7 +3999,7 @@ Server3_SetParamStringValue
 {
     /* check the parameter name and set the corresponding value */
 
-    /* CcspTraceWarning(("Unsupported parameter '%s'\n", ParamName)); */
+    /* DHCPMGR_LOG_WARNING("Unsupported parameter '%s'\n", ParamName); */
     UNREFERENCED_PARAMETER(hInsContext);
     UNREFERENCED_PARAMETER(ParamName);
     UNREFERENCED_PARAMETER(pString);
@@ -4523,7 +4524,7 @@ Pool1_GetParamBoolValue
         return TRUE;
     }
 
-    /* CcspTraceWarning(("Unsupported parameter '%s'\n", ParamName)); */
+    /* DHCPMGR_LOG_WARNING("Unsupported parameter '%s'\n", ParamName); */
     return FALSE;
 }
 
@@ -4603,7 +4604,7 @@ Pool1_GetParamUlongValue
         return TRUE;
     }
 
-    /* CcspTraceWarning(("Unsupported parameter '%s'\n", ParamName)); */
+    /* DHCPMGR_LOG_WARNING("Unsupported parameter '%s'\n", ParamName); */
     return FALSE;
 }
 
@@ -4808,7 +4809,7 @@ Pool1_GetParamStringValue
         return  update_pValue(pValue,pUlSize, (char*)pPool->Cfg.X_RDKCENTRAL_COM_DNSServers);
     }
 
-    /* CcspTraceWarning(("Unsupported parameter '%s'\n", ParamName)); */
+    /* DHCPMGR_LOG_WARNING("Unsupported parameter '%s'\n", ParamName); */
     return -1;
 }
 
@@ -4949,7 +4950,7 @@ Pool1_SetParamBoolValue
         return TRUE;
     }
 
-    /* CcspTraceWarning(("Unsupported parameter '%s'\n", ParamName)); */
+    /* DHCPMGR_LOG_WARNING("Unsupported parameter '%s'\n", ParamName); */
     return FALSE;
 }
 
@@ -5020,7 +5021,7 @@ Pool1_SetParamUlongValue
         return TRUE;
     }
 
-    /* CcspTraceWarning(("Unsupported parameter '%s'\n", ParamName)); */
+    /* DHCPMGR_LOG_WARNING("Unsupported parameter '%s'\n", ParamName); */
     return FALSE;
 }
 
@@ -5298,7 +5299,7 @@ Pool1_SetParamStringValue
     }
 
 
-    /* CcspTraceWarning(("Unsupported parameter '%s'\n", ParamName)); */
+    /* DHCPMGR_LOG_WARNING("Unsupported parameter '%s'\n", ParamName); */
     return FALSE;
 
 }
@@ -5774,7 +5775,7 @@ Client4_Synchronize
         pCxtLink->pClientContentList = (PCOSA_DML_DHCPSV6_CLIENTCONTENT)AnscAllocateMemory( count * sizeof(COSA_DML_DHCPSV6_CLIENTCONTENT) );
         if (  !pCxtLink->pClientContentList )
         {
-            CcspTraceWarning(( "Client4_Synchronize -- AnscAllocateMemory error.\n"));
+            DHCPMGR_LOG_WARNING( "Client4_Synchronize -- AnscAllocateMemory error.\n");
              /* Dereference after null check*/
              return ANSC_STATUS_FAILURE;
         }
@@ -5793,7 +5794,7 @@ Client4_Synchronize
 
             if ( returnStatus )
             {
-                CcspTraceWarning(( "Client4_Synchronize -- CosaDmlDhcpv6sGetIPv6Address() error %lu.\n", returnStatus));
+                DHCPMGR_LOG_WARNING( "Client4_Synchronize -- CosaDmlDhcpv6sGetIPv6Address() error %lu.\n", returnStatus);
             }
 
             returnStatus = CosaDmlDhcpv6sGetIPv6Prefix
@@ -5807,7 +5808,7 @@ Client4_Synchronize
 
             if ( returnStatus )
             {
-                CcspTraceWarning(( "Client4_Synchronize -- CosaDmlDhcpv6sGetIPv6Prefix() error %lu.\n", returnStatus));
+                DHCPMGR_LOG_WARNING( "Client4_Synchronize -- CosaDmlDhcpv6sGetIPv6Prefix() error %lu.\n", returnStatus);
             }
 
             returnStatus = CosaDmlDhcpv6sGetIPv6Option
@@ -5821,7 +5822,7 @@ Client4_Synchronize
 
             if ( returnStatus )
             {
-                CcspTraceWarning(( "Client4_Synchronize -- CosaDmlDhcpv6sGetIPv6Option() error %lu.\n", returnStatus));
+                DHCPMGR_LOG_WARNING( "Client4_Synchronize -- CosaDmlDhcpv6sGetIPv6Option() error %lu.\n", returnStatus);
             }
 
         }
@@ -5897,7 +5898,7 @@ Client4_GetParamBoolValue
     }
 
 
-    /* CcspTraceWarning(("Unsupported parameter '%s'\n", ParamName)); */
+    /* DHCPMGR_LOG_WARNING("Unsupported parameter '%s'\n", ParamName); */
     return FALSE;
 }
 
@@ -5941,7 +5942,7 @@ Client4_GetParamIntValue
 {
     /* check the parameter name and return the corresponding value */
 
-    /* CcspTraceWarning(("Unsupported parameter '%s'\n", ParamName)); */
+    /* DHCPMGR_LOG_WARNING("Unsupported parameter '%s'\n", ParamName); */
     UNREFERENCED_PARAMETER(hInsContext);
     UNREFERENCED_PARAMETER(ParamName);
     UNREFERENCED_PARAMETER(pInt);
@@ -5988,7 +5989,7 @@ Client4_GetParamUlongValue
 {
     /* check the parameter name and return the corresponding value */
 
-    /* CcspTraceWarning(("Unsupported parameter '%s'\n", ParamName)); */
+    /* DHCPMGR_LOG_WARNING("Unsupported parameter '%s'\n", ParamName); */
     UNREFERENCED_PARAMETER(hInsContext);
     UNREFERENCED_PARAMETER(ParamName);
     UNREFERENCED_PARAMETER(puLong);
@@ -6059,7 +6060,7 @@ Client4_GetParamStringValue
     }
 
 
-    /* CcspTraceWarning(("Unsupported parameter '%s'\n", ParamName)); */
+    /* DHCPMGR_LOG_WARNING("Unsupported parameter '%s'\n", ParamName); */
     return -1;
 }
 
@@ -6103,7 +6104,7 @@ Client4_SetParamBoolValue
 {
     /* check the parameter name and set the corresponding value */
 
-    /* CcspTraceWarning(("Unsupported parameter '%s'\n", ParamName)); */
+    /* DHCPMGR_LOG_WARNING("Unsupported parameter '%s'\n", ParamName); */
     UNREFERENCED_PARAMETER(hInsContext);
     UNREFERENCED_PARAMETER(ParamName);
     UNREFERENCED_PARAMETER(bValue);
@@ -6150,7 +6151,7 @@ Client4_SetParamIntValue
 {
     /* check the parameter name and set the corresponding value */
 
-    /* CcspTraceWarning(("Unsupported parameter '%s'\n", ParamName)); */
+    /* DHCPMGR_LOG_WARNING("Unsupported parameter '%s'\n", ParamName); */
     UNREFERENCED_PARAMETER(hInsContext);
     UNREFERENCED_PARAMETER(ParamName);
     UNREFERENCED_PARAMETER(iValue);
@@ -6197,7 +6198,7 @@ Client4_SetParamUlongValue
 {
     /* check the parameter name and set the corresponding value */
 
-    /* CcspTraceWarning(("Unsupported parameter '%s'\n", ParamName)); */
+    /* DHCPMGR_LOG_WARNING("Unsupported parameter '%s'\n", ParamName); */
     UNREFERENCED_PARAMETER(hInsContext);
     UNREFERENCED_PARAMETER(ParamName);
     UNREFERENCED_PARAMETER(uValue);
@@ -6260,7 +6261,7 @@ Client4_SetParamStringValue
     }
 
 
-    /* CcspTraceWarning(("Unsupported parameter '%s'\n", ParamName)); */
+    /* DHCPMGR_LOG_WARNING("Unsupported parameter '%s'\n", ParamName); */
     return FALSE;
 }
 
@@ -6519,7 +6520,7 @@ IPv6Address2_GetParamBoolValue
 {
     /* check the parameter name and return the corresponding value */
 
-    /* CcspTraceWarning(("Unsupported parameter '%s'\n", ParamName)); */
+    /* DHCPMGR_LOG_WARNING("Unsupported parameter '%s'\n", ParamName); */
     UNREFERENCED_PARAMETER(hInsContext);
     UNREFERENCED_PARAMETER(ParamName);
     UNREFERENCED_PARAMETER(pBool);
@@ -6566,7 +6567,7 @@ IPv6Address2_GetParamIntValue
 {
     /* check the parameter name and return the corresponding value */
 
-    /* CcspTraceWarning(("Unsupported parameter '%s'\n", ParamName)); */
+    /* DHCPMGR_LOG_WARNING("Unsupported parameter '%s'\n", ParamName); */
     UNREFERENCED_PARAMETER(hInsContext);
     UNREFERENCED_PARAMETER(ParamName);
     UNREFERENCED_PARAMETER(pInt);
@@ -6613,7 +6614,7 @@ IPv6Address2_GetParamUlongValue
 {
     /* check the parameter name and return the corresponding value */
 
-    /* CcspTraceWarning(("Unsupported parameter '%s'\n", ParamName)); */
+    /* DHCPMGR_LOG_WARNING("Unsupported parameter '%s'\n", ParamName); */
     UNREFERENCED_PARAMETER(hInsContext);
     UNREFERENCED_PARAMETER(ParamName);
     UNREFERENCED_PARAMETER(puLong);
@@ -6689,7 +6690,7 @@ IPv6Address2_GetParamStringValue
     }
 
 
-    /* CcspTraceWarning(("Unsupported parameter '%s'\n", ParamName)); */
+    /* DHCPMGR_LOG_WARNING("Unsupported parameter '%s'\n", ParamName); */
     return -1;
 }
 
@@ -6838,7 +6839,7 @@ IPv6Prefix1_GetParamBoolValue
 {
     /* check the parameter name and return the corresponding value */
 
-    /* CcspTraceWarning(("Unsupported parameter '%s'\n", ParamName)); */
+    /* DHCPMGR_LOG_WARNING("Unsupported parameter '%s'\n", ParamName); */
     UNREFERENCED_PARAMETER(hInsContext);
     UNREFERENCED_PARAMETER(ParamName);
     UNREFERENCED_PARAMETER(pBool);
@@ -6885,7 +6886,7 @@ IPv6Prefix1_GetParamIntValue
 {
     /* check the parameter name and return the corresponding value */
 
-    /* CcspTraceWarning(("Unsupported parameter '%s'\n", ParamName)); */
+    /* DHCPMGR_LOG_WARNING("Unsupported parameter '%s'\n", ParamName); */
     UNREFERENCED_PARAMETER(hInsContext);
     UNREFERENCED_PARAMETER(ParamName);
     UNREFERENCED_PARAMETER(pInt);
@@ -6932,7 +6933,7 @@ IPv6Prefix1_GetParamUlongValue
 {
     /* check the parameter name and return the corresponding value */
 
-    /* CcspTraceWarning(("Unsupported parameter '%s'\n", ParamName)); */
+    /* DHCPMGR_LOG_WARNING("Unsupported parameter '%s'\n", ParamName); */
     UNREFERENCED_PARAMETER(hInsContext);
     UNREFERENCED_PARAMETER(ParamName);
     UNREFERENCED_PARAMETER(puLong);
@@ -7008,7 +7009,7 @@ IPv6Prefix1_GetParamStringValue
     }
 
 
-    /* CcspTraceWarning(("Unsupported parameter '%s'\n", ParamName)); */
+    /* DHCPMGR_LOG_WARNING("Unsupported parameter '%s'\n", ParamName); */
     return -1;
 }
 
@@ -7157,7 +7158,7 @@ Option3_GetParamBoolValue
 {
     /* check the parameter name and return the corresponding value */
 
-    /* CcspTraceWarning(("Unsupported parameter '%s'\n", ParamName)); */
+    /* DHCPMGR_LOG_WARNING("Unsupported parameter '%s'\n", ParamName); */
     UNREFERENCED_PARAMETER(hInsContext);
     UNREFERENCED_PARAMETER(ParamName);
     UNREFERENCED_PARAMETER(pBool);
@@ -7204,7 +7205,7 @@ Option3_GetParamIntValue
 {
     /* check the parameter name and return the corresponding value */
 
-    /* CcspTraceWarning(("Unsupported parameter '%s'\n", ParamName)); */
+    /* DHCPMGR_LOG_WARNING("Unsupported parameter '%s'\n", ParamName); */
     UNREFERENCED_PARAMETER(hInsContext);
     UNREFERENCED_PARAMETER(ParamName);
     UNREFERENCED_PARAMETER(pInt);
@@ -7262,7 +7263,7 @@ Option3_GetParamUlongValue
     }
 
 
-    /* CcspTraceWarning(("Unsupported parameter '%s'\n", ParamName)); */
+    /* DHCPMGR_LOG_WARNING("Unsupported parameter '%s'\n", ParamName); */
     return FALSE;
 }
 
@@ -7323,7 +7324,7 @@ Option3_GetParamStringValue
     }
 
 
-    /* CcspTraceWarning(("Unsupported parameter '%s'\n", ParamName)); */
+    /* DHCPMGR_LOG_WARNING("Unsupported parameter '%s'\n", ParamName); */
     return -1;
 }
 
@@ -7651,7 +7652,7 @@ Option4_GetParamBoolValue
     }
 
 
-    /* CcspTraceWarning(("Unsupported parameter '%s'\n", ParamName)); */
+    /* DHCPMGR_LOG_WARNING("Unsupported parameter '%s'\n", ParamName); */
     return FALSE;
 }
 
@@ -7695,7 +7696,7 @@ Option4_GetParamIntValue
 {
     /* check the parameter name and return the corresponding value */
 
-    /* CcspTraceWarning(("Unsupported parameter '%s'\n", ParamName)); */
+    /* DHCPMGR_LOG_WARNING("Unsupported parameter '%s'\n", ParamName); */
     UNREFERENCED_PARAMETER(hInsContext);
     UNREFERENCED_PARAMETER(ParamName);
     UNREFERENCED_PARAMETER(pInt);
@@ -7753,7 +7754,7 @@ Option4_GetParamUlongValue
     }
 
 
-    /* CcspTraceWarning(("Unsupported parameter '%s'\n", ParamName)); */
+    /* DHCPMGR_LOG_WARNING("Unsupported parameter '%s'\n", ParamName); */
     return FALSE;
 }
 
@@ -7827,7 +7828,7 @@ Option4_GetParamStringValue
     }
 
 
-    /* CcspTraceWarning(("Unsupported parameter '%s'\n", ParamName)); */
+    /* DHCPMGR_LOG_WARNING("Unsupported parameter '%s'\n", ParamName); */
     return -1;
 }
 
@@ -7882,7 +7883,7 @@ Option4_SetParamBoolValue
     }
 
 
-    /* CcspTraceWarning(("Unsupported parameter '%s'\n", ParamName)); */
+    /* DHCPMGR_LOG_WARNING("Unsupported parameter '%s'\n", ParamName); */
     return FALSE;
 }
 
@@ -7926,7 +7927,7 @@ Option4_SetParamIntValue
 {
     /* check the parameter name and set the corresponding value */
 
-    /* CcspTraceWarning(("Unsupported parameter '%s'\n", ParamName)); */
+    /* DHCPMGR_LOG_WARNING("Unsupported parameter '%s'\n", ParamName); */
     UNREFERENCED_PARAMETER(hInsContext);
     UNREFERENCED_PARAMETER(ParamName);
     UNREFERENCED_PARAMETER(iValue);
@@ -7989,7 +7990,7 @@ Option4_SetParamUlongValue
     }
 
 
-    /* CcspTraceWarning(("Unsupported parameter '%s'\n", ParamName)); */
+    /* DHCPMGR_LOG_WARNING("Unsupported parameter '%s'\n", ParamName); */
     return FALSE;
 }
 
@@ -8091,7 +8092,7 @@ Option4_SetParamStringValue
        return TRUE;
     }
 
-    /* CcspTraceWarning(("Unsupported parameter '%s'\n", ParamName)); */
+    /* DHCPMGR_LOG_WARNING("Unsupported parameter '%s'\n", ParamName); */
     return FALSE;
 }
 

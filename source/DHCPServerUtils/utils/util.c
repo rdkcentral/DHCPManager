@@ -49,7 +49,6 @@
 #include <net/route.h>
 #include "util.h"
 #include "errno.h"
-#include "ccsp_trace.h"
 
 int vsystem(const char *fmt, ...)
 {
@@ -78,7 +77,7 @@ int iface_get_hwaddr(const char *ifname, char *mac, size_t size)
         return -1;
 
     if ((sockfd = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
-        perror("socket");
+        DHCPMGR_LOG_ERROR("socket");
         return -1;
     }
 
@@ -94,7 +93,7 @@ int iface_get_hwaddr(const char *ifname, char *mac, size_t size)
                 DHCPMGR_LOG_ERROR("%s interface is present, but got an error:%d while getting MAC Address", 
                                        ifname, errno);
         }
-        perror("ioctl");
+        DHCPMGR_LOG_ERROR("ioctl");
         close(sockfd);
         return -1;
     }

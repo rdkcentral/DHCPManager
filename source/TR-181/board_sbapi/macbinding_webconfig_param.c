@@ -20,7 +20,7 @@
 #include <string.h>
 #include <stdarg.h>
 #include <msgpack.h>
-#include "ccsp_trace.h"
+#include "util.h"
 #include "helpers.h"
 #include "macbinding_webconfig_param.h"
 
@@ -220,7 +220,7 @@ int process_macbindingdoc( macbindingdoc_t *md, int num, ... )
 
             if( 0 != process_macdocparams(&md->entries[i], &array->ptr[i].via.map) )
             {
-                CcspTraceWarning(("process_macdocparams failed\n"));
+                DHCPMGR_LOG_WARNING("process_macdocparams failed\n");
                 return -1;
             }
         }

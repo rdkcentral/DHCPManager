@@ -28,6 +28,7 @@
 #include "utapi.h"
 #include "utapi_util.h"
 #include "ansc_wrapper_base.h"
+#include "util.h"
 #define MACADDR_SZ          18
 #define MIN 60
 #define HOURS 3600
@@ -100,7 +101,7 @@ int CheckIpIsValid( char *ipAddress )
     if (!ipAddress)
         return INVALID_IP;
 
-    CcspTraceWarning(("%s:IpAddressReceivedIs:%s\n",__FUNCTION__,ipAddress));
+    DHCPMGR_LOG_WARNING("%s:IpAddressReceivedIs:%s\n",__FUNCTION__,ipAddress);
 
     if ( (inet_pton(AF_INET, ipAddress, &(sa.sin_addr)) == 1 ) )
     {
@@ -114,7 +115,7 @@ int CheckIpIsValid( char *ipAddress )
 int CheckStaticClientIpIsValid( char *ipAddress )
 {
 
-    CcspTraceWarning((" %s Enter \n",__FUNCTION__));
+    DHCPMGR_LOG_WARNING(" %s Enter \n",__FUNCTION__);
     if (VALID_IP == CheckIpIsValid(ipAddress))
     {
         ULONG static_ip = _ansc_inet_addr(ipAddress);
@@ -187,7 +188,7 @@ int Dhcpv4_Reset_Cache()
     memset(cache_temp,0,sizeof(cache_temp));
     g_numOfbkupCacheParam = 0;
     g_numOfReceivedParam = 0;
-    CcspTraceWarning((" %s done \n",__FUNCTION__));
+    DHCPMGR_LOG_WARNING(" %s done \n",__FUNCTION__);
     return 0;
 }
 
@@ -255,14 +256,14 @@ int Dhcpv4_UnsetAllDbValues(Dhcpv4_Cache_t *pCache, int numOfCacheParam)
     {
         if (syscfg_unset(NULL, pCache[i].cmd) != 0)
         {
-            CcspTraceError(("syscfg_set failed for %s %s\n",pCache[i].cmd,pCache[i].val));
+            DHCPMGR_LOG_ERROR("syscfg_set failed for %s %s\n",pCache[i].cmd,pCache[i].val);
             return SYSCFG_FAILURE;
         }
     }
 
     if (syscfg_commit() != 0)
     {
-        CcspTraceError(("syscfg_commit failed unset_ToDB\n"));
+        DHCPMGR_LOG_ERROR("syscfg_commit failed unset_ToDB\n");
         return SYSCFG_FAILURE;
     }
     return 0;
@@ -274,23 +275,23 @@ int Dhcpv4_Cache_ApplyAllToDb(Dhcpv4_Cache_t *pCache, int numOfCacheParam)
     if (!pCache || numOfCacheParam <= 0)
         return -1;
 
-    CcspTraceWarning((" %s line.no %d numOfParam %d\n",__FUNCTION__,__LINE__,numOfCacheParam));
+    DHCPMGR_LOG_WARNING(" %s line.no %d numOfParam %d\n",__FUNCTION__,__LINE__,numOfCacheParam);
 
     for(i = 0;i < numOfCacheParam ; i++)
     {
         if (syscfg_set(NULL, pCache[i].cmd, pCache[i].val) != 0)
         {
-            CcspTraceError(("syscfg_set failed for %s %s\n",pCache[i].cmd,pCache[i].val));
+            DHCPMGR_LOG_ERROR("syscfg_set failed for %s %s\n",pCache[i].cmd,pCache[i].val);
             return SYSCFG_FAILURE;
         }
     }
     if (syscfg_commit() != 0)
     {
-        CcspTraceError(("syscfg_commit failed apply_cache_ToDB\n"));
+        DHCPMGR_LOG_ERROR("syscfg_commit failed apply_cache_ToDB\n");
         return SYSCFG_FAILURE;
 
     }
-    CcspTraceWarning((" %s line.no %d Success \n",__FUNCTION__,__LINE__));
+    DHCPMGR_LOG_WARNING(" %s line.no %d Success \n",__FUNCTION__,__LINE__);
     return 0;
 }
 
@@ -309,26 +310,26 @@ int Dhcpv4_StaticClients_UnsetNotUsedParamFromDb(int numOfNewlyReceivedParam, in
         snprintf(cmd,sizeof(cmd),"%s%d",DHCPV4_STATIC_HOST,index + 1);
         if (syscfg_unset(NULL,cmd) != 0)
         {
-            CcspTraceError(("syscfg_unset failed for %s \n",cmd));
+            DHCPMGR_LOG_ERROR("syscfg_unset failed for %s \n",cmd);
             return SYSCFG_FAILURE;
         }
         snprintf(cmd,sizeof(cmd),"%s%d",DHCPV4_STATIC_HOST_ALIAS,index + 1);
         if (syscfg_unset(NULL,cmd) != 0)
         {
-            CcspTraceError(("syscfg_unset failed for %s \n",cmd));
+            DHCPMGR_LOG_ERROR("syscfg_unset failed for %s \n",cmd);
             return SYSCFG_FAILURE;
         }
         snprintf(cmd,sizeof(cmd),"%s%d",DHCPV4_STATIC_HOSTS_INSNUM,index + 1);
         if (syscfg_unset(NULL,cmd) != 0)
         {
-            CcspTraceError(("syscfg_unset failed for %s \n",cmd));
+            DHCPMGR_LOG_ERROR("syscfg_unset failed for %s \n",cmd);
             return SYSCFG_FAILURE;
         }
     }
 
     if (syscfg_commit() != 0)
     {
-        CcspTraceError(("syscfg_commit failed apply_cache_ToDB\n"));
+        DHCPMGR_LOG_ERROR("syscfg_commit failed apply_cache_ToDB\n");
         return SYSCFG_FAILURE;
 
     }
@@ -409,7 +410,7 @@ int Dhcpv4_StaticClients_BackupFromDb(Dhcpv4_Cache_t *pCache, int *pNumOfParam)
         ++numOfParam;
     }
     *pNumOfParam = numOfParam;
-    CcspTraceWarning((" %s Done NumofParam %d \n",__FUNCTION__,numOfParam));
+    DHCPMGR_LOG_WARNING(" %s Done NumofParam %d \n",__FUNCTION__,numOfParam);
     return 0;
 }
 
@@ -453,7 +454,7 @@ int Dhcpv4_StaticClients_Validate(macbindingdoc_t *pConf)
     if (!pConf)
         return -1;
 
-    CcspTraceWarning((" %s Enter \n",__FUNCTION__));
+    DHCPMGR_LOG_WARNING(" %s Enter \n",__FUNCTION__);
     if (pConf->entries_count <= 0 || !pConf->entries)
         return EMPTY_BLOB;
 
@@ -472,7 +473,7 @@ int Dhcpv4_StaticClients_Validate(macbindingdoc_t *pConf)
             return INVALID_MAC;
         }
     }
-    CcspTraceWarning((" %s Done \n",__FUNCTION__));
+    DHCPMGR_LOG_WARNING(" %s Done \n",__FUNCTION__);
 
     return 0;
 }
@@ -482,7 +483,7 @@ int Dhcpv4_StaticClients_SetSyncFlag()
     PCOSA_DATAMODEL_DHCPV4 pDhcpv4 = (PCOSA_DATAMODEL_DHCPV4)g_Dhcpv4Object;
     if (!pDhcpv4)
         return -1;
-    CcspTraceWarning((" %s line.no %d Entered \n",__FUNCTION__,__LINE__));
+    DHCPMGR_LOG_WARNING(" %s line.no %d Entered \n",__FUNCTION__,__LINE__);
     pDhcpv4->syncStaticClientsTable = TRUE;
     return 0;
 }
@@ -639,7 +640,7 @@ int Dhcpv4_StaticClients_Synchronize()
 
     CosaDhcpv4RegSetDhcpv4Info(pDhcpv4);
     numOfHost = AnscSListQueryDepth(&pCxtPoolLink->StaticAddressList);
-    CcspTraceWarning((" %s line.no %d Success num of host %d\n",__FUNCTION__,__LINE__,numOfHost));
+    DHCPMGR_LOG_WARNING(" %s line.no %d Success num of host %d\n",__FUNCTION__,__LINE__,numOfHost);
     return 0;
 }
 
@@ -655,7 +656,7 @@ pErr Process_StaticClients_WebConfigRequest(void *Data)
     pErrRetVal = (pErr) malloc (sizeof(Err));
     if (pErrRetVal == NULL )
     {
-        CcspTraceError(("%s : malloc failed\n",__FUNCTION__));
+        DHCPMGR_LOG_ERROR("%s : malloc failed\n",__FUNCTION__);
         return pErrRetVal;
     }
 
@@ -666,7 +667,7 @@ pErr Process_StaticClients_WebConfigRequest(void *Data)
 
     if (0 == ret && (strcmp(buf,"0")))
     {
-        CcspTraceWarning((" %s line.no %d bridge mode enabled \n",__FUNCTION__,__LINE__));
+        DHCPMGR_LOG_WARNING(" %s line.no %d bridge mode enabled \n",__FUNCTION__,__LINE__);
         pErrRetVal->ErrorCode = VALIDATION_FALIED;
         strncpy(pErrRetVal->ErrorMsg,"MacBinding Blob Not supported in bridge mode",sizeof(pErrRetVal->ErrorMsg)-1);
         return pErrRetVal;
@@ -681,7 +682,7 @@ pErr Process_StaticClients_WebConfigRequest(void *Data)
         ret = Dhcpv4_UnsetAllDbValues(g_dhcpv4bkup_cache,g_numOfbkupCacheParam);
         if (SYSCFG_FAILURE == ret)
         {
-            CcspTraceWarning((" %s line.no %d syscfg failure \n",__FUNCTION__,__LINE__));
+            DHCPMGR_LOG_WARNING(" %s line.no %d syscfg failure \n",__FUNCTION__,__LINE__);
             pErrRetVal->ErrorCode = SYSCFG_FAILURE;
             strncpy(pErrRetVal->ErrorMsg,"sysconfig failure while clearing entries",sizeof(pErrRetVal->ErrorMsg)-1);
         }
@@ -690,7 +691,7 @@ pErr Process_StaticClients_WebConfigRequest(void *Data)
             ret = Dhcpv4_StaticClients_SetSyncFlag();
             if (0 != ret)
             {
-                CcspTraceWarning((" %s Sync Failed \n",__FUNCTION__));
+                DHCPMGR_LOG_WARNING(" %s Sync Failed \n",__FUNCTION__);
                 pErrRetVal->ErrorCode = COSA_SYNCHRONIZE_FAILED;
                 strncpy(pErrRetVal->ErrorMsg,"Sync with Cosa Object failure",sizeof(pErrRetVal->ErrorMsg)-1);
             }
@@ -702,7 +703,7 @@ pErr Process_StaticClients_WebConfigRequest(void *Data)
     else if (0 != ret)
     {
         char *errMsg = ConvertErrCodeToErrMsg(ret);
-        CcspTraceWarning((" %s line.no %d validation failed reason %s \n",__FUNCTION__,__LINE__,errMsg));
+        DHCPMGR_LOG_WARNING(" %s line.no %d validation failed reason %s \n",__FUNCTION__,__LINE__,errMsg);
         pErrRetVal->ErrorCode = VALIDATION_FALIED;
         strncpy(pErrRetVal->ErrorMsg,errMsg,sizeof(pErrRetVal->ErrorMsg)-1);
         return pErrRetVal;
@@ -712,7 +713,7 @@ pErr Process_StaticClients_WebConfigRequest(void *Data)
     ret = Dhcpv4_UnsetAllDbValues(g_dhcpv4bkup_cache,g_numOfbkupCacheParam);
     if (SYSCFG_FAILURE == ret)
     {
-        CcspTraceWarning((" %s line.no %d syscfg failed \n",__FUNCTION__,__LINE__));
+        DHCPMGR_LOG_WARNING(" %s line.no %d syscfg failed \n",__FUNCTION__,__LINE__);
         pErrRetVal->ErrorCode = SYSCFG_FAILURE;
         strncpy(pErrRetVal->ErrorMsg,"sysconfig failure while clearing entries",sizeof(pErrRetVal->ErrorMsg)-1);
         Dhcpv4_StaticClients_MutexUnLock();
@@ -726,7 +727,7 @@ pErr Process_StaticClients_WebConfigRequest(void *Data)
         ret = Dhcpv4_Cache_ApplyAllToDb(cache_temp,cacheSize);
         if (SYSCFG_FAILURE == ret)
         {
-            CcspTraceWarning((" %s line.no %d syscfg failed \n",__FUNCTION__,__LINE__));
+            DHCPMGR_LOG_WARNING(" %s line.no %d syscfg failed \n",__FUNCTION__,__LINE__);
             pErrRetVal->ErrorCode = SYSCFG_FAILURE;
             strncpy(pErrRetVal->ErrorMsg,"sysconfig failure while applying into db",sizeof(pErrRetVal->ErrorMsg)-1);
         }
@@ -735,7 +736,7 @@ pErr Process_StaticClients_WebConfigRequest(void *Data)
             ret = Dhcpv4_StaticClients_SetSyncFlag();
             if (0 != ret)
             {
-                CcspTraceWarning((" %sSync Failed \n",__FUNCTION__));
+                DHCPMGR_LOG_WARNING(" %sSync Failed \n",__FUNCTION__);
                 pErrRetVal->ErrorCode = COSA_SYNCHRONIZE_FAILED;
                 strncpy(pErrRetVal->ErrorMsg,"Sync with Cosa object failure",sizeof(pErrRetVal->ErrorMsg)-1);
             }
@@ -753,7 +754,7 @@ int rollback_StaticClients()
 
     int ret = 0;
 
-    CcspTraceInfo((" Entering %s \n",__FUNCTION__));
+    DHCPMGR_LOG_INFO(" Entering %s \n",__FUNCTION__);
     Dhcpv4_StaticClients_MutexLock();
 
     ret = Dhcpv4_Cache_ApplyAllToDb(g_dhcpv4bkup_cache,g_numOfbkupCacheParam);
@@ -765,7 +766,7 @@ int rollback_StaticClients()
     Dhcpv4_StaticClients_MutexUnLock();
 
     system("sysevent set dhcp_server-restart");
-    CcspTraceWarning((" Success %s \n",__FUNCTION__));
+    DHCPMGR_LOG_WARNING(" Success %s \n",__FUNCTION__);
 
     return ret ;
 }
@@ -773,7 +774,7 @@ int rollback_StaticClients()
 void FreeResources_StaticClients(void *arg)
 {
 
-    CcspTraceWarning((" Entering %s \n",__FUNCTION__));
+    DHCPMGR_LOG_WARNING(" Entering %s \n",__FUNCTION__);
     execData *blob_exec_data  = (execData*) arg;
     /* Dereference before null check*/
     if(!blob_exec_data)
@@ -799,7 +800,7 @@ int Dhcpv4_Lan_BackupFromDb(Dhcpv4_Cache_t *pCache,int *pNumOfParam)
     if (!pCache || !pNumOfParam)
         return -1;
 
-    CcspTraceWarning((" Entering %s \n",__FUNCTION__));
+    DHCPMGR_LOG_WARNING(" Entering %s \n",__FUNCTION__);
     snprintf(pCache[numOfParam].cmd,sizeof(pCache[numOfParam].cmd),"%s",DHCPV4_LAN_IP);
     syscfg_get(NULL,pCache[numOfParam].cmd,pCache[numOfParam].val,sizeof(pCache[numOfParam].val));
     if (pCache[numOfParam].val[0] != 0)
@@ -1064,7 +1065,7 @@ pErr Process_Lan_WebConfigRequest(void *Data)
     pErrRetVal = (pErr) malloc (sizeof(Err));
     if (pErrRetVal == NULL )
     {
-        CcspTraceError(("%s : malloc failed\n",__FUNCTION__));
+        DHCPMGR_LOG_ERROR("%s : malloc failed\n",__FUNCTION__);
         return pErrRetVal;
     }
 
@@ -1074,7 +1075,7 @@ pErr Process_Lan_WebConfigRequest(void *Data)
 
     if (0 == ret && (strcmp(buf,"0")))
     {
-        CcspTraceWarning((" %s line.no %d bridge mode enabled \n",__FUNCTION__,__LINE__));
+        DHCPMGR_LOG_WARNING(" %s line.no %d bridge mode enabled \n",__FUNCTION__,__LINE__);
         pErrRetVal->ErrorCode = VALIDATION_FALIED;
         strncpy(pErrRetVal->ErrorMsg,"Lan Blob Not supported in bridge mode",sizeof(pErrRetVal->ErrorMsg)-1);
         return pErrRetVal;
@@ -1087,7 +1088,7 @@ pErr Process_Lan_WebConfigRequest(void *Data)
     {
         char *errMsg = ConvertErrCodeToErrMsg(ret);
 
-        CcspTraceWarning((" validation failed %s  Reason : %s \n",__FUNCTION__,errMsg));
+        DHCPMGR_LOG_WARNING(" validation failed %s  Reason : %s \n",__FUNCTION__,errMsg);
         pErrRetVal->ErrorCode = VALIDATION_FALIED;
         strncpy(pErrRetVal->ErrorMsg,errMsg,sizeof(pErrRetVal->ErrorMsg)-1);
         return pErrRetVal;
@@ -1119,11 +1120,11 @@ pErr Process_Lan_WebConfigRequest(void *Data)
             ret = Dhcpv4_Lan_Synchronize();
             if (0 != ret)
             {
-                CcspTraceWarning((" %s Sync Failed \n",__FUNCTION__));
+                DHCPMGR_LOG_WARNING(" %s Sync Failed \n",__FUNCTION__);
                 pErrRetVal->ErrorCode = COSA_SYNCHRONIZE_FAILED;
                 strncpy(pErrRetVal->ErrorMsg,"Sync with Cosa object failure",sizeof(pErrRetVal->ErrorMsg)-1);
             }
-            CcspTraceWarning(("%s: setting lan-restart\n", __FUNCTION__));
+            DHCPMGR_LOG_WARNING("%s: setting lan-restart\n", __FUNCTION__);
             system("sysevent set lan-restart");
             system("sysevent set dhcp_server-restart");
         }
@@ -1136,17 +1137,17 @@ pErr Process_Lan_WebConfigRequest(void *Data)
 int rollback_Lan()
 {
     // return 0 to notify framework when rollback is success
-    CcspTraceInfo((" Entering %s \n",__FUNCTION__));
+    DHCPMGR_LOG_INFO(" Entering %s \n",__FUNCTION__);
 
     int ret = 0;
     Dhcpv4_Lan_MutexLock();
     ret = Dhcpv4_Cache_ApplyAllToDb(g_dhcpv4bkup_cache,g_numOfbkupCacheParam);
     ret = Dhcpv4_Lan_Synchronize();
     Dhcpv4_Lan_MutexUnLock();
-    CcspTraceWarning(("%s: setting lan-restart\n", __FUNCTION__));
+    DHCPMGR_LOG_WARNING("%s: setting lan-restart\n", __FUNCTION__);
     system("sysevent set lan-restart");
     system("sysevent set dhcp_server-restart");
-    CcspTraceWarning((" Success %s \n",__FUNCTION__));
+    DHCPMGR_LOG_WARNING(" Success %s \n",__FUNCTION__);
 
     return ret ;
 }
@@ -1154,7 +1155,7 @@ int rollback_Lan()
 void FreeResources_Lan(void *arg)
 {
 
-    CcspTraceWarning((" Entering %s \n",__FUNCTION__));
+    DHCPMGR_LOG_WARNING(" Entering %s \n",__FUNCTION__);
     execData *blob_exec_data  = (execData*) arg;
     /* Dereference before null check*/
     if(!blob_exec_data)

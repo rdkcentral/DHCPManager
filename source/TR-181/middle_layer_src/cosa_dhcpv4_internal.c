@@ -81,6 +81,7 @@
 #include "safec_lib_common.h"
 #include <syscfg/syscfg.h>
 #include "cosa_apis_util.h"
+#include "util.h"
 
 extern void * g_pDslhDmlAgent;
 extern ANSC_HANDLE g_Dhcpv4Object;
@@ -752,7 +753,7 @@ CosaDhcpv4BackendGetDhcpv4Info
     ANSC_STATUS retStatus = DhcpMgr_StartIpcServer();
     if(retStatus != ANSC_STATUS_SUCCESS)
     {
-        CcspTraceInfo(("%s %d - IPC Thread failed to start!\n", __FUNCTION__, __LINE__ ));
+        DHCPMGR_LOG_INFO("%s %d - IPC Thread failed to start!\n", __FUNCTION__, __LINE__ );
     }
 #endif
     /*****************************************

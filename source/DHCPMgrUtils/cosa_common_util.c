@@ -64,6 +64,7 @@
 #include <pthread.h>
 #include <utapi.h>
 #include "cosa_common_util.h"
+#include "util.h"
 
 /**
  * common callback function dispatcher for event
@@ -158,7 +159,7 @@ EvtDispterRgstCbFuncToList
 
     if ( (NULL == eventName) || (NULL == func))
     {
-        CcspTraceWarning(("event/function name should not be null!\n"));
+        DHCPMGR_LOG_WARNING("event/function name should not be null!\n");
         return ANSC_STATUS_FAILURE;
     }
 
@@ -434,15 +435,15 @@ EvtDispterEventListen(void)
                 }
             }
         } else {
-            CcspTraceWarning(("Received msg that is not a SE_MSG_NOTIFICATION (%d)\n", msg_type));
+            DHCPMGR_LOG_WARNING("Received msg that is not a SE_MSG_NOTIFICATION (%d)\n", msg_type);
             if ( 0 != system("pidof syseventd")) {
 
-                CcspTraceWarning(("%s syseventd not running ,breaking the receive notification loop \n",__FUNCTION__));
+                DHCPMGR_LOG_WARNING("%s syseventd not running ,breaking the receive notification loop \n",__FUNCTION__);
                 ret = EVENT_HANDLE_EXIT;
            }
         }
     } else {
-        CcspTraceError(("%s: Received no event retval=%d\n", __FUNCTION__, retval));
+        DHCPMGR_LOG_ERROR("%s: Received no event retval=%d\n", __FUNCTION__, retval);
     }
     return ret;
 }
@@ -495,7 +496,7 @@ EvtDispterEventHandler(void *arg)
     UNREFERENCED_PARAMETER(arg);
     while(EVENT_ERROR == EvtDispterEventInits())
     {
-        CcspTraceError(("%s: sysevent init failed!\n", __FUNCTION__));
+        DHCPMGR_LOG_ERROR("%s: sysevent init failed!\n", __FUNCTION__);
         sleep(1);
     }
 
@@ -514,7 +515,7 @@ EvtDispterEventHandler(void *arg)
                 break;
 
             default :
-                CcspTraceWarning(("The received event status is not expected!\n"));
+                DHCPMGR_LOG_WARNING("The received event status is not expected!\n");
                 break;
         }
 
@@ -541,7 +542,7 @@ EvtDispterHandleEventAsync(void)
     err = pthread_create(&event_handle_thread, NULL, EvtDispterEventHandler, NULL);
     if(0 != err)
     {
-        CcspTraceError(("%s: create the event handle thread error!\n", __FUNCTION__));
+        DHCPMGR_LOG_ERROR("%s: create the event handle thread error!\n", __FUNCTION__);
     }
 }
 
@@ -551,7 +552,7 @@ int executeCmd(char *cmd)
     l_iSystem_Res = system(cmd);
     if (0 != l_iSystem_Res && ECHILD != errno)
     {
-        CcspTraceError(("%s: %s command didnt execute successfully\n", __FUNCTION__,cmd));
+        DHCPMGR_LOG_ERROR("%s: %s command didnt execute successfully\n", __FUNCTION__,cmd);
         return l_iSystem_Res;
     }
     return 0;

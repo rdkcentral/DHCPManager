@@ -194,7 +194,7 @@ static char *GetDeviceProperties (char *param)
     fp1 = fopen("/etc/device.properties", "r");
     if (fp1 == NULL)
     {
-        printf("Error opening properties file! \n");
+        DHCPMGR_LOG_INFO("Error opening properties file!");
         return NULL;
     }
 
@@ -296,35 +296,35 @@ int save_dhcp_offer (udhcpc_script_t *pinfo)
 
 // Enable for Debugging
 #if 0
-    printf("\n interface: %s \n",getenv("interface"));
-    printf("\n ip: %s \n",getenv("ip"));
-    printf("\n subnet: %s \n",getenv("subnet"));
-    printf("\n broadcast: %s \n",getenv("broadcast"));
-    printf("\n lease: %s \n",getenv("lease"));
-    printf("\n router: %s \n",getenv("router"));
-    printf("\n hostname: %s \n",getenv("hostname"));
-    printf("\n domain: %s \n",getenv("domain"));
-    printf("\n siaddr: %s \n",getenv("siaddr"));
-    printf("\n sname: %s \n",getenv("sname"));
-    printf("\n serverid: %s \n",getenv("serverid"));
-    printf("\n tftp: %s \n",getenv("tftp"));
-    printf("\n timezone: %s \n",getenv("timezone"));
-    printf("\n timesvr: %s \n",getenv("timesvr"));
-    printf("\n namesvr: %s \n",getenv("namesvr"));
-    printf("\n ntpsvr: %s \n",getenv("ntpsvr"));
-    printf("\n dns: %s \n",getenv("dns"));
-    printf("\n wins: %s \n",getenv("wins"));
-    printf("\n logsvr: %s \n",getenv("logsvr"));
-    printf("\n cookiesvr: %s \n",getenv("cookiesvr"));
-    printf("\n lprsvr: %s \n",getenv("lprsvr"));
-    printf("\n swapsvr: %s \n",getenv("swapsvr"));
-    printf("\n boot_file: %s \n",getenv("boot_file"));
-    printf("\n bootfile: %s \n",getenv("bootfile"));
-    printf("\n bootsize: %s \n",getenv("bootsize"));
-    printf("\n rootpath: %s \n",getenv("rootpath"));
-    printf("\n ipttl: %s \n",getenv("ipttl"));
-    printf("\n mtuipttl: %s \n",getenv("mtuipttl"));
-    printf("\n vendorspecific: %s \n",getenv("vendorspecific"));
+    DHCPMGR_LOG_INFO("\n interface: %s \n",getenv("interface"));
+    DHCPMGR_LOG_INFO("\n ip: %s \n",getenv("ip"));
+    DHCPMGR_LOG_INFO("\n subnet: %s \n",getenv("subnet"));
+    DHCPMGR_LOG_INFO("\n broadcast: %s \n",getenv("broadcast"));
+    DHCPMGR_LOG_INFO("\n lease: %s \n",getenv("lease"));
+    DHCPMGR_LOG_INFO("\n router: %s \n",getenv("router"));
+    DHCPMGR_LOG_INFO("\n hostname: %s \n",getenv("hostname"));
+    DHCPMGR_LOG_INFO("\n domain: %s \n",getenv("domain"));
+    DHCPMGR_LOG_INFO("\n siaddr: %s \n",getenv("siaddr"));
+    DHCPMGR_LOG_INFO("\n sname: %s \n",getenv("sname"));
+    DHCPMGR_LOG_INFO("\n serverid: %s \n",getenv("serverid"));
+    DHCPMGR_LOG_INFO("\n tftp: %s \n",getenv("tftp"));
+    DHCPMGR_LOG_INFO("\n timezone: %s \n",getenv("timezone"));
+    DHCPMGR_LOG_INFO("\n timesvr: %s \n",getenv("timesvr"));
+    DHCPMGR_LOG_INFO("\n namesvr: %s \n",getenv("namesvr"));
+    DHCPMGR_LOG_INFO("\n ntpsvr: %s \n",getenv("ntpsvr"));
+    DHCPMGR_LOG_INFO("\n dns: %s \n",getenv("dns"));
+    DHCPMGR_LOG_INFO("\n wins: %s \n",getenv("wins"));
+    DHCPMGR_LOG_INFO("\n logsvr: %s \n",getenv("logsvr"));
+    DHCPMGR_LOG_INFO("\n cookiesvr: %s \n",getenv("cookiesvr"));
+    DHCPMGR_LOG_INFO("\n lprsvr: %s \n",getenv("lprsvr"));
+    DHCPMGR_LOG_INFO("\n swapsvr: %s \n",getenv("swapsvr"));
+    DHCPMGR_LOG_INFO("\n boot_file: %s \n",getenv("boot_file"));
+    DHCPMGR_LOG_INFO("\n bootfile: %s \n",getenv("bootfile"));
+    DHCPMGR_LOG_INFO("\n bootsize: %s \n",getenv("bootsize"));
+    DHCPMGR_LOG_INFO("\n rootpath: %s \n",getenv("rootpath"));
+    DHCPMGR_LOG_INFO("\n ipttl: %s \n",getenv("ipttl"));
+    DHCPMGR_LOG_INFO("\n mtuipttl: %s \n",getenv("mtuipttl"));
+    DHCPMGR_LOG_INFO("\n vendorspecific: %s \n",getenv("vendorspecific"));
 #endif
 
     interface = getenv("interface");
@@ -351,7 +351,7 @@ int save_dhcp_offer (udhcpc_script_t *pinfo)
     result = read_cmd_output("cut -d. -f1 /proc/uptime",buf,sizeof(buf));
     if (result == 0)
     {
-        printf("\n %s uptime: %s\n",__FUNCTION__,buf);
+        DHCPMGR_LOG_INFO("uptime: %s",buf);
         sysevent_set(sysevent_fd, sysevent_token, eventname, buf, 0);
     }
     set_dns_sysevents(pinfo);
@@ -416,13 +416,13 @@ static int update_ipv4dns (udhcpc_script_t *pinfo)
     if (NULL == fp)
         return -1;
 
-    printf ("\n update resolv confg dns :%s \n", dns);
+    DHCPMGR_LOG_INFO ("update resolv confg dns :%s", dns);
 
     dns = strdup(dns);
     tok = strtok(dns, " ");
     while (NULL != tok)
     {
-        printf ("\n tok :%s \n",tok);
+        DHCPMGR_LOG_INFO ("tok :%s",tok);
         fprintf(fp,"%s\n",tok);
         tok = strtok(NULL, " ");
     }
@@ -449,13 +449,13 @@ int update_dns_tofile (udhcpc_script_t *pinfo)
     if ((access("/tmp/.ipv4dnsserver", F_OK) == 0))
     {
         tok = strtok(dns, " ");
-        printf ("\n %s dns:%s \n",__FUNCTION__, pinfo->dns);
+        DHCPMGR_LOG_INFO ("dns:%s", pinfo->dns);
         while (NULL != tok)
         {
             snprintf(buf,sizeof(buf),"grep %s /tmp/.ipv4dnsserver",tok);
             memset(val,0,sizeof(val));
             result = read_cmd_output(buf,val,sizeof(val));
-	    printf ("\n result %d grep:%s \n",result,val);
+	    DHCPMGR_LOG_INFO ("result %d grep:%s",result,val);
             if (0 == result)
             {
                 if (strlen(val) <= 0)
@@ -465,12 +465,12 @@ int update_dns_tofile (udhcpc_script_t *pinfo)
 		    result = read_cmd_output("date -u",utc_time,sizeof(utc_time));
                     if (result < 0)
                     {
-                        printf ("\n [date -u] cmd failed\n");            
+                        DHCPMGR_LOG_INFO ("[date -u] cmd failed");            
                     }
                     result = read_cmd_output("cut -d. -f1 /proc/uptime", uptime, sizeof(uptime));
 	            if (0 == result)
                     {
-                        printf ("\nuptime  %s tok : %s\n",uptime,tok);
+                        DHCPMGR_LOG_INFO ("uptime  %s tok : %s",uptime,tok);
 			OnboardLog("DNS_server_IP_changed:%s\n",uptime);
                         t2_event_s("bootuptime_dnsIpChanged_split", uptime);
                         v_secure_system("echo %s DNS_server_IP_changed:%s >> "CONSOLE_LOG_FILE,utc_time,uptime);
@@ -510,12 +510,12 @@ int add_route (udhcpc_script_t *pinfo)
         if (pinfo->ip_util_exist)
         {
             route_add_va_arg("default 0.0.0.0/0 via %s dev %s",tok, interface);
-	    printf("\n %s route_add_va_arg default 0.0.0.0/0 via %s dev %s",__FUNCTION__,tok, interface);
+            DHCPMGR_LOG_INFO("route_add_va_arg default 0.0.0.0/0 via %s dev %s",tok, interface);
         }
         else
         {
             route_add_va_arg("default gw %s dev %s metric %d",tok,interface,metric);
-	    printf("\n %s router:%s buf: route add default gw %s dev %s metric %d 2>/dev/null",__FUNCTION__,router,tok,interface,metric);
+	        DHCPMGR_LOG_INFO("router:%s buf: route add default gw %s dev %s metric %d 2>/dev/null",router,tok,interface,metric);
         }
         ++metric;
     }
@@ -527,12 +527,12 @@ int add_route (udhcpc_script_t *pinfo)
             if (pinfo->ip_util_exist)
             {
                 route_add_va_arg("default via %s metric %d",tok,metric);
-		printf("\n %s router:%s buf:ip route add default via %s metric %d",__FUNCTION__,router,tok,metric);
+                DHCPMGR_LOG_INFO("router:%s buf:ip route add default via %s metric %d",router,tok,metric);
             }
             else
             {
                 route_add_va_arg("default gw %s dev %s metric %d",tok,interface,metric);
-		printf("\n %s router:%s buf:route add default gw %s dev %s metric %d 2>/dev/null",__FUNCTION__,router,tok,interface,metric);
+                DHCPMGR_LOG_INFO("router:%s buf:route add default gw %s dev %s metric %d 2>/dev/null",router,tok,interface,metric);
             }
             ++metric;
         }
@@ -694,7 +694,7 @@ static void compare_and_delete_old_dns (udhcpc_script_t *pinfo)
   }
 
   snprintf(dns,sizeof(dns),"%s",pinfo->dns);
-  printf("\n %s Comparing old and new ipv4 dns config dns=%s\n",__FUNCTION__,dns);
+  DHCPMGR_LOG_INFO("Comparing old and new ipv4 dns config dns=%s",dns);
   tok = strtok(dns, " ");
   while (NULL != tok && dns_server_no != 0)
   {
@@ -705,7 +705,7 @@ static void compare_and_delete_old_dns (udhcpc_script_t *pinfo)
                 if(strncmp(dns_server_list[i].data,new_nameserver,sizeof(new_nameserver)) !=0)
                 {
                         dns_changed=true;
-                        printf("\n %s %s is not present in old dns config so resolv_conf file overide form service_udhcp\n",__FUNCTION__,new_nameserver);
+                        DHCPMGR_LOG_INFO("%s is not present in old dns config so resolv_conf file overide form service_udhcp",new_nameserver);
                         break;
                 }
         }
@@ -718,14 +718,14 @@ static void compare_and_delete_old_dns (udhcpc_script_t *pinfo)
   fptr  =  fopen(RESOLV_CONF,"r");
   if (fptr  ==  NULL)
   {
-    perror("Error in opening resolv.conf file in read mode ");
+    DHCPMGR_LOG_ERROR("Error in opening resolv.conf file in read mode ");
     exit(1);
   }
 
   ftmp =  fopen(RESOLV_CONF_TMP,"w");
   if (ftmp  ==  NULL)
   {
-    perror("Error in opening resolv_temp.conf file in write mode");
+    DHCPMGR_LOG_ERROR("Error in opening resolv_temp.conf file in write mode");
     exit(1);
   }
 
@@ -768,14 +768,14 @@ static void compare_and_delete_old_dns (udhcpc_script_t *pinfo)
       fout = fopen(RESOLV_CONF,"w");
       if (fout  ==  NULL)
       {
-        perror("Error in opening resolv.conf file in write mode");
+        DHCPMGR_LOG_ERROR("Error in opening resolv.conf file in write mode");
         exit(1);
       }
 
     fIN =  fopen(RESOLV_CONF_TMP,"r");
     if (fIN  ==  NULL)
     {
-      perror("Error in opening resolv_temp.conf file in read mode");
+      DHCPMGR_LOG_ERROR("Error in opening resolv_temp.conf file in read mode");
       exit(1);
     }
       while((read = getline(&buffer, &size, fIN)) != -1)
@@ -789,7 +789,7 @@ static void compare_and_delete_old_dns (udhcpc_script_t *pinfo)
       /* CID 118955: Unchecked return value from library */
       if (remove(RESOLV_CONF_TMP) != 0)
       {
-         perror("removing resolve_conf_tmp file is failed \n");
+         DHCPMGR_LOG_ERROR("removing resolve_conf_tmp file is failed \n");
          OnboardLog("%s: Unable to delete a file.",__FUNCTION__);
       }
    }
@@ -816,16 +816,16 @@ int update_resolveconf (udhcpc_script_t *pinfo)
     fp = fopen(RESOLV_CONF,"a");
     if (NULL == fp)
         {
-        perror("Error in opening resolv.conf file in append mode");
+        DHCPMGR_LOG_ERROR("Error in opening resolv.conf file in append mode");
         return -1;
         }
 
     fprintf(fp,"domain %s\n",getenv("domain"));
-    printf ("\n update resolv confg dns :%s \n", pinfo->dns);
+    DHCPMGR_LOG_INFO ("update resolv confg dns :%s", pinfo->dns);
     tok = strtok(dns, " ");
     while (NULL != tok)
     {
-        printf ("\n tok :%s \n",tok);
+        DHCPMGR_LOG_INFO ("tok :%s",tok);
         fprintf(fp,"nameserver %s\n",tok);
         tok = strtok(NULL, " ");
     }
@@ -953,7 +953,7 @@ static int handle_wan (udhcpc_script_t *pinfo)
         }
         if (mask && ip)
         {
-            printf ("\n IP is %s and mask is %s \n",ip, mask);
+            DHCPMGR_LOG_INFO ("IP is %s and mask is %s",ip, mask);
             sysevent_set(sysevent_fd, sysevent_token, "ipv4_wan_subnet", mask, 0);
             sysevent_set(sysevent_fd, sysevent_token, "ipv4_wan_ipaddr", ip, 0);
         }
@@ -972,10 +972,10 @@ static int handle_wan (udhcpc_script_t *pinfo)
         {
             if(broadcast_ip){
 		    addr_add_va_arg("dev %s broadcast %s %s/%s",interface,broadcast_ip,ip,subnet);
-		printf("\n %s router:%s buf: /sbin/ifconfig %s %s broadcast %s netmask %s",__FUNCTION__,router,interface,ip,broadcast_ip,subnet);
+            DHCPMGR_LOG_INFO("router:%s buf: /sbin/ifconfig %s %s broadcast %s netmask %s",router,interface,ip,broadcast_ip,subnet);
 	    }else{
 		    addr_add_va_arg("dev %s %s/%s",interface,ip,subnet);
-		printf("\n %s router:%s buf:/sbin/ifconfig %s %s netmask %s",__FUNCTION__,router,interface,ip,subnet);
+            DHCPMGR_LOG_INFO("router:%s buf:/sbin/ifconfig %s %s netmask %s",router,interface,ip,subnet);
             }
         }
     }
@@ -989,7 +989,7 @@ static int handle_wan (udhcpc_script_t *pinfo)
                 if (pinfo->ip_util_exist)
                 {
                     v_secure_system("/etc/utopia_ip_route.sh");
-                    printf("\nExit ip while\n");
+                    DHCPMGR_LOG_INFO("Exit ip while");
                 }
                 else
                 {
@@ -1005,7 +1005,7 @@ static int handle_wan (udhcpc_script_t *pinfo)
     {
         char prev_ip[100];
         sysevent_get(sysevent_fd, sysevent_token, "previous_wan_ipaddr",prev_ip, sizeof(prev_ip));
-        printf("\n %s removing ip rule based on prev_ip:%s and adding ip: %s\n",__FUNCTION__,prev_ip,ip);
+        DHCPMGR_LOG_INFO("removing ip rule based on prev_ip:%s and adding ip: %s",prev_ip,ip);
         if(strcmp(prev_ip,"") && strcmp(prev_ip,"0.0.0.0"))
         {
                 rule_delete_va_arg("-4 from %s lookup erouter",prev_ip);
@@ -1020,12 +1020,12 @@ static int handle_wan (udhcpc_script_t *pinfo)
     if (pinfo->ip_util_exist)
     {
 	route_add_va_arg("default via %s dev %s table erouter",router, interface);
-	printf("\nSet default route command: ip route add default via %s dev %s table erouter",router, interface);
+	DHCPMGR_LOG_INFO("Set default route command: ip route add default via %s dev %s table erouter",router, interface);
     }
     else
     {
 	route_add_va_arg("default via %s dev %s table erouter",router, interface);
-	printf("\nSet default route command: route add default via %s dev %s table erouter",router, interface);
+	DHCPMGR_LOG_INFO("Set default route command: route add default via %s dev %s table erouter",router, interface);
     }
 
     set_wan_sysevents();
@@ -1058,7 +1058,7 @@ static int handle_wan (udhcpc_script_t *pinfo)
                 {
                         fclose(fIn);
                         /*As there is a change in resolv.conf restarting dhcp-server (dnsmasq)*/
-                        printf("\n %s As there is a change in resolv.conf restarting dhcp-server (dnsmasq)\n",__FUNCTION__);
+                        DHCPMGR_LOG_INFO("As there is a change in resolv.conf restarting dhcp-server (dnsmasq)");
                         sysevent_set(sysevent_fd, sysevent_token, "dhcp_server-stop","", 0);
                         sysevent_set(sysevent_fd, sysevent_token, "dhcp_server-start","", 0);
                 }
@@ -1069,7 +1069,7 @@ static int handle_wan (udhcpc_script_t *pinfo)
         }
         else
         {
-                printf("\n %s Not Adding new IPV4 DNS Config to resolv.conf\n",__FUNCTION__);
+                DHCPMGR_LOG_INFO("Not Adding new IPV4 DNS Config to resolv.conf");
         }
         dns_changed=false; 
         sysevent_set(sysevent_fd, sysevent_token, "dhcp_domain",getenv("domain"), 0);
@@ -1120,15 +1120,15 @@ static int init_udhcpc_script_info (udhcpc_script_t *pinfo, char *option)
     if ((access(RESOLVE_CONF_BIN_FULL_PATH, F_OK) == 0))
     {
         pinfo->resconf_exist = true;
-        printf("\nRES conf bin exist\n");
+        DHCPMGR_LOG_INFO("RES conf bin exist");
     }    
     if ((access(IP_UTIL_BIN_FULL_PATH, F_OK) == 0))
     {
         pinfo->ip_util_exist = true;
-        printf("\nip bin exist\n");
+        DHCPMGR_LOG_INFO("ip bin exist");
     }
     pinfo->broot_is_nfs = root_is_nfs();
-    printf("\nrootfs %d\n",pinfo->broot_is_nfs);
+    DHCPMGR_LOG_INFO("rootfs %d",pinfo->broot_is_nfs);
     pinfo->input_option = option;
     pinfo->wan_type = GetDeviceProperties("WAN_TYPE");
     pinfo->box_type = GetDeviceProperties("BOX_TYPE");
@@ -1145,12 +1145,12 @@ static int init_udhcpc_script_info (udhcpc_script_t *pinfo, char *option)
     }
     if (pinfo->wan_type)
     {
-        printf("\nwan_type %s \n",pinfo->wan_type);
+        DHCPMGR_LOG_INFO("wan_type %s",pinfo->wan_type);
     }
  
     if (pinfo->box_type)
     {
-	    printf("\nbox_type %s \n",pinfo->box_type);
+	    DHCPMGR_LOG_INFO("box_type %s",pinfo->box_type);
     }
     return 0;
 }
@@ -1187,7 +1187,7 @@ static int get_and_fill_env_data (ipc_dhcpv4_data_t *dhcpv4_data, udhcpc_script_
 
     if (dhcpv4_data == NULL || pinfo == NULL)
     {
-        printf("[%s-%d] Invalid argument \n", __FUNCTION__,__LINE__);
+        DHCPMGR_LOG_INFO(" %d Invalid argument",__LINE__);
         return -1;
     }
 
@@ -1399,7 +1399,7 @@ static int send_dhcp_data_to_wanmanager (ipc_dhcpv4_data_t *dhcpv4_data)
 {
     if ( NULL == dhcpv4_data)
     {
-        printf ("[%s-%d] Invalid argument \n", __FUNCTION__,__LINE__);
+        DHCPMGR_LOG_INFO (" %d Invalid argument",__LINE__);
         return -1;
     }
 
@@ -1453,7 +1453,7 @@ static int send_dhcp_data_to_dhcpmanager (ipc_dhcpv4_data_t *dhcpv4_data)
 {
     if ( NULL == dhcpv4_data)
     {
-        printf ("[%s-%d] Invalid argument \n", __FUNCTION__,__LINE__);
+        DHCPMGR_LOG_INFO ("%d Invalid argument",__LINE__);
         return -1;
     }
 
@@ -1519,7 +1519,7 @@ int main(int argc, char *argv[])
         return -1;
     }
 
-    printf ("\n service_udhcpc arg %s \n",argv[1]);
+    DHCPMGR_LOG_INFO ("service_udhcpc arg %s",argv[1]);
     if (sysevent_init() < 0)
     {
         return -1;

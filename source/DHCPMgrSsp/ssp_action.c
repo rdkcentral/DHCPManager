@@ -69,7 +69,7 @@
 #include "ssp_global.h"
 #include "plugin_main.h"
 #include "dslh_dmagnt_interface.h"
-#include "ccsp_trace.h"
+#include "util.h"
 #include "dm_pack_create_func.h"
 #include "safec_lib_common.h"
 
@@ -174,7 +174,7 @@ ssp_create
 
     if ( !pDslhCpeController )
     {
-        CcspTraceWarning(("CANNOT Create pDslhCpeController... Exit!\n"));
+        DHCPMGR_LOG_WARNING("CANNOT Create pDslhCpeController... Exit!\n");
 
         return ANSC_STATUS_RESOURCES;
     }
@@ -290,7 +290,7 @@ ssp_cancel
     }
     /* unregister component */
     nRet = CcspBaseIf_unregisterComponent(bus_handle, CrName, CpName );  
-    AnscTrace("unregisterComponent returns %d\n", nRet);
+    DHCPMGR_LOG_INFO("unregisterComponent returns %d\n", nRet);
 
     pDslhCpeController->Cancel((ANSC_HANDLE)pDslhCpeController);
     AnscFreeMemory(pDslhCpeController);

@@ -81,6 +81,8 @@
 #include "service_dhcpv6_client.h"
 #endif
 
+#include "util.h"
+
 #ifdef DHCPV6_SERVER_SUPPORT
 extern void dhcpv6_server_init();
 #endif
@@ -102,7 +104,7 @@ int  cmd_dispatch(int  command)
     {
         case    'e' :
 
-            CcspTraceInfo(("Connect to bus daemon...\n"));
+            DHCPMGR_LOG_INFO("Connect to bus daemon...\n");
 
             {
                 char                            CName[256];
@@ -181,7 +183,7 @@ static void _print_stack_backtrace(void)
         if ( funcNames ) {
             // Print the stack trace
             for( i = 0; i < count; i++ )
-            CcspTraceWarning(("%s\n", funcNames[i] ));
+            DHCPMGR_LOG_WARNING("%s\n", funcNames[i] );
 
             // Free the string pointers
             free( funcNames );
@@ -196,8 +198,7 @@ static void daemonize(void) {
              break;
         case -1:
               // Error
-               CcspTraceInfo(("Error daemonizing (fork)! %d - %s\n", errno, strerror(
-                            errno)));
+                DHCPMGR_LOG_INFO("Error daemonizing (fork)! %d - %s\n", errno, strerror(errno));
                 exit(0);
                 break;
         default:
@@ -205,7 +206,7 @@ static void daemonize(void) {
         }
 
         if (setsid() < 0) {
-                CcspTraceInfo(("Error demonizing (setsid)! %d - %s\n", errno, strerror(errno)));
+                DHCPMGR_LOG_INFO("Error demonizing (setsid)! %d - %s\n", errno, strerror(errno));
                 exit(0);
         }
 
@@ -236,34 +237,34 @@ void sig_handler(int sig)
 {
     if ( sig == SIGINT ) {
         signal(SIGINT, sig_handler); /* reset it to this function */
-        CcspTraceInfo(("SIGINT received!\n"));
+        DHCPMGR_LOG_INFO("SIGINT received!\n");
         exit(0);
     }
     else if ( sig == SIGUSR1 ) {
         signal(SIGUSR1, sig_handler); /* reset it to this function */
-        CcspTraceInfo(("SIGUSR1 received!\n"));
+        DHCPMGR_LOG_INFO("SIGUSR1 received!\n");
     }
     else if ( sig == SIGUSR2 ) {
-        CcspTraceInfo(("SIGUSR2 received!\n"));
+        DHCPMGR_LOG_INFO("SIGUSR2 received!\n");
     }
     else if ( sig == SIGCHLD ) {
         signal(SIGCHLD, sig_handler); /* reset it to this function */
-        CcspTraceInfo(("SIGCHLD received!\n"));
+        DHCPMGR_LOG_INFO("SIGCHLD received!\n");
     }
     else if ( sig == SIGPIPE ) {
         signal(SIGPIPE, sig_handler); /* reset it to this function */
-        CcspTraceInfo(("SIGPIPE received!\n"));
+        DHCPMGR_LOG_INFO("SIGPIPE received!\n");
     }
     else if ( sig == SIGALRM ) 
     {
 
         signal(SIGALRM, sig_handler); /* reset it to this function */
-        CcspTraceInfo(("SIGALRM received!\n"));
+        DHCPMGR_LOG_INFO("SIGALRM received!\n");
     }
     else {
         /* get stack trace first */
         _print_stack_backtrace();
-        CcspTraceInfo(("Signal %d received, exiting!\n", sig));
+        DHCPMGR_LOG_INFO("Signal %d received, exiting!\n", sig);
         exit(0);
     }
 
@@ -309,11 +310,11 @@ static bool drop_root()
   ret = isBlocklisted();
   if(ret)
   {
-    CcspTraceInfo(("NonRoot feature is disabled\n"));
+    DHCPMGR_LOG_INFO("NonRoot feature is disabled\n");
   }
   else
   {
-    CcspTraceInfo(("NonRoot feature is enabled, dropping root privileges for CcspDHCPMgr process\n"));
+    DHCPMGR_LOG_INFO("NonRoot feature is enabled, dropping root privileges for CcspDHCPMgr process\n");
     if(init_capability() != NULL) {
       if(drop_root_caps(&appcaps) != -1) {
         if(update_process_caps(&appcaps) != -1) {
@@ -340,7 +341,7 @@ int main(int argc, char* argv[])
     errno_t        rc = -1;
     int ind = -1;
 
-    CcspTraceInfo(("\nWithin the main function\n"));
+    DHCPMGR_LOG_INFO("\nWithin the main function\n");
 
 #ifdef FEATURE_SUPPORT_RDKLOG
     RDK_LOGGER_INIT();
@@ -348,7 +349,7 @@ int main(int argc, char* argv[])
 
     if (access("/tmp/dhcpmgr_initialized", F_OK) == 0)
     {
-        CcspTraceInfo(("/tmp/dhcpmgr_initialized already exists, removing it"));
+        DHCPMGR_LOG_INFO("/tmp/dhcpmgr_initialized already exists, removing it");
         remove_file("/tmp/dhcpmgr_initialized");
     }
 
@@ -369,7 +370,7 @@ int main(int argc, char* argv[])
            }
            else
            {
-               CcspTraceError(("parameter after -subsys is missing"));
+               DHCPMGR_LOG_ERROR("parameter after -subsys is missing");
            }
              
         }
@@ -389,14 +390,14 @@ int main(int argc, char* argv[])
 #if 0
     if(!drop_root())
     {
-        CcspTraceError(("drop_root function failed!\n"));
+        DHCPMGR_LOG_ERROR("drop_root function failed!\n");
         gain_root_privilege();
     }
 #endif
     if ( bRunAsDaemon ) 
         daemonize();
 
-CcspTraceInfo(("\nAfter daemonize before signal\n"));
+DHCPMGR_LOG_INFO("\nAfter daemonize before signal\n");
 
 #ifdef INCLUDE_BREAKPAD
     breakpad_ExceptionHandler();
@@ -405,7 +406,7 @@ CcspTraceInfo(("\nAfter daemonize before signal\n"));
     if (is_core_dump_opened())
     {
         signal(SIGUSR1, sig_handler);
-        CcspTraceWarning(("Core dump is opened, do not catch signal\n"));
+        DHCPMGR_LOG_WARNING("Core dump is opened, do not catch signal\n");
     }
     signal(SIGTERM, sig_handler);
     signal(SIGINT, sig_handler);
@@ -423,27 +424,27 @@ CcspTraceInfo(("\nAfter daemonize before signal\n"));
     signal(SIGALRM, sig_handler);
 #endif
 
-    CcspTraceInfo(("DHCPMgr InterfaceLayer initialization started\n"));
+    DHCPMGR_LOG_INFO("DHCPMgr InterfaceLayer initialization started\n");
     // inti dhcpmgr interfacelayer
     if (ifl_init("DHCP-Mgr") == IFL_SUCCESS)
     {
         if (IFL_SUCCESS != ifl_init_ctx("DHCP-Mgr-main", IFL_CTX_STATIC))
         {
-            CcspTraceError(("Failed to init ifl ctx for DHCP-Mgr-main\n"));
+            DHCPMGR_LOG_ERROR("Failed to init ifl ctx for DHCP-Mgr-main\n");
         }
-        CcspTraceInfo(("DHCPMgr InterfaceLayer initialized.\n"));
+        DHCPMGR_LOG_INFO("DHCPMgr InterfaceLayer initialized.\n");
     }
     else
     {
-        CcspTraceError(("Error in initialising DHCPMgr InterfaceLayer\n"));
+        DHCPMGR_LOG_ERROR("Error in initialising DHCPMgr InterfaceLayer\n");
     }
 
-    CcspTraceInfo(("\nbefore cmd_dispatch command\n"));
+    DHCPMGR_LOG_INFO("\nbefore cmd_dispatch command\n");
 
     cmd_dispatch('e');
 
 /*
-    CcspTraceInfo(("DHCPMGR_DBG:-------Read Log Info\n"));
+    DHCPMGR_LOG_INFO("DHCPMGR_DBG:-------Read Log Info\n");
     char buffer[5] = {0};
     if( 0 == syscfg_get( NULL, "X_RDKCENTRAL-COM_LoggerEnable" , buffer, sizeof( buffer ) ) &&  ( buffer[0] != '\0' ) )
     {
@@ -464,17 +465,17 @@ CcspTraceInfo(("\nAfter daemonize before signal\n"));
     {
         DHCPMGR_RDKLogEnable = (BOOL)atoi(buffer);
     }
-    CcspTraceInfo(("DHCPMGR_DBG:-------Log Info values RDKLogEnable:%d,RDKLogLevel:%u,DHCPMGR_RDKLogLevel:%u,DHCPMGR_RDKLogEnable:%d\n",RDKLogEnable,RDKLogLevel,DHCPMGR_RDKLogLevel, DHCPMGR_RDKLogEnable ));
+    DHCPMGR_LOG_INFO("DHCPMGR_DBG:-------Log Info values RDKLogEnable:%d,RDKLogLevel:%u,DHCPMGR_RDKLogLevel:%u,DHCPMGR_RDKLogEnable:%d\n",RDKLogEnable,RDKLogLevel,DHCPMGR_RDKLogLevel, DHCPMGR_RDKLogEnable );
 */ 
 #ifdef _COSA_SIM_
     subSys = "";        /* PC simu use empty string as subsystem */
 #else
     subSys = NULL;      /* use default sub-system */
 #endif
-CcspTraceWarning(("\nBefore Cdm_Init\n"));
+DHCPMGR_LOG_WARNING("\nBefore Cdm_Init\n");
 
     err = Cdm_Init(bus_handle, subSys, NULL, NULL, pComponentName);
-CcspTraceWarning(("\nAfter Cdm_Init\n"));
+DHCPMGR_LOG_WARNING("\nAfter Cdm_Init\n");
 
     if (err != CCSP_SUCCESS)
     {
@@ -484,37 +485,37 @@ CcspTraceWarning(("\nAfter Cdm_Init\n"));
 
 #ifdef DHCPV4_CLIENT_SUPPORT
     //Init dhcpv4 client
-    CcspTraceInfo(("serv_dhcp_init (dhcpv4 client) Started\n"));
+    DHCPMGR_LOG_INFO("serv_dhcp_init (dhcpv4 client) Started\n");
     serv_dhcp_init();
-    CcspTraceInfo(("serv_dhcp_init (dhcpv4 client) Ended\n"));
+    DHCPMGR_LOG_INFO("serv_dhcp_init (dhcpv4 client) Ended\n");
 #endif
 
 #ifdef DHCPV6_CLIENT_SUPPORT
     //Init dhcpv6 cleint
-    CcspTraceInfo(("init_dhcpv6_client (dhcpv6 cleint) Started\n"));
+    DHCPMGR_LOG_INFO("init_dhcpv6_client (dhcpv6 cleint) Started\n");
     init_dhcpv6_client ();
-    CcspTraceInfo(("init_dhcpv6_client (dhcpv6 cleint) Ended\n"));
+    DHCPMGR_LOG_INFO("init_dhcpv6_client (dhcpv6 cleint) Ended\n");
 #endif
 
 #ifdef DHCPV4_SERVER_SUPPORT
     //Init dhcpv4 server
-    CcspTraceInfo(("dhcp_server_init (dhcpv4 server) Started\n"));
+    DHCPMGR_LOG_INFO("dhcp_server_init (dhcpv4 server) Started\n");
     dhcp_server_init();
-    CcspTraceInfo(("dhcp_server_init (dhcpv4 server) Ended\n"));
+    DHCPMGR_LOG_INFO("dhcp_server_init (dhcpv4 server) Ended\n");
 #endif
 
 #ifdef DHCPV6_SERVER_SUPPORT
     //Init dhcpv6 server
-    CcspTraceInfo(("dhcp_server_init (dhcpv6 server) Started\n"));
+    DHCPMGR_LOG_INFO("dhcp_server_init (dhcpv6 server) Started\n");
     dhcpv6_server_init();
-    CcspTraceInfo(("dhcp_server_init (dhcpv6 server) Ended\n"));
+    DHCPMGR_LOG_INFO("dhcp_server_init (dhcpv6 server) Ended\n");
 #endif
  
 #ifdef DHCPV4_SERVER_SUPPORT
     //Init dhcp server services
-    CcspTraceInfo(("init_dhcp_server_service Started\n"));
+    DHCPMGR_LOG_INFO("init_dhcp_server_service Started\n");
     init_dhcp_server_service();
-    CcspTraceInfo(("init_dhcp_server_service Ended\n"));
+    DHCPMGR_LOG_INFO("init_dhcp_server_service Ended\n");
 #endif
 
     system("touch /tmp/dhcpmgr_initialized");
@@ -544,12 +545,12 @@ CcspTraceWarning(("\nAfter Cdm_Init\n"));
         fprintf(stderr, "Cdm_Term: %s\n", Cdm_StrError(err));
         exit(1);
         }
-CcspTraceInfo(("\n Before ssp_cancel() \n"));
+DHCPMGR_LOG_INFO("\n Before ssp_cancel() \n");
         ssp_cancel();
         //exit_rbus_service();
 #if defined(_CBR_PRODUCT_REQ_) && !defined(_CBR2_PRODUCT_REQ_)
 	serv_ipv6_term();
 #endif
-CcspTraceInfo(("\nExiting the main function\n"));
+DHCPMGR_LOG_INFO("\nExiting the main function\n");
     return 0;
 }

@@ -481,7 +481,7 @@ BOOL IsDhcpConfHasInterface(void)
         char *interface = NULL;
         interface = strstr(buf,"interface=");
         if (interface)
-        printf ("\ninterface search res : %s\n",interface);
+        DHCPMGR_LOG_INFO ("\ninterface search res : %s\n",interface);
         if (interface)
         {
         fclose(fp);

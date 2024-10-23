@@ -830,9 +830,9 @@ static int divide_ipv6_prefix()
         return -1;
     }
 
-        printf("mso_prefix.value %s \n",mso_prefix.value);
-        printf("mso_prefix.len %d \n",mso_prefix.len);
-        printf("si6->tpmod %d \n",si6->tpmod);
+        DHCPMGR_LOG_INFO("mso_prefix.value %s \n",mso_prefix.value);
+        DHCPMGR_LOG_INFO("mso_prefix.len %d \n",mso_prefix.len);
+        DHCPMGR_LOG_INFO("si6->tpmod %d \n",si6->tpmod);
 
     /* divide base on mso prefix len and topology mode
      *  1) prefix len > 56 && topology mode = "favor depth", divide on 2 bit boundaries to 4 sub-prefixes.
@@ -1693,7 +1693,7 @@ static int gen_dibbler_conf()
                 }
 
                 fprintf(fp, "   }\n");
-                printf("%s Fixed prefix_value: %s\n", __func__, prefix_value);
+                DHCPMGR_LOG_INFO("%s Fixed prefix_value: %s\n", __func__, prefix_value);
                 /*
                 client duid B4:2A:0E:11:06:9B
                 {

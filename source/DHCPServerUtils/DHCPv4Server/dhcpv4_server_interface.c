@@ -64,7 +64,7 @@ extern void executeCmd(char *);
 
 int dhcp_server_init()
 {
-    CcspTraceInfo(("DHCPV4 server event registration started\n"));
+    DHCPMGR_LOG_INFO("DHCPV4 server event registration started\n");
     char l_cDhcp_Server_Enabled[BUFF_LEN_8] = {0};
 
     syscfg_get(NULL, "dhcp_server_enabled", l_cDhcp_Server_Enabled, sizeof(l_cDhcp_Server_Enabled));
@@ -73,7 +73,7 @@ int dhcp_server_init()
     {
         if (IFL_SUCCESS != ifl_init_ctx(DHCPV4S_CALLER_CTX, IFL_CTX_DYNAMIC))
         {
-            CcspTraceInfo(("Failed to init ifl ctx for %s", DHCPV4S_CALLER_CTX));
+            DHCPMGR_LOG_INFO("Failed to init ifl ctx for %s", DHCPV4S_CALLER_CTX);
         }
 
         //Hardcoded dhcp_server_start call for now, Further modifications will be taken care later
@@ -89,6 +89,6 @@ int dhcp_server_init()
     #endif
 
     }
-    CcspTraceInfo(("DHCPV4 server event registration completed\n"));
+    DHCPMGR_LOG_INFO("DHCPV4 server event registration completed\n");
     return 0;
 }

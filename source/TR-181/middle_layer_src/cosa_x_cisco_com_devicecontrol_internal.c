@@ -226,7 +226,7 @@ CosaDeviceControlInitialize
 
         if (CosaDmlLanMngm_GetEntryByIndex(ulLmIdx, pLanMngm) != ANSC_STATUS_SUCCESS)
         {
-            CcspTraceError(("%s: CosaDmlLanMngm_GetEntryByIndex error\n", __FUNCTION__));
+            DHCPMGR_LOG_ERROR("%s: CosaDmlLanMngm_GetEntryByIndex error\n", __FUNCTION__);
             AnscFreeMemory(pLanMngm);
             return ANSC_STATUS_FAILURE;
         }

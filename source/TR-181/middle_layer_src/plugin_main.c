@@ -66,6 +66,7 @@
 #include "cosa_common_util.h"
 #include "cosa_x_cisco_com_devicecontrol_internal.h"
 #include "cosa_webconfig_api.h"
+#include "util.h"
 
 #define THIS_PLUGIN_VERSION                         1
 
@@ -559,7 +560,7 @@ COSA_Init
     }
     else
     {
-        CcspTraceInfo(("!!! haha, catcha !!!\n"));
+        DHCPMGR_LOG_INFO("!!! haha, catcha !!!\n");
         goto EXIT;
     }
     pGetInsNumberByIndexProc = (COSAGetInstanceNumberByIndexProc)pPlugInfo->AcquireFunction("COSAGetInstanceNumberByIndex");
@@ -586,7 +587,7 @@ COSA_Init
 
     if ( !g_pPnmCcdIf )
     {
-        CcspTraceError(("g_pPnmCcdIf is NULL !\n"));
+        DHCPMGR_LOG_ERROR("g_pPnmCcdIf is NULL !\n");
 
         goto EXIT;
     }

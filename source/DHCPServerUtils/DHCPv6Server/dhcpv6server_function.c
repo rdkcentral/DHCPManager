@@ -47,7 +47,6 @@
 #include "sysevent/sysevent.h"
 #include "cosa_apis_util.h"
 #include "service_dhcpv6_client.h"
-#include "ccsp_trace.h"
 #include "ifl.h"
 
 extern void* g_pDslhDmlAgent;
@@ -212,14 +211,14 @@ void dhcpv6_server_init()
 #if defined(_CBR_PRODUCT_REQ_) && !defined(_CBR2_PRODUCT_REQ_)
   if (IFL_SUCCESS != ifl_init_ctx(DHCPV6S_CALLER_CTX, IFL_CTX_DYNAMIC))
   {
-      CcspTraceError(("Failed to init ifl ctx for %s", DHCPV6S_CALLER_CTX));
+      DHCPMGR_LOG_ERROR("Failed to init ifl ctx for %s", DHCPV6S_CALLER_CTX);
   }
   serv_ipv6_init();
   ifl_register_event_handler("dhcpv6_server-start", IFL_EVENT_NOTIFY_TRUE, DHCPV6S_CALLER_CTX, serv_ipv6_start);
   ifl_register_event_handler("dhcpv6_server-stop", IFL_EVENT_NOTIFY_TRUE, DHCPV6S_CALLER_CTX, serv_ipv6_stop);
   ifl_register_event_handler("dhcpv6_server-restart", IFL_EVENT_NOTIFY_TRUE, DHCPV6S_CALLER_CTX, serv_ipv6_restart);
 #endif
-  CcspTraceInfo(("SERVICE_DHCP6S : Server event registration completed\n"));
+  DHCPMGR_LOG_INFO("SERVICE_DHCP6S : Server event registration completed\n");
 
 }
 
@@ -233,7 +232,7 @@ void dhcpv6_server_init()
 void CosaDmlDhcpv6sRestartOnLanStarted(void * arg)
 {
     UNREFERENCED_PARAMETER(arg);
-    CcspTraceWarning(("%s -- lan status is started. \n", __FUNCTION__));
+    DHCPMGR_LOG_WARNING("%s -- lan status is started. \n", __FUNCTION__);
     g_lan_ready = TRUE;
 
     int val1 = TRUE;
@@ -256,7 +255,7 @@ void CosaDmlDhcpv6sRestartOnLanStarted(void * arg)
             deviceMode = atoi(buf);
         }
 
-        CcspTraceWarning(("%s -- %d Device Mode %d \n", __FUNCTION__, __LINE__,deviceMode));
+        DHCPMGR_LOG_WARNING("%s -- %d Device Mode %d \n", __FUNCTION__, __LINE__,deviceMode);
         //dont start dibbler server in extender mode.
         if (deviceMode == DEVICE_MODE_EXTENDER)
         {
@@ -311,7 +310,7 @@ int CosaDmlDHCPv6sTriggerRestart(BOOL OnlyTrigger)
         DHCPMGR_LOG_INFO("open dhcpv6 server restart fifo when writing.");
         return 1;
     }
-    CcspTraceDebug(("%s -- %d: Writing %s to DHCPS6V_SERVER_RESTART_FIFO... \n", __FUNCTION__, __LINE__, str));
+    DHCPMGR_LOG_DEBUG("%s -- %d: Writing %s to DHCPS6V_SERVER_RESTART_FIFO... \n", __FUNCTION__, __LINE__, str);
     write( fd, str, sizeof(str) );
     close(fd);
 
@@ -336,7 +335,7 @@ int _dibbler_server_operation(char * arg)
     ULONG Index  = 0;
     int fd = 0;
 
-    CcspTraceInfo(("%s:%d\n",__FUNCTION__, __LINE__));
+    DHCPMGR_LOG_INFO("%s:%d\n",__FUNCTION__, __LINE__);
     if (!strncmp(arg, "stop", 4))
     {
         /*stop the process only if it is started*/
@@ -346,7 +345,7 @@ int _dibbler_server_operation(char * arg)
         #endif
         fd = open(DHCPV6S_SERVER_PID_FILE, O_RDONLY);
         if (fd >= 0) {
-            CcspTraceInfo(("%s:%d stop dibbler.\n",__FUNCTION__, __LINE__));
+            DHCPMGR_LOG_INFO("%s:%d stop dibbler.\n",__FUNCTION__, __LINE__);
             //DHCPMGR_LOG_INFO("%s -- %d stop", __LINE__);
             //dibbler stop seems to be hanging intermittently with v_secure_system
             //replacing with system call
@@ -355,7 +354,7 @@ int _dibbler_server_operation(char * arg)
             close(fd);
         }else{
             //this should not happen.
-            CcspTraceInfo(("%s:%d No PID server is not running.\n",__FUNCTION__, __LINE__));
+            DHCPMGR_LOG_INFO("%s:%d No PID server is not running.\n",__FUNCTION__, __LINE__);
             //DHCPMGR_LOG_INFO("%s -- %d server is not running. ", __LINE__);
         }
     }
@@ -365,10 +364,10 @@ int _dibbler_server_operation(char * arg)
                     * There is not interface enabled. Not start
                     * There is not valid pool. Not start.
                 */
-        CcspTraceInfo(("Dibbler Server Start %s Line (%d)\n", __FUNCTION__, __LINE__));
+        DHCPMGR_LOG_INFO("Dibbler Server Start %s Line (%d)\n", __FUNCTION__, __LINE__);
         if ( !g_dhcpv6_server )
         {
-            CcspTraceInfo(("%s Line (%d) g_dhcpv6_server %d \n", __FUNCTION__, __LINE__, g_dhcpv6_server));
+            DHCPMGR_LOG_INFO("%s Line (%d) g_dhcpv6_server %d \n", __FUNCTION__, __LINE__, g_dhcpv6_server);
             goto EXIT;
         }
 
@@ -380,7 +379,7 @@ int _dibbler_server_operation(char * arg)
         }
         if ( Index < uDhcpv6ServerPoolNum )
         {
-            CcspTraceInfo(("Index %lu \n", Index));
+            DHCPMGR_LOG_INFO("Index %lu \n", Index);
             goto EXIT;
         }
 #ifdef FEATURE_RDKB_WAN_MANAGER
@@ -393,7 +392,7 @@ int _dibbler_server_operation(char * arg)
 #endif
         if (g_dhcpv6_server_prefix_ready && g_lan_ready)
         {
-            CcspTraceInfo(("%s:%d start dibbler %d\n",__FUNCTION__, __LINE__,g_dhcpv6_server));
+            DHCPMGR_LOG_INFO("%s:%d start dibbler %d\n",__FUNCTION__, __LINE__,g_dhcpv6_server);
             //DHCPMGR_LOG_INFO("%s -- %d start %d", __LINE__, g_dhcpv6_server);
 
             #if defined (_HUB4_PRODUCT_REQ_)
@@ -406,7 +405,7 @@ int _dibbler_server_operation(char * arg)
     }
     else if (!strncmp(arg, "restart", 7))
     {
-        CcspTraceInfo(("%s:%d restart dibbler.\n",__FUNCTION__, __LINE__));
+        DHCPMGR_LOG_INFO("%s:%d restart dibbler.\n",__FUNCTION__, __LINE__);
         _dibbler_server_operation("stop");
         _dibbler_server_operation("start");
     }
@@ -459,7 +458,7 @@ dhcpv6s_dbg_thrd(void * in)
                 continue;
 
             DHCPVS_DEBUG_PRINT
-            CcspTraceWarning(("%s -- select(): %s", __FUNCTION__, strerror(errno)));
+            DHCPMGR_LOG_WARNING("%s -- select(): %s", __FUNCTION__, strerror(errno));
             goto EXIT;
         }
         else if(retCode == 0 )
@@ -475,7 +474,7 @@ dhcpv6s_dbg_thrd(void * in)
             sleep(3);
             memset(msg, 0, sizeof(msg));
             read(v6_srvr_fifo_file_dscrptr, msg, sizeof(msg));
-            CcspTraceDebug(("%s,%d: Calling CosaDmlDhcpv6sRebootServer... \n", __FUNCTION__, __LINE__));
+            DHCPMGR_LOG_DEBUG("%s,%d: Calling CosaDmlDhcpv6sRebootServer... \n", __FUNCTION__, __LINE__);
             CosaDmlDhcpv6sRebootServer();
             continue;
         }
@@ -525,9 +524,9 @@ void CosaDmlDhcpv6sRebootServer()
         g_dhcpv6s_restart_count=0;
 
         //when need stop, it's supposed the configuration file need to be updated.
-        CcspTraceDebug(("%s - Calling _cosa_dhcpsv6_refresh_config...\n",__FUNCTION__));
+        DHCPMGR_LOG_DEBUG("%s - Calling _cosa_dhcpsv6_refresh_config...\n",__FUNCTION__);
 	_cosa_dhcpsv6_refresh_config();
-        CcspTraceInfo(("%s - Call _dibbler_server_operation stop\n",__FUNCTION__));
+        DHCPMGR_LOG_INFO("%s - Call _dibbler_server_operation stop\n",__FUNCTION__);
         _dibbler_server_operation("stop");
     }
     fd = open(DHCPV6S_SERVER_PID_FILE, O_RDONLY);
@@ -562,7 +561,7 @@ void CosaDmlDhcpv6sRebootServer()
             v_secure_system("kill -15 `pidof " SERVER_BIN "`");
             sleep(1);
         }
-        CcspTraceInfo(("%s - Call _dibbler_server_operation start\n",__FUNCTION__));
+        DHCPMGR_LOG_INFO("%s - Call _dibbler_server_operation start\n",__FUNCTION__);
         _dibbler_server_operation("start");
     } else{
         close(fd);
@@ -574,7 +573,7 @@ void CosaDmlDhcpv6sRebootServer()
 #endif
     {
         g_dhcpv6s_refresh_count = 0;
-        CcspTraceWarning(("%s: DBG calling  gw_lan_refresh\n", __func__));
+        DHCPMGR_LOG_WARNING("%s: DBG calling  gw_lan_refresh\n", __func__);
         v_secure_system("gw_lan_refresh");
     }
 
@@ -741,7 +740,7 @@ void __cosa_dhcpsv6_refresh_config()
                 returnValue = g_GetParamValueString(g_pDslhDmlAgent, prefixFullName, prefixValue, &uSize);
                 if ( returnValue != 0 )
                 {
-                    CcspTraceWarning(("_cosa_dhcpsv6_refresh_config -- g_GetParamValueString for iana:%d\n", returnValue));
+                    DHCPMGR_LOG_WARNING("_cosa_dhcpsv6_refresh_config -- g_GetParamValueString for iana:%d\n", returnValue);
                 }
                 fprintf(fp, "   class {\n");
 #ifdef CONFIG_CISCO_DHCP6S_REQUIREMENT_FROM_DPC3825
@@ -762,10 +761,10 @@ void __cosa_dhcpsv6_refresh_config()
                     while( (prefixValue[i-1] != '/') && ( i > 0 ) )
                         i--;
                     if ( i == 0 ){
-                        CcspTraceWarning(("_cosa_dhcpsv6_refresh_config -- iana:%s is error\n", prefixValue));
+                        DHCPMGR_LOG_WARNING("_cosa_dhcpsv6_refresh_config -- iana:%s is error\n", prefixValue);
                     }
                     if ( ( prefixValue[i-2] != ':' ) || ( prefixValue[i-3] != ':' ) ){
-                        CcspTraceWarning(("_cosa_dhcpsv6_refresh_config -- iana:%s is error\n", prefixValue));
+                        DHCPMGR_LOG_WARNING("_cosa_dhcpsv6_refresh_config -- iana:%s is error\n", prefixValue);
                     }
                     /* We just delete last '/' here */
                     prefixValue[i-1] = '\0';
@@ -806,7 +805,7 @@ void __cosa_dhcpsv6_refresh_config()
                                 returnValue = g_GetParamValueString(g_pDslhDmlAgent, dmName, dmValue, &uSize);
                                 if ( returnValue != 0 )
                                 {
-                                    CcspTraceWarning(("_cosa_dhcpsv6_refresh_config -- g_GetParamValueString for iana:%d\n", returnValue));
+                                    DHCPMGR_LOG_WARNING("_cosa_dhcpsv6_refresh_config -- g_GetParamValueString for iana:%d\n", returnValue);
                                 }
 
                                 memset( sysEventName, 0, sizeof(sysEventName));
@@ -874,12 +873,12 @@ OPTIONS:
                 if ((strncmp(buf,"true",4) == 0) && iresCode == 204)
                 {
                         inWifiCp = 1;
-                        CcspTraceWarning((" _cosa_dhcpsv6_refresh_config -- Box is in captive portal mode \n"));
+                        DHCPMGR_LOG_WARNING(" _cosa_dhcpsv6_refresh_config -- Box is in captive portal mode \n");
                 }
                 else
                 {
                         //By default isInCaptivePortal is false
-                        CcspTraceWarning((" _cosa_dhcpsv6_refresh_config -- Box is not in captive portal mode \n"));
+                        DHCPMGR_LOG_WARNING(" _cosa_dhcpsv6_refresh_config -- Box is not in captive portal mode \n");
                 }
             }
 #if defined (_XB6_PRODUCT_REQ_)
@@ -897,7 +896,7 @@ OPTIONS:
                  if (strncmp(rfCpMode,"true",4) == 0)
                  {
                     inRfCaptivePortal = 1;
-                    CcspTraceWarning((" _cosa_dhcpsv6_refresh_config -- Box is in RF captive portal mode \n"));
+                    DHCPMGR_LOG_WARNING(" _cosa_dhcpsv6_refresh_config -- Box is in RF captive portal mode \n");
                  }
               }
           }
@@ -924,7 +923,7 @@ OPTIONS:
                 if ( sDhcpv6ServerPoolOption[Index][Index2].Tag == 23 )
                 {
                     char dns_str[256] = {0};
-                    CcspTraceWarning(("_cosa_dhcpsv6_refresh_config -- Tag is 23 \n"));
+                    DHCPMGR_LOG_WARNING("_cosa_dhcpsv6_refresh_config -- Tag is 23 \n");
                                         /* Static DNS Servers */
                                         if( 1 == sDhcpv6ServerPool[Index].Cfg.X_RDKCENTRAL_COM_DNSServersEnabled )
                                         {
@@ -1045,10 +1044,10 @@ OPTIONS:
                                                          }
                                                    }
                                             }
-                                           CcspTraceWarning(("%s %d - DNSServersEnabled:%d DNSServers:%s\n", __FUNCTION__,
+                                           DHCPMGR_LOG_WARNING("%s %d - DNSServersEnabled:%d DNSServers:%s\n", __FUNCTION__,
                                                                                                                                                                                  __LINE__,
                                                                                                                                                                                  sDhcpv6ServerPool[Index].Cfg.X_RDKCENTRAL_COM_DNSServersEnabled,
-                                                                                                                                                                                 sDhcpv6ServerPool[Index].Cfg.X_RDKCENTRAL_COM_DNSServers ));
+                                                                                                                                                                                 sDhcpv6ServerPool[Index].Cfg.X_RDKCENTRAL_COM_DNSServers );
                                         }
                                         else
                                         {
@@ -1070,7 +1069,7 @@ OPTIONS:
                 else if (sDhcpv6ServerPoolOption[Index][Index2].Tag == 24)
                 {//domain
                     char domain_str[256] = {0};
-                        CcspTraceWarning(("_cosa_dhcpsv6_refresh_config -- Tag is 24 \n"));
+                        DHCPMGR_LOG_WARNING("_cosa_dhcpsv6_refresh_config -- Tag is 24 \n");
                     ifl_get_event ("ipv6_dnssl", domain_str, sizeof(domain_str));
                     if (domain_str[0] != '\0') {
                         format_dibbler_option(domain_str);
@@ -1096,7 +1095,7 @@ OPTIONS:
 			    return;
 		    }
                                             if( 1 == sDhcpv6ServerPool[Index].Cfg.X_RDKCENTRAL_COM_DNSServersEnabled ) {
-                                            //CcspTraceWarning(("Cfg.X_RDKCENTRAL_COM_DNSServersEnabled is 1 \n"));
+                                            //DHCPMGR_LOG_WARNING("Cfg.X_RDKCENTRAL_COM_DNSServersEnabled is 1 \n");
 					     /* RDKB-50535 send ULA address as DNS address only when lan ULA is enabled */
 					    if (ula_enable)
 				            {
@@ -1189,7 +1188,7 @@ OPTIONS:
                     }
                     else
                     {
-                        CcspTraceWarning(("vendor_spec sysevent failed to get, so not updating vendor_spec information. \n"));
+                        DHCPMGR_LOG_WARNING("vendor_spec sysevent failed to get, so not updating vendor_spec information. \n");
                     }
                 }
 #else
@@ -1322,10 +1321,10 @@ OPTIONS:
                                                       fprintf(fp, "     option %s %s\n", tagList[Index3].cmdstring, dnsStr);
                                                   }
                                          }
-                                         CcspTraceWarning(("%s %d - DNSServersEnabled:%d DNSServers:%s\n", __FUNCTION__,
+                                         DHCPMGR_LOG_WARNING("%s %d - DNSServersEnabled:%d DNSServers:%s\n", __FUNCTION__,
                                                                                                                                                                                 __LINE__,
                                                                                                                                                                                 sDhcpv6ServerPool[Index].Cfg.X_RDKCENTRAL_COM_DNSServersEnabled,
-                                                                                                                                                                                sDhcpv6ServerPool[Index].Cfg.X_RDKCENTRAL_COM_DNSServers ));
+                                                                                                                                                                                sDhcpv6ServerPool[Index].Cfg.X_RDKCENTRAL_COM_DNSServers );
                                    }
                                    else
                                    {
@@ -1386,10 +1385,10 @@ OPTIONS:
                                            {
                                                    fprintf(fp, "        option %s %s\n", tagList[Index3].cmdstring, dns_str);
                                         }
-                                                  CcspTraceWarning(("%s %d - DNSServersEnabled:%d DNSServers:%s\n", __FUNCTION__,
+                                                  DHCPMGR_LOG_WARNING("%s %d - DNSServersEnabled:%d DNSServers:%s\n", __FUNCTION__,
                                                                                                                                                                                  __LINE__,
                                                                                                                                                                                  sDhcpv6ServerPool[Index].Cfg.X_RDKCENTRAL_COM_DNSServersEnabled,
-                                                                                                                                                                                 sDhcpv6ServerPool[Index].Cfg.X_RDKCENTRAL_COM_DNSServers ));
+                                                                                                                                                                                 sDhcpv6ServerPool[Index].Cfg.X_RDKCENTRAL_COM_DNSServers );
                                         }
                                         else
                                         {
@@ -1439,7 +1438,7 @@ OPTIONS:
 #if (!defined _COSA_INTEL_USG_ARM_) && (!defined _COSA_BCM_MIPS_)
     /*we will copy the updated conf file at once*/
     if (rename(TMP_SERVER_CONF, SERVER_CONF_LOCATION))
-        CcspTraceWarning(("%s rename failed %s\n", __FUNCTION__, strerror(errno)));
+        DHCPMGR_LOG_WARNING("%s rename failed %s\n", __FUNCTION__, strerror(errno));
 #endif
 if (stat(SERVER_CONF_LOCATION, &check_ConfigFile) == -1) {
         ifl_set_event("dibbler_server_conf-status","");
@@ -1501,7 +1500,7 @@ void __cosa_dhcpsv6_refresh_config()
      *  5) Send RA, start DHCPv6 server
      */
     if (divide_ipv6_prefix() != 0) {
-      // CcspTraceError(("[%s] ERROR divide the operator-delegated prefix to sub-prefix error.\n",  __FUNCTION__));
+      // DHCPMGR_LOG_ERROR("[%s] ERROR divide the operator-delegated prefix to sub-prefix error.\n",  __FUNCTION__);
         DHCPMGR_LOG_ERROR("divide the operator-delegated prefix to sub-prefix error.");
         // sysevent_set(si6->sefd, si6->setok, "service_ipv6-status", "error", 0);
         ifl_set_event("service_ipv6-status", "error");
@@ -1523,9 +1522,9 @@ void __cosa_dhcpsv6_refresh_config()
        if (sDhcpv6ServerPool[Index].Cfg.PrefixRangeBegin[0] == '\0'  &&
            sDhcpv6ServerPool[Index].Cfg.PrefixRangeEnd[0] == '\0')
          {
-           CcspTraceInfo(("%s Skip Index: %lu, iface: %s, entry. Invalid PrefixRangeBegin: %s,  PrefixRangeEnd: %s, LeaseTime: %lu\n",
+           DHCPMGR_LOG_INFO("%s Skip Index: %lu, iface: %s, entry. Invalid PrefixRangeBegin: %s,  PrefixRangeEnd: %s, LeaseTime: %lu\n",
                           __func__, Index, COSA_DML_DHCPV6_SERVER_IFNAME, sDhcpv6ServerPool[Index].Cfg.PrefixRangeBegin,
-                          sDhcpv6ServerPool[Index].Cfg.PrefixRangeEnd, sDhcpv6ServerPool[Index].Cfg.LeaseTime));
+                          sDhcpv6ServerPool[Index].Cfg.PrefixRangeEnd, sDhcpv6ServerPool[Index].Cfg.LeaseTime);
             continue;
          }
         fprintf(fp, "iface %s {\n", COSA_DML_DHCPV6_SERVER_IFNAME);
@@ -1568,7 +1567,7 @@ void __cosa_dhcpsv6_refresh_config()
                 returnValue = g_GetParamValueString(g_pDslhDmlAgent, prefixFullName, prefixValue, &uSize);
                 if ( returnValue != 0 )
                 {
-                    CcspTraceWarning(("_cosa_dhcpsv6_refresh_config -- g_GetParamValueString for iana:%d\n", returnValue));
+                    DHCPMGR_LOG_WARNING("_cosa_dhcpsv6_refresh_config -- g_GetParamValueString for iana:%d\n", returnValue);
                 }
                 fprintf(fp, "   class {\n");
 #ifdef CONFIG_CISCO_DHCP6S_REQUIREMENT_FROM_DPC3825
@@ -1589,11 +1588,11 @@ void __cosa_dhcpsv6_refresh_config()
                     while( (prefixValue[i-1] != '/') && ( i > 0 ) )
                         i--;
                     if ( i == 0 ){
-                        CcspTraceWarning(("_cosa_dhcpsv6_refresh_config -- iana:%s is error\n", prefixValue));
+                        DHCPMGR_LOG_WARNING("_cosa_dhcpsv6_refresh_config -- iana:%s is error\n", prefixValue);
                        bBadPrefixFormat = TRUE;
                     }
                     if ( ( prefixValue[i-2] != ':' ) || ( prefixValue[i-3] != ':' ) ){
-                        CcspTraceWarning(("_cosa_dhcpsv6_refresh_config -- iana:%s is error\n", prefixValue));
+                        DHCPMGR_LOG_WARNING("_cosa_dhcpsv6_refresh_config -- iana:%s is error\n", prefixValue);
                        bBadPrefixFormat = TRUE;
                     }
 #if 0
@@ -1651,7 +1650,7 @@ void __cosa_dhcpsv6_refresh_config()
                                }
                            }
                        }
-                       CcspTraceInfo(("%s Fixed prefixValue: %s\n", __func__, prefixValue));
+                       DHCPMGR_LOG_INFO("%s Fixed prefixValue: %s\n", __func__, prefixValue);
                      }
                 }
                 fprintf(fp, "       pool %s%s - %s%s\n", prefixValue, sDhcpv6ServerPool[Index].Cfg.PrefixRangeBegin, prefixValue, sDhcpv6ServerPool[Index].Cfg.PrefixRangeEnd );
@@ -1675,15 +1674,15 @@ void __cosa_dhcpsv6_refresh_config()
             }
             AnscFreeMemory(pTmp3);
 #ifdef CISCO_CONFIG_DHCPV6_PREFIX_DELEGATION
-            CcspTraceInfo(("[%s]  %d - See if need to emit pd-class, sDhcpv6ServerPool[Index].Cfg.IAPDEnable: %d, Index: %d\n",
-                           __FUNCTION__, __LINE__, sDhcpv6ServerPool[Index].Cfg.IAPDEnable, Index));
+            DHCPMGR_LOG_INFO("[%s]  %d - See if need to emit pd-class, sDhcpv6ServerPool[Index].Cfg.IAPDEnable: %d, Index: %d\n",
+                           __FUNCTION__, __LINE__, sDhcpv6ServerPool[Index].Cfg.IAPDEnable, Index);
             if (sDhcpv6ServerPool[Index].Cfg.IAPDEnable) {
               /*pd pool*/
               if(get_pd_pool(&pd_pool) == 0) {
-                CcspTraceInfo(("[%s]  %d emit pd-class { pd-pool pd_pool.start: %s, pd_pool.prefix_length: %d\n",
-                               __FUNCTION__, __LINE__, pd_pool.start, pd_pool.prefix_length));
-                CcspTraceInfo(("[%s]  %d emit            pd-length pd_pool.pd_length: %d\n",
-                               __FUNCTION__, __LINE__, pd_pool.pd_length));
+                DHCPMGR_LOG_INFO("[%s]  %d emit pd-class { pd-pool pd_pool.start: %s, pd_pool.prefix_length: %d\n",
+                               __FUNCTION__, __LINE__, pd_pool.start, pd_pool.prefix_length);
+                DHCPMGR_LOG_INFO("[%s]  %d emit            pd-length pd_pool.pd_length: %d\n",
+                               __FUNCTION__, __LINE__, pd_pool.pd_length);
                 fprintf(fp, "   pd-class {\n");
 #if defined (_CBR_PRODUCT_REQ_) || defined (CISCO_CONFIG_DHCPV6_PREFIX_DELEGATION)
                 fprintf(fp, "       pd-pool %s /%d\n", pd_pool.start, pd_pool.prefix_length);
@@ -1771,10 +1770,10 @@ OPTIONS:
                                           {
                                                   fprintf(fp, "    option %s %s\n", tagList[Index3].cmdstring, dnsStr);
                                           }
-                                          CcspTraceWarning(("%s %d - DNSServersEnabled:%d DNSServers:%s\n", __FUNCTION__,
+                                          DHCPMGR_LOG_INFO("%s %d - DNSServersEnabled:%d DNSServers:%s\n", __FUNCTION__,
                                                                                                                                                                                 __LINE__,
                                                                                                                                                                                 sDhcpv6ServerPool[Index].Cfg.X_RDKCENTRAL_COM_DNSServersEnabled,
-                                                                                                                                                                                sDhcpv6ServerPool[Index].Cfg.X_RDKCENTRAL_COM_DNSServers ));
+                                                                                                                                                                                sDhcpv6ServerPool[Index].Cfg.X_RDKCENTRAL_COM_DNSServers );
                                    }
                                    else
                                    {
@@ -1825,10 +1824,10 @@ OPTIONS:
                                            {
                                                    fprintf(fp, "       option %s %s\n", tagList[Index3].cmdstring, dnsStr);
                                            }
-                                           CcspTraceWarning(("%s %d - DNSServersEnabled:%d DNSServers:%s\n", __FUNCTION__,
+                                           DHCPMGR_LOG_WARNING("%s %d - DNSServersEnabled:%d DNSServers:%s\n", __FUNCTION__,
                                                                                                                                                                                  __LINE__,
                                                                                                                                                                                  sDhcpv6ServerPool[Index].Cfg.X_RDKCENTRAL_COM_DNSServersEnabled,
-                                                                                                                                                                                 sDhcpv6ServerPool[Index].Cfg.X_RDKCENTRAL_COM_DNSServers ));
+                                                                                                                                                                                 sDhcpv6ServerPool[Index].Cfg.X_RDKCENTRAL_COM_DNSServers );
                                         }
                                         else
                                         {
@@ -1949,7 +1948,7 @@ char * CosaDmlDhcpv6sGetStringFromHex(char * hexString){
              k = 0;
         }
     }
-    CcspTraceWarning(("New normal string is %s from %s .\n", newString, hexString));
+    DHCPMGR_LOG_WARNING("New normal string is %s from %s .\n", newString, hexString);
     return newString;
 }
 
@@ -1968,7 +1967,7 @@ char * CosaDmlDhcpv6sGetAddressFromString(char * address){
         ipv6Address[j] = '\0';
     else
         ipv6Address[j-1] = '\0';
-    CcspTraceWarning(("New ipv6 address is %s from %s .\n", ipv6Address, address));
+    DHCPMGR_LOG_WARNING("New ipv6 address is %s from %s .\n", ipv6Address, address);
     return ipv6Address;
 }
 

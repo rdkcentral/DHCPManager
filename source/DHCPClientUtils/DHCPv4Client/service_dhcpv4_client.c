@@ -38,7 +38,6 @@
 #include <sys/time.h>
 #include "safec_lib_common.h"
 #include "service_dhcpv4_client.h"
-#include "ccsp_trace.h"
 #include "ifl.h"
 #include <libnet.h>
 
@@ -109,7 +108,7 @@ int get_dhcpc_pidfile
     int size
 )
 {
-    CcspTraceInfo(("%s: BEGIN \n", __FUNCTION__));
+    DHCPMGR_LOG_INFO("%s: BEGIN \n", __FUNCTION__);
     #if defined(_PLATFORM_IPQ_)
         strncpy(pidfile,"/tmp/udhcpc.erouter0.pid",size);
 
@@ -152,7 +151,7 @@ int dhcp_parse_vendor_info
     char       *ethWanMode
 )
 {
-    CcspTraceInfo(("%s: BEGIN \n", __FUNCTION__));
+    DHCPMGR_LOG_INFO("%s: BEGIN \n", __FUNCTION__);
     FILE *fp;
     char subopt_num[BUFF_LEN_16] ={0}, subopt_value[BUFF_LEN_64] = {0}, mode[BUFF_LEN_8] = {0};
     int num_read;
@@ -175,7 +174,7 @@ int dhcp_parse_vendor_info
             char *ptr;
             if (length - opt_len < 6)
             {
-                CcspTraceInfo(("%s: Too many options\n", __FUNCTION__));
+                DHCPMGR_LOG_INFO("%s: Too many options\n", __FUNCTION__);
                 fclose(fp);   // Resource leak
                 return -1;
             }
@@ -183,20 +182,20 @@ int dhcp_parse_vendor_info
             #if defined (EROUTER_DHCP_OPTION_MTA)
                 if ((strcmp(mode,"DOCSIS") == 0) && (strcmp(ethWanMode,"true") == 0))
                 {
-                    CcspTraceInfo(("DOCSIS Mode\n"));
+                    DHCPMGR_LOG_INFO("DOCSIS Mode\n");
                     continue;
                 }
 
                 if ((strcmp(mode,"ETHWAN") == 0) && (strcmp(ethWanMode,"false") == 0))
                 {
-                    CcspTraceInfo(("EWAN Mode\n"));
+                    DHCPMGR_LOG_INFO("EWAN Mode\n");
                     continue;
                 }
             #else
                 UNREFERENCED_PARAMETER(ethWanMode);
                 if ((strcmp(mode,"ETHWAN") == 0 ))
                 {
-                    CcspTraceInfo(("EWAN Mode\n"));
+                    DHCPMGR_LOG_INFO("EWAN Mode\n");
                     continue;
                 }
             #endif
@@ -222,7 +221,7 @@ int dhcp_parse_vendor_info
             }
             else
             {
-                CcspTraceError(("%s: Invalid suboption\n", __FUNCTION__));
+                DHCPMGR_LOG_ERROR("%s: Invalid suboption\n", __FUNCTION__);
                 fclose(fp);
                 return -1;
             }
@@ -240,7 +239,7 @@ int dhcp_parse_vendor_info
             {
                 if (length - opt_len <= 2)
                 {
-                    CcspTraceInfo(("%s: Too many options\n", __FUNCTION__));
+                    DHCPMGR_LOG_INFO("%s: Too many options\n", __FUNCTION__);
                     fclose(fp);
                     return -1;
                 }
@@ -255,14 +254,14 @@ int dhcp_parse_vendor_info
 
         if ((num_read != EOF) && (num_read != 3))
         {
-            CcspTraceError(("%s: Error parsing file\n", __FUNCTION__));
+            DHCPMGR_LOG_ERROR("%s: Error parsing file\n", __FUNCTION__);
             fclose(fp);
             return -1;
         }
     }
     else
     {
-        CcspTraceError(("%s: Cannot read %s\n", __FUNCTION__, VENDOR_SPEC_FILE));
+        DHCPMGR_LOG_ERROR("%s: Cannot read %s\n", __FUNCTION__, VENDOR_SPEC_FILE);
         return -1;
     }
     fclose(fp);
@@ -282,7 +281,7 @@ int dhcp_parse_vendor_info
 **********************************************************************/
 int serv_dhcp_init()
 {
-    CcspTraceInfo(("%s: BEGIN \n", __FUNCTION__));
+    DHCPMGR_LOG_INFO("%s: BEGIN \n", __FUNCTION__);
     char buf[BUFF_LEN_32];
     memset(buf,0,sizeof(buf));
 
@@ -291,14 +290,14 @@ int serv_dhcp_init()
         sd = (serv_dhcp *)malloc(sizeof(serv_dhcp));
         if (sd == NULL)
         {
-            CcspTraceError(("Malloc failed\n"));
+            DHCPMGR_LOG_ERROR("Malloc failed\n");
             return -1;
         }
     }
 
     if (IFL_SUCCESS != ifl_init_ctx(DHCPV4C_CALLER_CTX, IFL_CTX_DYNAMIC))
     {
-        CcspTraceError(("Failed to init ifl ctx for %s", DHCPV4C_CALLER_CTX));
+        DHCPMGR_LOG_ERROR("Failed to init ifl ctx for %s", DHCPV4C_CALLER_CTX);
         serv_dhcp_deinit();
         return -1;
     }
@@ -306,7 +305,7 @@ int serv_dhcp_init()
     syscfg_get(NULL, "wan_physical_ifname", sd->ifname, sizeof(sd->ifname));
     if (!strlen(sd->ifname))
     {
-        CcspTraceError(("Failed to get ifname. Call serv_dhcp_deinit\n"));
+        DHCPMGR_LOG_ERROR("Failed to get ifname. Call serv_dhcp_deinit\n");
         serv_dhcp_deinit();
         return -1;
     }
@@ -322,7 +321,7 @@ int serv_dhcp_init()
     }
     else
     {
-        CcspTraceError(("Failed to get wan protocol. Call serv_dhcp_deinit\n"));
+        DHCPMGR_LOG_ERROR("Failed to get wan protocol. Call serv_dhcp_deinit\n");
         serv_dhcp_deinit();
         return -1;
     }
@@ -330,7 +329,7 @@ int serv_dhcp_init()
     memset(buf,0,sizeof(buf));
 
     syscfg_get(NULL, "last_erouter_mode", buf, sizeof(buf));
-    CcspTraceInfo(("Last erouter mode = %s \n", buf));
+    DHCPMGR_LOG_INFO("Last erouter mode = %s \n", buf);
     switch (atoi(buf))
     {
         case 1:
@@ -343,19 +342,19 @@ int serv_dhcp_init()
             sd->rtmod = RTMOD_DS;
             break;
         default:
-            CcspTraceError(("Unknown RT mode (last_erouter_mode)\n"));
+            DHCPMGR_LOG_ERROR("Unknown RT mode (last_erouter_mode)\n");
             sd->rtmod = RTMOD_UNKNOW;
             break;
     }
 
-    CcspTraceInfo(("DHCPV4 client event registration started\n"));
+    DHCPMGR_LOG_INFO("DHCPV4 client event registration started\n");
     ifl_register_event_handler( DHCPV4_CLIENT_START, IFL_EVENT_NOTIFY_TRUE, DHCPV4C_CALLER_CTX, dhcpv4_client_service_start);
     ifl_register_event_handler( DHCPV4_CLIENT_STOP, IFL_EVENT_NOTIFY_TRUE, DHCPV4C_CALLER_CTX, dhcpv4_client_service_stop);
     ifl_register_event_handler( EROUTER_MODE_UPDATED, IFL_EVENT_NOTIFY_TRUE, DHCPV4C_CALLER_CTX, dhcpv4_client_service_restart);
     ifl_register_event_handler( DHCPV4_CLIENT_RESTART, IFL_EVENT_NOTIFY_TRUE, DHCPV4C_CALLER_CTX, dhcpv4_client_service_restart);
     ifl_register_event_handler( DHCPV4_CLIENT_RELEASE, IFL_EVENT_NOTIFY_TRUE, DHCPV4C_CALLER_CTX, dhcpv4_client_service_release);
     ifl_register_event_handler( DHCPV4_CLIENT_RENEW, IFL_EVENT_NOTIFY_TRUE, DHCPV4C_CALLER_CTX, dhcpv4_client_service_renew);
-    CcspTraceInfo(("DHCPV4 client event registration completed\n"));
+    DHCPMGR_LOG_INFO("DHCPV4 client event registration completed\n");
 
     return 0;
 }
@@ -373,7 +372,7 @@ int serv_dhcp_init()
 **********************************************************************/
 static int serv_dhcp_deinit()
 {
-    CcspTraceInfo(("%s: BEGIN \n", __FUNCTION__));
+    DHCPMGR_LOG_INFO("%s: BEGIN \n", __FUNCTION__);
     if(sd != NULL)
     {
         free(sd);
@@ -396,7 +395,7 @@ static int serv_dhcp_deinit()
 void dhcpv4_client_service_start(void *arg)
 {
     UNREFERENCED_PARAMETER(arg);
-    CcspTraceInfo(("%s: BEGIN \n", __FUNCTION__));
+    DHCPMGR_LOG_INFO("%s: BEGIN \n", __FUNCTION__);
     int pid;
     int has_pid_file = 0;
     #if defined(_PLATFORM_IPQ_)
@@ -431,7 +430,7 @@ void dhcpv4_client_service_start(void *arg)
 
     if (pid > 0 && has_pid_file)
     {
-        CcspTraceInfo(("%s: DHCP client has already running as PID %d\n", __FUNCTION__, pid));
+        DHCPMGR_LOG_INFO("%s: DHCP client has already running as PID %d\n", __FUNCTION__, pid);
     }
 
     if (pid > 0 && !has_pid_file)
@@ -440,14 +439,14 @@ void dhcpv4_client_service_start(void *arg)
     }
     else if (pid <= 0 && has_pid_file)
     {
-        CcspTraceInfo(("Has Pid file, Stop dhcpv4 client \n"));
+        DHCPMGR_LOG_INFO("Has Pid file, Stop dhcpv4 client \n");
         dhcpv4_client_stop(sd->ifname);
     }
 
     ifl_get_event("map_transport_mode", mapt_mode, sizeof(mapt_mode));
     if (strcmp(mapt_mode, "MAPT") == 0)
     {
-        CcspTraceInfo(("%s: Do not start dhcpv4 client when mapt is already configured\n", __FUNCTION__));
+        DHCPMGR_LOG_INFO("%s: Do not start dhcpv4 client when mapt is already configured\n", __FUNCTION__);
         return;
     }
 
@@ -459,7 +458,7 @@ void dhcpv4_client_service_start(void *arg)
          */
         if ( 0 != (ret = dhcpv4_client_start(sd)) )
         {
-            CcspTraceError(("Dhcpv4 client start Failure \n"));
+            DHCPMGR_LOG_ERROR("Dhcpv4 client start Failure \n");
         }
 
         system("sysevent set current_ipv4_link_state up");
@@ -470,7 +469,7 @@ void dhcpv4_client_service_start(void *arg)
     #else
         if ( dhcpv4_client_start(sd) != 0 )
         {
-            CcspTraceError(("Dhcpv4 client start Failure \n"));
+            DHCPMGR_LOG_ERROR("Dhcpv4 client start Failure \n");
         }
     #endif
 }
@@ -492,10 +491,10 @@ void dhcpv4_client_service_stop
 )
 {
     UNREFERENCED_PARAMETER(arg);
-    CcspTraceInfo(("%s: BEGIN \n", __FUNCTION__));
+    DHCPMGR_LOG_INFO("%s: BEGIN \n", __FUNCTION__);
     if (dhcpv4_client_stop(sd->ifname) != 0)
     {
-        CcspTraceError(("Dhcpv4 client stop Failure \n"));
+        DHCPMGR_LOG_ERROR("Dhcpv4 client stop Failure \n");
     }
 }
 
@@ -516,15 +515,15 @@ void dhcpv4_client_service_restart
 )
 {
     UNREFERENCED_PARAMETER(arg);
-    CcspTraceInfo(("%s: BEGIN \n", __FUNCTION__));
+    DHCPMGR_LOG_INFO("%s: BEGIN \n", __FUNCTION__);
     if (dhcpv4_client_stop(sd->ifname) != 0)
     {
-        CcspTraceError(("DHCPv4 stop error \n"));
+        DHCPMGR_LOG_ERROR("DHCPv4 stop error \n");
     }
 
     if (dhcpv4_client_start(sd) != 0)
     {
-        CcspTraceError(("Dhcpv4 client start Error \n"));
+        DHCPMGR_LOG_ERROR("Dhcpv4 client start Error \n");
     }
 }
 
@@ -545,7 +544,7 @@ void dhcpv4_client_service_renew
 )
 {
     UNREFERENCED_PARAMETER(arg);
-    CcspTraceInfo(("%s: BEGIN \n", __FUNCTION__));
+    DHCPMGR_LOG_INFO("%s: BEGIN \n", __FUNCTION__);
     FILE *fp = NULL;
     char pid[BUFF_LEN_16];
     char line[BUFF_LEN_64], *cp;
@@ -553,10 +552,10 @@ void dhcpv4_client_service_renew
     get_dhcpc_pidfile(DHCPC_PID_FILE,sizeof(DHCPC_PID_FILE));
     if ((fp = fopen(DHCPC_PID_FILE, "rb")) == NULL)
     {
-        CcspTraceInfo(("Call dhcpv4 start \n"));
+        DHCPMGR_LOG_INFO("Call dhcpv4 start \n");
         if (dhcpv4_client_start(sd) != 0)
         {
-            CcspTraceError(("Error in starting Dhcpv4 client\n"));
+            DHCPMGR_LOG_ERROR("Error in starting Dhcpv4 client\n");
         }
         
     }    
@@ -574,7 +573,7 @@ void dhcpv4_client_service_renew
     
     if ((fp = fopen("/proc/uptime", "rb")) == NULL)
     {
-        CcspTraceError(("Error in opening /proc/uptime\n"));
+        DHCPMGR_LOG_ERROR("Error in opening /proc/uptime\n");
     } 
     else
     {
@@ -607,20 +606,20 @@ void dhcpv4_client_service_release
 )
 {
     UNREFERENCED_PARAMETER(arg);
-    CcspTraceInfo(("%s: BEGIN \n", __FUNCTION__));
+    DHCPMGR_LOG_INFO("%s: BEGIN \n", __FUNCTION__);
     FILE *fp;
     char pid[BUFF_LEN_16];
 
     get_dhcpc_pidfile(DHCPC_PID_FILE,sizeof(DHCPC_PID_FILE));
     if ((fp = fopen(DHCPC_PID_FILE, "rb")) == NULL)
     {
-        CcspTraceError(("Fopen failure \n"));
+        DHCPMGR_LOG_ERROR("Fopen failure \n");
         return;
     }
 
     if (fgets(pid, sizeof(pid), fp) != NULL && atoi(pid) > 0)
     {
-        CcspTraceInfo(("Trigger DHCP release \n"));
+        DHCPMGR_LOG_INFO("Trigger DHCP release \n");
         kill(atoi(pid), SIGUSR2); // triger DHCP release
     }
     fclose(fp);
@@ -644,7 +643,7 @@ int dhcpv4_client_start
     serv_dhcp *sd
 )
 {
-    CcspTraceInfo(("%s: BEGIN \n", __FUNCTION__));
+    DHCPMGR_LOG_INFO("%s: BEGIN \n", __FUNCTION__);
     int err = 0;
     char l_cErouter_Mode[BUFF_LEN_16] = {0}, l_cWan_if_name[BUFF_LEN_16] = {0}, cEthWanMode[BUFF_LEN_8] = {0};
     int pid = -1;
@@ -653,7 +652,7 @@ int dhcpv4_client_start
     ifl_get_event( "map_transport_mode", mapt_mode, sizeof(mapt_mode));
     if (strcmp(mapt_mode, "MAPT") == 0)
     {
-        CcspTraceInfo(("%s: Do not start dhcpv4 client when mapt is already configured\n", __FUNCTION__));
+        DHCPMGR_LOG_INFO("%s: Do not start dhcpv4 client when mapt is already configured\n", __FUNCTION__);
         return -1;
     }
 
@@ -672,10 +671,10 @@ int dhcpv4_client_start
     {
         if (0 < (pid = pid_of("udhcpc", NULL)))
         {
-            CcspTraceInfo(("udhcpc is already running , terminating it to restart it"));
+            DHCPMGR_LOG_INFO("udhcpc is already running , terminating it to restart it");
             kill(pid, SIGTERM);
         }
-        CcspTraceInfo(("RTMOD = %d \n", sd->rtmod));
+        DHCPMGR_LOG_INFO("RTMOD = %d \n", sd->rtmod);
         /*TCHXB6 is configured to use udhcpc */
         #if defined(_PLATFORM_IPQ_)
             err = v_secure_system("/sbin/udhcpc -t 5 -n -i %s -p %s -s /etc/udhcpc.script",
@@ -684,7 +683,7 @@ int dhcpv4_client_start
             /* DHCP client didn't able to get Ipv4 configurations */
             if ( -1 == access(DHCPC_PID_FILE, F_OK) )
             {
-                CcspTraceInfo(("WAN service not able to get IPv4 configuration in 5 lease try"));
+                DHCPMGR_LOG_INFO("WAN service not able to get IPv4 configuration in 5 lease try");
             }
         #elif defined (_COSA_INTEL_XB3_ARM_) || defined (INTEL_PUMA7)
         {
@@ -693,7 +692,7 @@ int dhcpv4_client_start
 
             if( 0 == strcmp(udhcpflag,"true"))
             {
-                CcspTraceInfo(("UDHCPC Enable = TRUE \n"));
+                DHCPMGR_LOG_INFO("UDHCPC Enable = TRUE \n");
                 char options[VENDOR_OPTIONS_LENGTH];
                 if ((err = dhcp_parse_vendor_info(options, VENDOR_OPTIONS_LENGTH,cEthWanMode)) == 0)
                 {
@@ -758,7 +757,7 @@ int dhcpv4_client_start
 
         if (err != 0)
         {
-            CcspTraceError(("Failed to start udhcp"));
+            DHCPMGR_LOG_ERROR("Failed to start udhcp");
         }
     }
     return err == 0 ? 0 : -1;
@@ -780,7 +779,7 @@ int dhcpv4_client_stop
     const char *ifname
 )
 {
-    CcspTraceInfo(("%s: BEGIN \n", __FUNCTION__));
+    DHCPMGR_LOG_INFO("%s: BEGIN \n", __FUNCTION__);
     FILE *fp;
     char pid_str[BUFF_LEN_16];
     int pid = -1;

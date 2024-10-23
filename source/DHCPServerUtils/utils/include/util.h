@@ -36,6 +36,7 @@
 #ifndef __SERV_UTIL__
 #define __SERV_UTIL__
 #include <sysevent/sysevent.h>
+#include "ccsp_trace.h"
 
 #define SE_SERV         "127.0.0.1"
 
@@ -60,5 +61,7 @@ int pid_of(const char *name, const char *keyword);
                               CcspTraceNotice (("%s - "format"\n", (char *)__FUNCTION__, ##__VA_ARGS__))
 #define DHCPMGR_LOG_WARNING(format, ...)  \
                               CcspTraceWarning(("%s - "format"\n", (char *)__FUNCTION__, ##__VA_ARGS__))
+#define DHCPMGR_LOG_DEBUG(format, ...)  \
+                              CcspTraceDebug(("%s - "format"\n", (char *)__FUNCTION__, ##__VA_ARGS__))
 
 #endif /* __SW_UTIL__ */

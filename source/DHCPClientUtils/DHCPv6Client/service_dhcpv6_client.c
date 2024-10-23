@@ -77,28 +77,28 @@ static inline void remove_file(char *tb_removed_file)
         l_iRemove_Res = remove(tb_removed_file);
         if (0 != l_iRemove_Res)
         {
-            CcspTraceInfo(("SERVICE_DHCP6C : remove of %s file is not successful error is:%d\n", tb_removed_file, errno));
+            DHCPMGR_LOG_INFO("SERVICE_DHCP6C : remove of %s file is not successful error is:%d\n", tb_removed_file, errno);
         }
     }
     else
     {
-        CcspTraceInfo(("SERVICE_DHCP6C : Requested File %s is not available\n", tb_removed_file));
+        DHCPMGR_LOG_INFO("SERVICE_DHCP6C : Requested File %s is not available\n", tb_removed_file);
     }
 
 }
 
 void deinit_dhcpv6_client ()
 {
-    CcspTraceInfo(("SERVICE_DHCP6C : Client deinit started\n"));
+    DHCPMGR_LOG_INFO("SERVICE_DHCP6C : Client deinit started\n");
 }
 
 void init_dhcpv6_client ()
 {
-    CcspTraceInfo(("SERVICE_DHCP6C : Cleint event registration started\n"));
+    DHCPMGR_LOG_INFO("SERVICE_DHCP6C : Cleint event registration started\n");
 
     if (IFL_SUCCESS != ifl_init_ctx(DHCPV6C_CALLER_CTX, IFL_CTX_DYNAMIC))
     {
-        CcspTraceError(("Failed to init ifl ctx for %s", DHCPV6C_CALLER_CTX));
+        DHCPMGR_LOG_ERROR("Failed to init ifl ctx for %s", DHCPV6C_CALLER_CTX);
         deinit_dhcpv6_client ();
     }
 
@@ -108,12 +108,12 @@ void init_dhcpv6_client ()
     ifl_register_event_handler( BRIDGE_MODE, IFL_EVENT_NOTIFY_FALSE, DHCPV6C_CALLER_CTX, dhcpv6_client_service_update);
     ifl_register_event_handler( DHCPV6_CLIENT_START, IFL_EVENT_NOTIFY_TRUE, DHCPV6C_CALLER_CTX, dhcpv6_client_service_enable);
     ifl_register_event_handler( DHCPV6_CLIENT_STOP, IFL_EVENT_NOTIFY_TRUE, DHCPV6C_CALLER_CTX, dhcpv6_client_service_disable);
-    CcspTraceInfo(("SERVICE_DHCP6C : Cleint event registration completed\n"));
+    DHCPMGR_LOG_INFO("SERVICE_DHCP6C : Cleint event registration completed\n");
 }
 
 void dhcpv6_client_service_start ()
 {
-    CcspTraceInfo(("SERVICE_DHCP6C : SERVICE START\n"));
+    DHCPMGR_LOG_INFO("SERVICE_DHCP6C : SERVICE START\n");
 
     char l_cLastErouterMode[BUFF_LEN_8] = {0}, l_cWanLinkStatus[BUFF_LEN_16] = {0}, l_cWanIfname[BUFF_LEN_16] = {0},
          l_cBridgeMode[BUFF_LEN_16] = {0}, l_cWanState[BUFF_LEN_16] = {0}, l_cDibblerEnable[BUFF_LEN_16] = {0},
@@ -123,7 +123,7 @@ void dhcpv6_client_service_start ()
 
     if(0 != mkdir(DIBBLER_DEBUG_DIR, 0777))
     {
-        CcspTraceInfo(("SERVICE_DHCP6C : Failed to create %s Directory\n",DIBBLER_DEBUG_DIR));
+        DHCPMGR_LOG_INFO("SERVICE_DHCP6C : Failed to create %s Directory\n",DIBBLER_DEBUG_DIR);
     }
 
     syscfg_get(NULL, "last_erouter_mode", l_cLastErouterMode, sizeof(l_cLastErouterMode));
@@ -137,7 +137,7 @@ void dhcpv6_client_service_start ()
     FILE *fp = fopen(DHCPV6_PID_FILE,"r");
     if (fp != NULL)
     {
-        CcspTraceInfo(("SERVICE_DHCP6C : %s is available\n", DHCPV6_PID_FILE));
+        DHCPMGR_LOG_INFO("SERVICE_DHCP6C : %s is available\n", DHCPV6_PID_FILE);
         int pid = -1;
         pid = pid_of(DHCPV6_BINARY, NULL);
         if (pid < 0)
@@ -146,7 +146,7 @@ void dhcpv6_client_service_start ()
             int size = ftell(fp);
             if (size != 0)
             {
-                CcspTraceError(("SERVICE_DHCP6C : file %s is available and not empty, but processes is not running, triggering dhcpv6_client_service_stop \n", DHCPV6_PID_FILE));
+                DHCPMGR_LOG_ERROR("SERVICE_DHCP6C : file %s is available and not empty, but processes is not running, triggering dhcpv6_client_service_stop \n", DHCPV6_PID_FILE);
                 dhcpv6_client_service_stop();
             }
         }
@@ -154,27 +154,27 @@ void dhcpv6_client_service_start ()
     }
     if ((strncmp(l_cLastErouterMode, "2", 1)) && (strncmp(l_cLastErouterMode, "3", 1)))
     {
-        CcspTraceInfo(("SERVICE_DHCP6C : Non IPv6 Mode, service_stop\n"));
+        DHCPMGR_LOG_INFO("SERVICE_DHCP6C : Non IPv6 Mode, service_stop\n");
         dhcpv6_client_service_stop();
     }
     else if ((!strncmp(l_cWanLinkStatus, "down", 4)))
     {
-        CcspTraceInfo(("SERVICE_DHCP6C : WAN LINK is Down, service_stop\n"));
+        DHCPMGR_LOG_INFO("SERVICE_DHCP6C : WAN LINK is Down, service_stop\n");
         dhcpv6_client_service_stop();
     }
     else if (strlen(l_cWanIfname) == 0)
     {
-        CcspTraceInfo(("SERVICE_DHCP6C : WAN Interface not configured, service_stop\n"));
+        DHCPMGR_LOG_INFO("SERVICE_DHCP6C : WAN Interface not configured, service_stop\n");
         dhcpv6_client_service_stop();
     }
     else if ((!strncmp(l_cBridgeMode, "1", 1)))
     {
-        CcspTraceInfo(("SERVICE_DHCP6C : BridgeMode, service_stop\n"));
+        DHCPMGR_LOG_INFO("SERVICE_DHCP6C : BridgeMode, service_stop\n");
         dhcpv6_client_service_stop();
     }
     else if ((!strncmp(l_cWanState, "stopped", 7)))
     {
-        CcspTraceInfo(("SERVICE_DHCP6C : WAN state stopped, service_stop\n"));
+        DHCPMGR_LOG_INFO("SERVICE_DHCP6C : WAN state stopped, service_stop\n");
         dhcpv6_client_service_stop();
     }
     else if (access(DHCPV6_PID_FILE, F_OK) != 0)
@@ -183,21 +183,21 @@ void dhcpv6_client_service_start ()
             int fd = creat(DHCP6C_PROGRESS_FILE, S_IWUSR | S_IWGRP | S_IWOTH);
             if (fd == -1) {
                 // Handling error creating file
-                CcspTraceError(("SERVICE_DHCP6C: Failed to create %s: %s\n", DHCP6C_PROGRESS_FILE, strerror(errno)));
+                DHCPMGR_LOG_ERROR("SERVICE_DHCP6C: Failed to create %s: %s\n", DHCP6C_PROGRESS_FILE, strerror(errno));
             
             } else {
-                CcspTraceInfo(("SERVICE_DHCP6C : Starting DHCPv6 Client from service_dhcpv6_client binary\n"));
+                DHCPMGR_LOG_INFO("SERVICE_DHCP6C : Starting DHCPv6 Client from service_dhcpv6_client binary\n");
                 close(fd);
         }
 
 #if defined(_COSA_INTEL_XB3_ARM_) || defined(INTEL_PUMA7)
             if (strncmp(l_cDibblerEnable, "true", 4))
             {
-                CcspTraceInfo(("SERVICE_DHCP6C : Starting ti_dhcp6c\n"));
+                DHCPMGR_LOG_INFO("SERVICE_DHCP6C : Starting ti_dhcp6c\n");
                 ret = v_secure_system("ti_dhcp6c -i %s -p %s -plugin /fss/gw/lib/libgw_dhcp6plg.so",l_cWanIfname,DHCPV6_PID_FILE);
                 if(ret !=0)
                 {
-                    CcspTraceError(("Failure in executing command via v_secure_system. ret val: %d \n", ret));
+                    DHCPMGR_LOG_ERROR("Failure in executing command via v_secure_system. ret val: %d \n", ret);
                 }
             }
             else
@@ -213,35 +213,35 @@ void dhcpv6_client_service_start ()
 #else
             if(0 != mkdir(DIBBLER_INFO_DIR, 0777))
             {
-                CcspTraceInfo(("SERVICE_DHCP6C : Failed to create %s Directory\n",DIBBLER_INFO_DIR));
+                DHCPMGR_LOG_INFO("SERVICE_DHCP6C : Failed to create %s Directory\n",DIBBLER_INFO_DIR);
             }
             //Dibbler-init is called to set the pre-configuration for dibbler
-            CcspTraceInfo(("SERVICE_DHCP6C :%s dibbler-init.sh Called \n", __func__));
+            DHCPMGR_LOG_INFO("SERVICE_DHCP6C :%s dibbler-init.sh Called \n", __func__);
             ret = v_secure_system("/lib/rdk/dibbler-init.sh");
             if(ret !=0)
             {
-                CcspTraceError(("Failure in executing command via v_secure_system. ret val: %d \n", ret));
+                DHCPMGR_LOG_ERROR("Failure in executing command via v_secure_system. ret val: %d \n", ret);
             }
-            CcspTraceInfo(("SERVICE_DHCP6C :%s Dibbler Client Started \n", __func__));
+            DHCPMGR_LOG_INFO("SERVICE_DHCP6C :%s Dibbler Client Started \n", __func__);
             ret = v_secure_system("%s start",DHCPV6_BINARY);
             if(ret !=0)
             {
-                CcspTraceError(("Failure in executing command via v_secure_system. ret val: %d \n", ret));
+                DHCPMGR_LOG_ERROR("Failure in executing command via v_secure_system. ret val: %d \n", ret);
             }
-            CcspTraceInfo(("SERVICE_DHCP6C :%s Dibbler Client Started Binary called is %s\n", __func__, DHCPV6_BINARY));
+            DHCPMGR_LOG_INFO("SERVICE_DHCP6C :%s Dibbler Client Started Binary called is %s\n", __func__, DHCPV6_BINARY);
 #endif
             remove_file(DHCP6C_PROGRESS_FILE);
         }
         else
         {
-           CcspTraceInfo(("SERVICE_DHCP6C : DHCPv6 Client process start in progress, not starting one more\n"));
+           DHCPMGR_LOG_INFO("SERVICE_DHCP6C : DHCPv6 Client process start in progress, not starting one more\n");
         }
     }
 }
 
 void dhcpv6_client_service_stop ()
 {
-    CcspTraceInfo(("SERVICE_DHCP6C : SERVICE STOP\n"));
+    DHCPMGR_LOG_INFO("SERVICE_DHCP6C : SERVICE STOP\n");
     char l_cDibblerEnable[BUFF_LEN_8] = {0}, l_cDSLiteEnable[BUFF_LEN_8] = {0};
     int ret = 0;
 
@@ -264,18 +264,18 @@ void dhcpv6_client_service_stop ()
                 snprintf(l_cCommand, sizeof(l_cCommand),"ip -d link show erouter0 | grep state | awk '/erouter0/{print $9}'");
                 copy_command_output(l_cCommand, l_cErouter0Status, sizeof(l_cErouter0Status));
                 l_cErouter0Status[strlen(l_cErouter0Status)] = '\0';
-                CcspTraceInfo(("SERVICE_DHCP6C : l_cErouter0Status is %s\n",l_cErouter0Status));
+                DHCPMGR_LOG_INFO("SERVICE_DHCP6C : l_cErouter0Status is %s\n",l_cErouter0Status);
 
                 if (strncmp(l_cErouter0Status, "UP", 2))
                 {
                    ret = interface_up("erouter0");
                    if(ret !=0)
                    {
-                       CcspTraceError(("Failed to up erouter0 : ret val: %d \n", ret));
+                       DHCPMGR_LOG_ERROR("Failed to up erouter0 : ret val: %d \n", ret);
                    }
                 }
             }
-            CcspTraceInfo(("SERVICE_DHCP6C : Sending SIGTERM to %s\n",DHCPV6_PID_FILE));
+            DHCPMGR_LOG_INFO("SERVICE_DHCP6C : Sending SIGTERM to %s\n",DHCPV6_PID_FILE);
 
             pid = pid_of(DHCPV6_BINARY, NULL);
             if (pid > 0)
@@ -301,10 +301,10 @@ void dhcpv6_client_service_stop ()
     }
 #else
     ret = v_secure_system("%s stop",DHCPV6_BINARY);
-    CcspTraceInfo(("SERVICE_DHCP6C : Stopping dhcpv6 client\n"));
+    DHCPMGR_LOG_INFO("SERVICE_DHCP6C : Stopping dhcpv6 client\n");
     if(ret !=0)
     {
-        CcspTraceError(("Failure in executing command via v_secure_system. ret val: %d \n", ret));
+        DHCPMGR_LOG_ERROR("Failure in executing command via v_secure_system. ret val: %d \n", ret);
     }
     remove_file(DHCPV6_PID_FILE);
 #endif
@@ -312,7 +312,7 @@ void dhcpv6_client_service_stop ()
 
 void dhcpv6_client_service_update()
 {
-    CcspTraceInfo(("SERVICE_DHCP6C : Inside dhcpv6_client_service_update\n"));
+    DHCPMGR_LOG_INFO("SERVICE_DHCP6C : Inside dhcpv6_client_service_update\n");
 
     char l_cDhcpv6cEnabled[BUFF_LEN_8] = {0};
 
@@ -330,7 +330,7 @@ void dhcpv6_client_service_update()
 
 void dhcpv6_client_service_enable()
 {
-    CcspTraceInfo(("SERVICE_DHCP6C : SERVICE ENABLE\n"));
+    DHCPMGR_LOG_INFO("SERVICE_DHCP6C : SERVICE ENABLE\n");
 
     char l_cDhcpv6cEnabled[BUFF_LEN_8] = {0};
     ifl_get_event( "dhcpv6c_enabled", l_cDhcpv6cEnabled, sizeof(l_cDhcpv6cEnabled));
@@ -341,20 +341,20 @@ void dhcpv6_client_service_enable()
 
 void dhcpv6_client_service_disable()
 {
-    CcspTraceInfo(("SERVICE_DHCP6C : SERVICE DISABLE\n"));
+    DHCPMGR_LOG_INFO("SERVICE_DHCP6C : SERVICE DISABLE\n");
 
     char l_cDhcpv6cEnabled[BUFF_LEN_8] = {0};
     ifl_get_event( "dhcpv6c_enabled", l_cDhcpv6cEnabled, sizeof(l_cDhcpv6cEnabled));
 
     if (strncmp(l_cDhcpv6cEnabled, "1", 1))
     {
-        CcspTraceInfo(("SERVICE_DHCP6C : DHCPv6 Client is not enabled\n"));
+        DHCPMGR_LOG_INFO("SERVICE_DHCP6C : DHCPv6 Client is not enabled\n");
         return;
     }
 
     ifl_set_event( "dhcpv6c_enabled", "0");
 
-    CcspTraceInfo(("Removing file: %s\n", DHCP6C_PROGRESS_FILE));
+    DHCPMGR_LOG_INFO("Removing file: %s\n", DHCP6C_PROGRESS_FILE);
     remove_file(DHCP6C_PROGRESS_FILE);
 
     dhcpv6_client_service_stop();
