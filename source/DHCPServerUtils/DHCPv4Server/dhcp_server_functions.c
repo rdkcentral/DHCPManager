@@ -533,11 +533,44 @@ void prepare_dhcp_options_wan_dns()
         remove_file(l_cLocalDhcpOpt);
 }
 
+void get_ipv4_dns(char *cNsServer4)
+{
+    char l_cLine[255] = {0};
+    FILE *l_fResolv_Conf = NULL;
+
+    cNsServer4[0] = '\0';
+
+    l_fResolv_Conf = fopen(RESOLV_CONF, "r");
+    if (NULL != l_fResolv_Conf)
+    {
+        while(fgets(l_cLine, 80, l_fResolv_Conf) != NULL )
+        {
+            char *property = NULL;
+            if (NULL != (property = strstr(l_cLine, "nameserver ")))
+            {
+                property = property + strlen("nameserver ");
+                if (strstr(property, "."))
+                {
+                    //strlen - 1 to strip \n
+                    strncpy(cNsServer4, property, (strlen(property) - 1));
+                    break;
+                }
+            }
+        }
+        fclose(l_fResolv_Conf);
+    }
+    else
+    {
+        DHCPMGR_LOG_ERROR("opening of %s file failed with error:%d", RESOLV_CONF, errno);
+    }
+    DHCPMGR_LOG_INFO("Nameserver IPv4 address is:%s", cNsServer4);
+}
+
 void prepare_whitelist_urls(FILE *fp_local_dhcp_conf)
 {
         char l_cRedirect_Url[64] = {0}, l_cCloud_Personal_Url[64] = {0}, l_cUrl[64] = {0};
         char l_cErouter0_Ipv4Addr[16] = {0}, l_cNsServer4[16] = {0}, l_cLine[255] = {0};
-        FILE *l_fStatic_Urls = NULL, *l_fResolv_Conf = NULL;
+        FILE *l_fStatic_Urls = NULL;
     char *l_cRemoveHttp = NULL;
 
     // Redirection URL can be get from DML
@@ -587,32 +620,7 @@ void prepare_whitelist_urls(FILE *fp_local_dhcp_conf)
         iface_get_ipv4addr(WAN_IF_NAME, l_cErouter0_Ipv4Addr, sizeof(l_cErouter0_Ipv4Addr));
     if (0 != l_cErouter0_Ipv4Addr[0])
         {
-        //TODO see if getting IPv4 name server can be moved to a function
-        l_fResolv_Conf = fopen(RESOLV_CONF, "r");
-        if (NULL != l_fResolv_Conf)
-        {
-                   while(fgets(l_cLine, 80, l_fResolv_Conf) != NULL )
-            {
-                char *property = NULL;
-                if (NULL != (property = strstr(l_cLine, "nameserver ")))
-                {
-                         property = property + strlen("nameserver ");
-                    if (strstr(property, "."))
-                    {
-                         //strlen - 1 to strip \n
-                        strncpy(l_cNsServer4, property, (strlen(property) - 1));
-                        break;
-                    }
-                }
-            }
-            fclose(l_fResolv_Conf);
-        }
-        else
-        {
-                  DHCPMGR_LOG_ERROR("opening of %s file failed with error:%d", RESOLV_CONF, errno);
-        }
-        DHCPMGR_LOG_INFO("Nameserver IPv4 address is:%s", l_cNsServer4);
-        //TODO move to function if possible
+            get_ipv4_dns(l_cNsServer4);
     }
     // erouter0 doesnt have IPv4 Address not doing anything
     // TODO: ipv6 DNS whitelisting in case of ipv6 only clients
