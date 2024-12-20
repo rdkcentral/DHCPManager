@@ -2905,6 +2905,9 @@ CosaDmlDhcpv6cGetEnabled
     BOOL dibblerEnabled = FALSE;
 #elif defined(_PLATFORM_RASPBERRYPI_) && defined (FEATURE_RDKB_WAN_MANAGER)
     BOOL dibblerEnabled = FALSE;
+#elif defined(_PLATFORM_BANANAPI_R4_) && defined (FEATURE_RDKB_WAN_MANAGER)
+    BOOL dibblerEnabled = FALSE;
+    
 #endif
 
 // For XB3, AXB6 if dibbler flag enabled, check dibbler-client process status

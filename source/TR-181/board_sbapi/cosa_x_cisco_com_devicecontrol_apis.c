@@ -212,7 +212,7 @@ void* WebGuiRestart( void *arg )
 }
 
 
-#if defined(_PLATFORM_RASPBERRYPI_) || defined(_PLATFORM_TURRIS_)
+#if defined(_PLATFORM_RASPBERRYPI_) || defined(_PLATFORM_TURRIS_)  || defined(_PLATFORM_BANANAPI_R4_)
 static int
 DmSetBool(const char *param, BOOL value)
 {
@@ -1083,7 +1083,7 @@ CosaDmlLanMngm_SetConf(ULONG ins, PCOSA_DML_LAN_MANAGEMENT pLanMngm)
     }
 #endif
 
-#if defined(_PLATFORM_RASPBERRYPI_) || defined(_PLATFORM_TURRIS_)
+#if defined(_PLATFORM_RASPBERRYPI_) || defined(_PLATFORM_TURRIS_) || defined(_PLATFORM_BANANAPI_R4_)
     char buf[7] = {0};
     BOOL value;
     snprintf(buf,sizeof(buf),"%d",bridge_info.mode);
