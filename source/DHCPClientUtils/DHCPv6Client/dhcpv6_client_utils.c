@@ -1,0 +1,168 @@
+/*
+ * If not stated otherwise in this file or this component's LICENSE file the
+ * following copyright and licenses apply:
+ *
+ * Copyright 2020 RDK Management
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+*/
+
+#include "dibbler_client_utils.h"
+#include <sysevent/sysevent.h>
+#include <syscfg/syscfg.h>
+#include <string.h>
+
+#define LOCALHOST         "127.0.0.1"
+#define DHCP_SYSEVENT_NAME "dhcp_evt_handler"
+
+token_t dhcp_sysevent_token;
+int dhcp_sysevent_fd;
+
+#ifndef CONFIGURABLE_OPTIONS
+static int get_dhcpv6_opt_list (dhcp_opt_list ** req_opt_list, dhcp_opt_list ** send_opt_list)
+{
+    char dslite_enable[BUFLEN_16] = {0};
+    char wanoe_enable[BUFLEN_16] = {0};
+
+    if ((req_opt_list == NULL) || (send_opt_list == NULL))
+    {
+        DBG_PRINT ("%s %d: Invalid args..\n", __FUNCTION__, __LINE__);
+        return FAILURE;
+    }
+
+    //syscfg for eth_wan_enabled
+    if (syscfg_get(NULL, "eth_wan_enabled", wanoe_enable, sizeof(wanoe_enable)) == 0)
+    {
+        if (strcmp(wanoe_enable, "true") == 0)
+        {
+            //ToDo, eth_wan_enabled is not being be used by any platform at moment ,
+            //Comcast Platform is not affected by this change as currently comcast don't use
+           //Wan Interface State Machine.
+        }
+    }
+    else
+    {
+        DBG_PRINT("Failed to get eth_wan_enabled \n");
+    }
+
+    //syscfg for dslite_enable and sysevent for dslite_enabled
+    if (syscfg_get(NULL, "dslite_enable", dslite_enable, sizeof(dslite_enable)) == 0)
+    {
+        if (strcmp(dslite_enable, "true") == 0)
+        {
+            memset(dslite_enable, 0, BUFLEN_16);
+            sysevent_get(dhcp_sysevent_fd, dhcp_sysevent_token, "dslite_enabled", dslite_enable, sizeof(dslite_enable));
+            if (strcmp(dslite_enable, "true") == 0)
+            {
+                //ToDo, dslite not yet implemented, so as of now no DHCPv6 Options.
+            }
+        }
+    }
+    else
+    {
+        DBG_PRINT("Failed to get dslite_enable \n");
+    }
+/* FIXME : Platform Hall Call in Future Reference
+#ifndef __PLATFORM_HAL_H__
+    if (platform_hal_GetDhcpv6_Options(req_opt_list, send_opt_list) == FAILURE)
+    {
+        DBG_PRINT("%s %d: failed to get option list from platform hal\n", __FUNCTION__, __LINE__);
+        return FAILURE;
+    }
+#endif
+*/
+    return SUCCESS;
+
+}
+#endif
+
+pid_t return_dhcp6_client_pid (){
+
+#ifdef DHCPV6_CLIENT_DIBBLER
+        return return_dibbler_pid();
+#endif
+        return 0;
+}
+
+/*
+ * start_dhcpv6_client ()
+ * @description: This API will build dhcp request/send options and start dibbler client program.
+ * @params     : input parameter to pass interface specific arguments
+ * @return     : returns the pid of the dibbler client program else return error code on failure
+ *
+ */
+pid_t start_dhcpv6_client (dhcp_params * params, dhcp_opt_list * req_opt_list, dhcp_opt_list * send_opt_list)
+{
+    char * sysevent_name = DHCP_SYSEVENT_NAME;
+
+    if (params == NULL)
+    {
+        DBG_PRINT("%s %d: Invalid args..\n", __FUNCTION__, __LINE__);
+        return 0;
+    }
+
+    pid_t pid = 0;
+    pid = get_process_pid(DIBBLER_CLIENT, params->ifname, false);
+    if (pid > 0)
+    {
+        DBG_PRINT("%s %d: another instance of %s running on %s \n", __FUNCTION__, __LINE__, DIBBLER_CLIENT, params->ifname);
+        return FAILURE;
+    }
+
+    dhcp_sysevent_fd =  sysevent_open(LOCALHOST, SE_SERVER_WELL_KNOWN_PORT, SE_VERSION, sysevent_name, &dhcp_sysevent_token);
+    if (dhcp_sysevent_fd < 0)
+    {
+        DBG_PRINT("%s %d: Fail to open sysevent.\n", __FUNCTION__, __LINE__);
+    }
+
+#ifndef CONFIGURABLE_OPTIONS
+    DBG_PRINT("%s %d: Collecting DHCP GET/SEND Request\n", __FUNCTION__, __LINE__);
+    if ((params->ifType == WAN_LOCAL_IFACE) && (get_dhcpv6_opt_list(&req_opt_list, &send_opt_list)) == FAILURE)
+    {
+        DBG_PRINT("%s %d: failed to get option list from platform hal\n", __FUNCTION__, __LINE__);
+        sysevent_close(dhcp_sysevent_fd, dhcp_sysevent_token);
+        return pid;
+    }
+#endif
+
+    // building args and starting dhcpv4 client
+    DBG_PRINT("%s %d: Starting Dibbler Clients\n", __FUNCTION__, __LINE__);
+#ifdef DHCPV6_CLIENT_DIBBLER
+    pid =  start_dibbler (params, req_opt_list, send_opt_list);
+#endif
+    //exit part
+    DBG_PRINT("%s %d: freeing all allocated resources\n", __FUNCTION__, __LINE__);
+    sysevent_close(dhcp_sysevent_fd, dhcp_sysevent_token);
+
+    return pid;
+}
+
+/*
+ * stop_dhcpv6_client ()
+ * @description: This API will stop dhcpv6 client program for interface passed in paramter.
+ * @params     : input parameter to pass interface specific arguments
+ * @return     : returns SUCCESS if killed else returns FAILURE
+ *
+ */
+int stop_dhcpv6_client (dhcp_params * params)
+{
+    if (params == NULL)
+    {
+        DBG_PRINT("%s %d: Invalid args..\n", __FUNCTION__, __LINE__);
+        return 0;
+    }
+
+    return stop_dibbler (params);
+
+}
+
