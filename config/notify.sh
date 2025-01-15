@@ -1,5 +1,6 @@
+#!/bin/sh
 ##########################################################################
-# If not stated otherwise in this file or this component's Licenses.txt
+# If not stated otherwise in this file or this component's LICENSE
 # file the following copyright and licenses apply:
 #
 # Copyright 2024 Deutsche Telekom AG.
@@ -16,7 +17,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 ##########################################################################
-#!/bin/sh
 
 if [ "$v6Routes_Change" == "1" ]; then
     if [ "$DEFAULT_IPV6_ROUTES_COUNT" -gt 0 ]; then # Case when ipv6 default routes present in gateway

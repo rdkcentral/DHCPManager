@@ -198,33 +198,37 @@ static void daemonize(void) {
              break;
         case -1:
               // Error
-                DHCPMGR_LOG_INFO("Error daemonizing (fork)! %d - %s\n", errno, strerror(errno));
+                DHCPMGR_LOG_INFO("error d(a)emonizing (fork)! %d - %s\n", errno, strerror(errno));
                 exit(0);
                 break;
         default:
                 _exit(0);
         }
 
+        /*creates a session and sets the process group ID */
         if (setsid() < 0) {
-                DHCPMGR_LOG_INFO("Error demonizing (setsid)! %d - %s\n", errno, strerror(errno));
+                DHCPMGR_LOG_INFO("error d(a)emonizing (setsid)! %d - %s\n", errno, strerror(errno));
                 exit(0);
         }
 
-//      chdir("/");
-
-
 #ifndef  _DEBUG
         int fd;
+
+        /*Duplicate an Null File Descriptor to Standard Input file descriptor */
         fd = open("/dev/null", O_RDONLY);
         if (fd != 0) {
                 dup2(fd, 0);
                 close(fd);
         }
+
+        /*Duplicate an Null File Descriptor to Standard Output file descriptor */
         fd = open("/dev/null", O_WRONLY);
         if (fd != 1) {
                 dup2(fd, 1);
                 close(fd);
         }
+
+        /*Duplicate an Null File Descriptor to Standard Error file descriptor */
         fd = open("/dev/null", O_WRONLY);
         if (fd != 2) {
                 dup2(fd, 2);
