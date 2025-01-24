@@ -246,7 +246,6 @@ static int update_pValue (char *pValue, PULONG pulSize, char *str)
     return:     TRUE if succeeded.
 
 **********************************************************************/
-#ifndef FEATURE_RDKB_WAN_MANAGER
 BOOL
 DHCPv4_GetParamBoolValue
 (
@@ -3478,7 +3477,6 @@ ReqOption_Rollback
 
     return returnStatus;
 }
-#endif
 /***********************************************************************
 
  APIs for Object:

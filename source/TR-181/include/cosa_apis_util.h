@@ -27,7 +27,6 @@ extern ANSC_HANDLE bus_handle;
 #define ETHERNET_INTERFACE_OBJECT "Device.Ethernet.Interface"
 #define ETH_COMPONENT_NAME "eRT.com.cisco.spvtg.ccsp.ethagent"
 #define ETH_DBUS_PATH "/com/cisco/spvtg/ccsp/ethagent"
-static ANSC_STATUS RdkBus_GetParamValues( char *pComponent, char *pBus, char *pParamName, char *pReturnVal );
 #endif
 
 #define PARTNERS_INFO_FILE              "/nvram/partners_defaults.json"

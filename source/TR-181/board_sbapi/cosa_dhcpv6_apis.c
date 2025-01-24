@@ -2558,7 +2558,12 @@ iface wan0 {
 #define CLIENT_CONF_LOCATION  "/etc/dibbler/client.conf"
 #define TMP_SERVER_CONF "/tmp/.dibbler_server_conf"
 #define SERVER_CONF_LOCATION  "/etc/dibbler/server.conf"
+
+#ifdef FEATURE_RDKB_WAN_MANAGER
+#define CLIENT_NOTIFY "/lib/rdk/client-notify.sh"
+#else
 #define CLIENT_NOTIFY "/etc/dibbler/client-notify.sh"
+#endif
 
 static int _prepare_client_conf(PCOSA_DML_DHCPCV6_CFG       pCfg)
 {
@@ -2905,9 +2910,6 @@ CosaDmlDhcpv6cGetEnabled
     BOOL dibblerEnabled = FALSE;
 #elif defined(_PLATFORM_RASPBERRYPI_) && defined (FEATURE_RDKB_WAN_MANAGER)
     BOOL dibblerEnabled = FALSE;
-#elif defined(_PLATFORM_BANANAPI_R4_) && defined (FEATURE_RDKB_WAN_MANAGER)
-    BOOL dibblerEnabled = FALSE;
-    
 #endif
 
 // For XB3, AXB6 if dibbler flag enabled, check dibbler-client process status
@@ -8624,14 +8626,12 @@ dhcpv6c_dbg_thrd(void * in)
                        action, IfaceName, v6addr,    iana_iaid, iana_t1, iana_t2, iana_pretm, iana_vldtm,
                        v6pref, preflen, iapd_iaid, iapd_t1, iapd_t2, iapd_pretm, iapd_vldtm,
                        opt95_dBuf);
-	    DHCPMGR_LOG_DEBUG("%s,%d: dataLen = %d", __FUNCTION__, __LINE__, dataLen);
 	    if (dataLen == 16)
 #else
             dataLen = sscanf(p, "%63s %63s %s %s %s %s %s %63s %s %s %s %s %s %s %s",
                        action, v6addr,    iana_iaid, iana_t1, iana_t2, iana_pretm, iana_vldtm,
                        v6pref, preflen, iapd_iaid, iapd_t1, iapd_t2, iapd_pretm, iapd_vldtm,
                        opt95_dBuf);
-	    DHCPMGR_LOG_DEBUG("%s,%d: dataLen = %d", __FUNCTION__, __LINE__, dataLen);
 	    if (dataLen == 15)
 #endif
 #else // FEATURE_MAPT
@@ -8639,13 +8639,11 @@ dhcpv6c_dbg_thrd(void * in)
             dataLen = sscanf(p, "%63s %63s %63s %s %s %s %s %s %63s %s %s %s %s %s %s",
                        action, IfaceName, v6addr,    iana_iaid, iana_t1, iana_t2, iana_pretm, iana_vldtm,
                        v6pref, preflen, iapd_iaid, iapd_t1, iapd_t2, iapd_pretm, iapd_vldtm);
-	    DHCPMGR_LOG_DEBUG("%s,%d: dataLen = %d", __FUNCTION__, __LINE__, dataLen);
 	    if (dataLen == 15)
 #else
             dataLen = sscanf(p, "%63s %63s %s %s %s %s %s %63s %s %s %s %s %s %s", 
                        action, v6addr,    iana_iaid, iana_t1, iana_t2, iana_pretm, iana_vldtm,
                        v6pref, preflen, iapd_iaid, iapd_t1, iapd_t2, iapd_pretm, iapd_vldtm);
-	    DHCPMGR_LOG_DEBUG("%s,%d: dataLen = %d", __FUNCTION__, __LINE__, dataLen);
 	    if (dataLen == 14)
 #endif
 #endif
@@ -8655,7 +8653,6 @@ dhcpv6c_dbg_thrd(void * in)
 		remove_single_quote(preflen);
 		pref_len = atoi(preflen);
 
-		DHCPMGR_LOG_DEBUG("%s,%d: v6addr=%s, v6pref=%s, pref_len=%d", __FUNCTION__, __LINE__, v6addr, v6pref, pref_len);
 
                 pString = (char*)CosaUtilGetFullPathNameByKeyword
                     (
@@ -8664,12 +8661,6 @@ dhcpv6c_dbg_thrd(void * in)
                         (PUCHAR)COSA_DML_DHCPV6_CLIENT_IFNAME
                         );
 
-#if defined(FEATURE_RDKB_CONFIGURABLE_WAN_INTERFACE)
-                /* ToDo: Replace COSA_DML_DHCPV6_CLIENT_IFNAME with DATA-VLAN interface while integrating DHCPManager with WanManager*/
-		if (strcmp(IfaceName, COSA_DML_DHCPV6_CLIENT_IFNAME) != 0)
-                    continue;
-#endif
- 
                 if (!strncmp(action, "add", 3))
                 {
                     DHCPMGR_LOG_INFO("%s: add\n", __func__);

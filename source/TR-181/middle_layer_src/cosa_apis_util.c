@@ -147,47 +147,6 @@ static int Get_comp_paramvalue(char* compName,char* dbusPath,char *param_name,ch
         return 0;
 }
 
-
-ULONG
-CosaGetParamValueUlong
-    (
-        char*                       pParamName
-    )
-{
-
-    char        acTmpReturnValue[256] = {0};
-    ULONG       result = 0;
-    int         ret = -1;
-    char        comp_name[MAX_STR_SIZE];
-    char        dbus_path[MAX_STR_SIZE];
-#ifdef FEATURE_RDKB_WAN_MANAGER
-    if (strstr(pParamName, ETHERNET_INTERFACE_OBJECT))
-    {
-        if (ANSC_STATUS_FAILURE == RdkBus_GetParamValues(ETH_COMPONENT_NAME, ETH_DBUS_PATH, pParamName, acTmpReturnValue))
-        {
-            DHCPMGR_LOG_ERROR("[%s][%d]Failed to get param value\n", __FUNCTION__, __LINE__);
-            return 0;
-        }
-        result = strtoul(acTmpReturnValue, NULL, 10);
-        return result;
-    }
-#endif
-
-    ret = Get_comp_namespace(comp_name,dbus_path,pParamName);
-
-    if(ret){
-
-        ret=Get_comp_paramvalue(comp_name,dbus_path,pParamName,acTmpReturnValue);
-        if(ret){
-                result = strtoul(acTmpReturnValue, NULL, 10);
-                return result;
-        }
-
-    }
-
-    return 0;
-}
-
 ULONG
 CosaGetInstanceNumberByIndex
     (
