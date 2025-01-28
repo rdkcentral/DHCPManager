@@ -35,7 +35,7 @@
 /* { */
 /*     if ((buff == NULL) || (buff_len == 0)) */
 /*     { */
-/*         DBG_PRINT("Invalid args..\n"); */
+/*         DBG_PRINT("<<DEBUG>>Invalid args..\n"); */
 /*         return NULL; */
 /*     } */
 
@@ -43,7 +43,7 @@
 /*     char * hex_buff = malloc (len); */
 /*     if (hex_buff == NULL) */
 /*     { */
-/*         DBG_PRINT ("malloc() failure\n"); */
+/*         DBG_PRINT("<<DEBUG>>malloc() failure\n"); */
 /*         return NULL; */
 /*     } */
 /*     memset (hex_buff, 0, len); */
@@ -71,13 +71,13 @@ static int udhcpc_get_req_options (char * buff, dhcp_opt_list * req_opt_list)
 
     if (buff == NULL)
     {
-        DBG_PRINT("%s %d: Invalid args..\n", __FUNCTION__, __LINE__);
+        DBG_PRINT("<<DEBUG>>%s %d: Invalid args..\n", __FUNCTION__, __LINE__);
         return FAILURE;
     }
 
     if (req_opt_list == NULL)
     {
-        DBG_PRINT("%s %d: No req option sent to udhcpc.\n", __FUNCTION__, __LINE__);
+        DBG_PRINT("<<DEBUG>>%s %d: No req option sent to udhcpc.\n", __FUNCTION__, __LINE__);
         return SUCCESS;
     }
 
@@ -103,7 +103,7 @@ static int udhcpc_get_req_options (char * buff, dhcp_opt_list * req_opt_list)
         strcat(buff, args);
     }
 
-    DBG_PRINT("%s %d: get req args - %s\n", __FUNCTION__, __LINE__, buff);
+    DBG_PRINT("<<DEBUG>>%s %d: get req args - %s\n", __FUNCTION__, __LINE__, buff);
     return SUCCESS;
 
 }
@@ -121,13 +121,13 @@ static int udhcpc_get_send_options (char * buff, dhcp_opt_list * send_opt_list)
 
     if (buff == NULL)
     {
-        DBG_PRINT("%s %d: Invalid args..\n", __FUNCTION__, __LINE__);
+        DBG_PRINT("<<DEBUG>>%s %d: Invalid args..\n", __FUNCTION__, __LINE__);
         return FAILURE;
     }
 
     if (send_opt_list == NULL)
     {
-        DBG_PRINT("%s %d: No send option sent to udhcpc.\n", __FUNCTION__, __LINE__);
+        DBG_PRINT("<<DEBUG>>%s %d: No send option sent to udhcpc.\n", __FUNCTION__, __LINE__);
         return SUCCESS;
     }
 
@@ -169,7 +169,7 @@ static int udhcpc_get_other_args (char * buff, dhcp_params * params)
 {
      if ((buff == NULL) || (params == NULL))
     {
-        DBG_PRINT("%s %d: Invalid args..\n", __FUNCTION__, __LINE__);
+        DBG_PRINT("<<DEBUG>>%s %d: Invalid args..\n", __FUNCTION__, __LINE__);
         return FAILURE;
     }
 
@@ -227,7 +227,7 @@ pid_t start_udhcpc (dhcp_params * params, dhcp_opt_list * req_opt_list, dhcp_opt
 {
     if ((params == NULL) || (params->ifname == NULL))
     {
-        DBG_PRINT("%s %d: Invalid args..\n", __FUNCTION__, __LINE__);
+        DBG_PRINT("<<DEBUG>>%s %d: Invalid args..\n", __FUNCTION__, __LINE__);
         return FAILURE;
     }
 
@@ -236,33 +236,33 @@ pid_t start_udhcpc (dhcp_params * params, dhcp_opt_list * req_opt_list, dhcp_opt
 
     if (pid > 0)
     {
-        DBG_PRINT("%s %d: another instance of %s runing on %s\n", __FUNCTION__, __LINE__, UDHCPC_CLIENT, params->ifname);
+        DBG_PRINT("<<DEBUG>>%s %d: another instance of %s runing on %s\n", __FUNCTION__, __LINE__, UDHCPC_CLIENT, params->ifname);
     }
 
     char buff [BUFLEN_512] = {0};
 
-    DBG_PRINT("%s %d: Constructing REQUEST option args to udhcpc.\n", __FUNCTION__, __LINE__);
+    DBG_PRINT("<<DEBUG>>%s %d: Constructing REQUEST option args to udhcpc.\n", __FUNCTION__, __LINE__);
     if ((req_opt_list != NULL) && (udhcpc_get_req_options(buff, req_opt_list)) != SUCCESS)
     {
-        DBG_PRINT("%s %d: Unable to get DHCPv4 REQ OPT.\n", __FUNCTION__, __LINE__);
+        DBG_PRINT("<<DEBUG>>%s %d: Unable to get DHCPv4 REQ OPT.\n", __FUNCTION__, __LINE__);
         return FAILURE;
     }
 
-    DBG_PRINT("%s %d: Constructing SEND option args to udhcpc.\n", __FUNCTION__, __LINE__);
+    DBG_PRINT("<<DEBUG>>%s %d: Constructing SEND option args to udhcpc.\n", __FUNCTION__, __LINE__);
     if ((send_opt_list != NULL) && (udhcpc_get_send_options(buff, send_opt_list) != SUCCESS))
     {
-        DBG_PRINT("%s %d: Unable to get DHCPv4 SEND OPT.\n", __FUNCTION__, __LINE__);
+        DBG_PRINT("<<DEBUG>>%s %d: Unable to get DHCPv4 SEND OPT.\n", __FUNCTION__, __LINE__);
         return FAILURE;
     }
 
-    DBG_PRINT("%s %d: Constructing other option args to udhcpc.\n", __FUNCTION__, __LINE__);
+    DBG_PRINT("<<DEBUG>>%s %d: Constructing other option args to udhcpc.\n", __FUNCTION__, __LINE__);
     if (udhcpc_get_other_args(buff, params) != SUCCESS)
     {
-        DBG_PRINT("%s %d: Unable to get DHCPv4 SEND OPT.\n", __FUNCTION__, __LINE__);
+        DBG_PRINT("<<DEBUG>>%s %d: Unable to get DHCPv4 SEND OPT.\n", __FUNCTION__, __LINE__);
         return FAILURE;
     }
 
-    DBG_PRINT("%s %d: Starting udhcpc.\n", __FUNCTION__, __LINE__);
+    DBG_PRINT("<<DEBUG>>%s %d: Starting udhcpc.\n", __FUNCTION__, __LINE__);
 
     pid = start_exe(UDHCPC_CLIENT_PATH, buff);
 
@@ -270,10 +270,10 @@ pid_t start_udhcpc (dhcp_params * params, dhcp_opt_list * req_opt_list, dhcp_opt
     // udhcpc-client will demonize a child thread during start, so we need to collect the exited main thread
     if (collect_waiting_process(pid, UDHCPC_TERMINATE_TIMEOUT) != SUCCESS)
     {
-        DBG_PRINT("%s %d: unable to collect pid for %d.\n", __FUNCTION__, __LINE__, pid);
+        DBG_PRINT("<<DEBUG>>%s %d: unable to collect pid for %d.\n", __FUNCTION__, __LINE__, pid);
     }
 
-    DBG_PRINT("%s %d: Started dibbler-client. returning pid..\n", __FUNCTION__, __LINE__);
+    DBG_PRINT("<<DEBUG>>%s %d: Started dibbler-client. returning pid..\n", __FUNCTION__, __LINE__);
     pid = get_process_pid (UDHCPC_CLIENT, NULL, true);
 #endif
 
@@ -293,7 +293,7 @@ int stop_udhcpc (dhcp_params * params)
 {
     if ((params == NULL) || (params->ifname == NULL))
     {
-        DBG_PRINT("%s %d: Invalid args..\n", __FUNCTION__, __LINE__);
+        DBG_PRINT("<<DEBUG>>%s %d: Invalid args..\n", __FUNCTION__, __LINE__);
         return FAILURE;
     }
 
@@ -305,17 +305,17 @@ int stop_udhcpc (dhcp_params * params)
 
     if (pid <= 0)
     {
-        DBG_PRINT("%s %d: unable to get pid of %s\n", __FUNCTION__, __LINE__, UDHCPC_CLIENT);
+        DBG_PRINT("<<DEBUG>>%s %d: unable to get pid of %s\n", __FUNCTION__, __LINE__, UDHCPC_CLIENT);
         return FAILURE;
     }
 
     if (signal_process(pid, SIGUSR2) != RETURN_OK)
     {
-        DBG_PRINT("%s %d: unable to send signal to pid %d\n", __FUNCTION__, __LINE__, pid);
+        DBG_PRINT("<<DEBUG>>%s %d: unable to send signal to pid %d\n", __FUNCTION__, __LINE__, pid);
         return FAILURE;    }
     if (signal_process(pid, SIGTERM) != RETURN_OK)
     {
-         DBG_PRINT("%s %d: unable to send signal to pid %d\n", __FUNCTION__, __LINE__, pid);
+         DBG_PRINT("<<DEBUG>>%s %d: unable to send signal to pid %d\n", __FUNCTION__, __LINE__, pid);
          return FAILURE;
     }
     int ret = collect_waiting_process(pid, UDHCPC_TERMINATE_TIMEOUT);
