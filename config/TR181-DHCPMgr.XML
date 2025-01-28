@@ -29,7 +29,6 @@
         <object>
       <name>DHCPv4</name>
       <objectType>object</objectType>
-<?ifndef FEATURE_RDKB_WAN_MANAGER?>
       <functions>
         <func_GetParamBoolValue>DHCPv4_GetParamBoolValue</func_GetParamBoolValue>
         <func_GetParamIntValue>DHCPv4_GetParamIntValue</func_GetParamIntValue>
@@ -42,12 +41,8 @@
           <type>unsignedInt</type>
           <syntax>uint32</syntax>
         </parameter>
-<?endif?>
-<?ifndef FEATURE_RDKB_WAN_MANAGER?>
       </parameters>
-<?endif?>
       <objects>
-<?ifndef FEATURE_RDKB_WAN_MANAGER?>
         <object>
           <name>Client</name>
           <objectType>writableTable</objectType>
@@ -262,7 +257,6 @@
             </object>
           </objects>
         </object>
-<?endif?>
         <object>
           <name>Server</name>
           <objectType>object</objectType>
@@ -746,7 +740,6 @@
     <object>
       <name>DHCPv6</name>
       <objectType>object</objectType>
-<?ifndef FEATURE_RDKB_WAN_MANAGER?>
       <functions>
         <func_GetParamBoolValue>DHCPv6_GetParamBoolValue</func_GetParamBoolValue>
         <func_GetParamIntValue>DHCPv6_GetParamIntValue</func_GetParamIntValue>
@@ -760,9 +753,7 @@
           <syntax>uint32</syntax>
         </parameter>
       </parameters>
-<?endif?>
       <objects>
-<?ifndef FEATURE_RDKB_WAN_MANAGER?>
         <object>
           <name>Client</name>
           <objectType>writableTable</objectType>
@@ -1078,7 +1069,6 @@
 
           </objects>
         </object>
-<?endif?>
         <object>
           <name>Server</name>
           <objectType>object</objectType>

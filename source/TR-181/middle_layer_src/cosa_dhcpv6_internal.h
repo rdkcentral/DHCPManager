@@ -89,10 +89,8 @@
   *
   */
 #define  COSA_IREP_FOLDER_NAME_DHCPV6                      "Dhcpv6"
-#ifndef FEATURE_RDKB_WAN_MANAGER
 #define  COSA_IREP_FOLDER_NAME_DHCPV6_CLIENT               "Client"
 #define  COSA_IREP_FOLDER_NAME_DHCPV6_SENTOPTION           "SentOption"
-#endif
 #define  COSA_IREP_FOLDER_NAME_DHCPV6_POOL                 "Pool"
 #define  COSA_IREP_FOLDER_NAME_DHCPV6_OPTION               "Option"
 #define  COSA_DML_RR_NAME_Dhcpv6Alias                      "Alias"
@@ -107,7 +105,6 @@
 #define   COSA_DML_DHCPV6_ACCESS_INTERVAL_CLIENTRECV     60 /* seconds*/
 #define   COSA_DML_DHCPV6_ACCESS_INTERVAL_POOLCLIENT     10 /* seconds*/
 
-#ifndef FEATURE_RDKB_WAN_MANAGER
 /*
 *  This struct is only for dhcpc because it have two sub tables.
 *  For the two table, they just use common link struct because they havenot sub tables.
@@ -134,7 +131,6 @@ COSA_CONTEXT_DHCPCV6_LINK_OBJECT, *PCOSA_CONTEXT_DHCPCV6_LINK_OBJECT;
 #define  ACCESS_COSA_CONTEXT_DHCPCV6_LINK_OBJECT(p)                                \
          ACCESS_CONTAINER(p, COSA_CONTEXT_DHCPCV6_LINK_OBJECT, Linkage)            \
 
-#endif
 /*
 *  This struct is only for dhcps.pool because it have one sub tables.
 *  For the two table, they just use common link struct because they havenot sub tables.
@@ -180,7 +176,6 @@ _COSA_DATAMODEL_DHCPV6
 }
 COSA_DATAMODEL_DHCPV6,  *PCOSA_DATAMODEL_DHCPV6;
 
-#ifndef FEATURE_RDKB_WAN_MANAGER
 
 #define   DHCPV6_CLIENT_ENTRY_MATCH(src,dst)                       \
     (strcmp((src)->Alias, (dst)->Alias) == 0)
@@ -203,7 +198,6 @@ COSA_DATAMODEL_DHCPV6,  *PCOSA_DATAMODEL_DHCPV6;
 #define   DHCPV6_POOL_ENTRY_MATCH(src,dst)                         \
     (strcmp((src)->Alias, (dst)->Alias) == 0)
 
-#endif
 
 #define   DHCPV6_POOL_ENTRY_MATCH2(src,dst)                        \
     (strcmp((src), (dst)) == 0)
@@ -214,7 +208,6 @@ COSA_DATAMODEL_DHCPV6,  *PCOSA_DATAMODEL_DHCPV6;
 #define   DHCPV6_POOLOPTION_ENTRY_MATCH2(src,dst)               \
     (strcmp((src), (dst)) == 0)
 
-#ifndef FEATURE_RDKB_WAN_MANAGER
 
 #define   DHCPV6_CLIENT_INITIATION_CONTEXT(pDhcpc)                 \
     COSA_CONTEXT_LINK_INITIATION_CONTENT(((PCOSA_CONTEXT_LINK_OBJECT)(pDhcpc)))  \
@@ -228,7 +221,6 @@ COSA_DATAMODEL_DHCPV6,  *PCOSA_DATAMODEL_DHCPV6;
     (pDhcpc)->PreviousVisitTimeOfRecv         = 0;                 \
     AnscZeroMemory((pDhcpc)->AliasOfSent, sizeof((pDhcpc)->AliasOfSent) ); \
 
-#endif
 
 #define   DHCPV6_POOL_INITIATION_CONTEXT(pPool)                            \
     COSA_CONTEXT_LINK_INITIATION_CONTENT(((PCOSA_CONTEXT_LINK_OBJECT)(pPool)))   \
@@ -240,7 +232,6 @@ COSA_DATAMODEL_DHCPV6,  *PCOSA_DATAMODEL_DHCPV6;
     (pPool)->PreviousVisitTimeOfClient = 0;                 \
     AnscZeroMemory((pPool)->AliasOfOption, sizeof((pPool)->AliasOfOption) ); \
 
-#ifndef FEATURE_RDKB_WAN_MANAGER
 
 #define DHCPV6_CLIENT_SET_DEFAULTVALUE(pDhcpc)                                         \
     (pDhcpc)->Cfg.bEnabled                    = FALSE;                                 \
@@ -252,7 +243,6 @@ COSA_DATAMODEL_DHCPV6,  *PCOSA_DATAMODEL_DHCPV6;
     (pSentOption)->Tag                        = 0;                                    \
     AnscZeroMemory( (pSentOption)->Value, sizeof( (pSentOption)->Value ) );           \
 
-#endif
 
 #define DHCPV6_POOL_SET_DEFAULTVALUE(pPool)                                            \
     (pPool)->Cfg.bEnabled                     = FALSE;                                 \
@@ -300,13 +290,11 @@ CosaDhcpv6RegSetDhcpv6Info
     (
         ANSC_HANDLE                 hThisObject
     );
-#ifndef FEATURE_RDKB_WAN_MANAGER
 BOOL
 CosaDhcpv6ClientHasDelayAddedChild
     (
         PCOSA_CONTEXT_DHCPCV6_LINK_OBJECT     hContext
     );
-#endif
 BOOL
 CosaDhcpv6PoolHasDelayAddedChild
     (

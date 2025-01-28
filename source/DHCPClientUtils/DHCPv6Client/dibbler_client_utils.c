@@ -122,7 +122,6 @@ static void convert_option16_to_hex(char **optionVal)
     int enterprise_number;
     int enterprise_number_len = 4;
     char temp[10] ={0};
-
     // we receive option value in  [enterprise_number(4 bytes) + vendor-class-data field] format. Parse enterprise_number and covnert to int.
     strncpy(enterprise_number_string, *optionVal, enterprise_number_len);
     enterprise_number = atoi(enterprise_number_string);
@@ -154,7 +153,6 @@ static void convert_option16_to_hex(char **optionVal)
     }
     free(*optionVal);
     *optionVal = option16;
-
     return;
 }
 
@@ -270,7 +268,6 @@ static int dibbler_client_prepare_config (dibbler_client_info * client_info)
                     while (opt_list)
                     {
                         memset (&args, 0, BUFLEN_128);
-
                         if (opt_list->dhcp_opt == DHCPV6_OPT_16)
                         {
                             convert_option16_to_hex(&opt_list->dhcp_opt_val);
@@ -293,7 +290,6 @@ static int dibbler_client_prepare_config (dibbler_client_info * client_info)
                                 snprintf(temp, 3, "%02X",str[i]);
                                 strncat(option15,temp,3);
                             }
-
                             snprintf (args, BUFLEN_128, "\n\toption 00%d hex %s\n", opt_list->dhcp_opt,option15 );
                             fputs(args, fout);
 
