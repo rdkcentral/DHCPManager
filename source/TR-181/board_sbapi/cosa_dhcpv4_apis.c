@@ -1921,7 +1921,6 @@ CosaDmlDhcpcGetCfg
    
         pCfg->bEnabled = FALSE;
         commonSyseventGet("current_wan_ifname", ifname, sizeof(ifname));
-	//if(dhcpv4c_get_ert_ifname(ifname))
         if (strlen(ifname) > 0)
                pCfg->Interface[0] = 0;
         else
