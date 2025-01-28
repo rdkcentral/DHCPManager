@@ -21,7 +21,7 @@ AM_LDFLAGS = -lhal_platform -lz -lpthread -lccsp_common $(DBUS_LIBS)
 
 ACLOCAL_AMFLAGS = -I m4
 
-noinst_LTLIBRARIES = libCcspDhcpMgr_Dhcpv6Client.la
+lib_LTLIBRARIES = libCcspDhcpMgr_Dhcpv6Client.la
 
 libCcspDhcpMgr_Dhcpv6Client_la_CPPFLAGS = -I$(top_srcdir)/source/DHCPClientUtils/DHCPv4Client/include \
                                           -I$(top_srcdir)/source/DHCPClientUtils/DHCPv6Client/include \

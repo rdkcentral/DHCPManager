@@ -16,11 +16,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 #include "dhcp_client_utils.h"
 
 /*
  * signal_process ()
- * @description: some process like dibbler spawns a new thread and the main thread exits.
+ * @description: some process like dibbler spawns a new thread and the main thread exits. 
                  this function can be called to collect the zombie child
  * @params     : pid - pid of the process to collect
                  timeout - time this function can wait till the child is ready to collect
@@ -31,15 +32,17 @@ int signal_process (pid_t pid, int signal)
 {
     if ((pid <= 0) || (signal < 0))
     {
-        DBG_PRINT("%s %d: Invalid args..\n", __FUNCTION__, __LINE__);
+        DBG_PRINT("<<DEBUG>>%s %d: Invalid args..\n", __FUNCTION__, __LINE__);
         return FAILURE;
     }
 
     int ret;
 
+    DBG_PRINT("<<DEBUG>>%s %d: Sending signal %d to pid %d\n", __FUNCTION__, __LINE__, signal, pid);
+
     if ((ret = kill(pid, signal)) < 0)
     {
-        DBG_PRINT("%s %d: Invalid pid %d or signal %d\n", __FUNCTION__, __LINE__, pid, signal);
+        DBG_PRINT("<<DEBUG>>%s %d: Invalid pid %d or signal %d\n", __FUNCTION__, __LINE__, pid, signal);
         return FAILURE;
     }
 
@@ -49,7 +52,7 @@ int signal_process (pid_t pid, int signal)
 
 /*
  * collect_waiting_process ()
- * @description: some process like dibbler spawns a new thread and the main thread exits.
+ * @description: some process like dibbler spawns a new thread and the main thread exits. 
                  this function can be called to collect the zombie child
  * @params     : pid - pid of the process to collect
                  timeout - time this function can wait till the child is ready to collect
@@ -63,10 +66,13 @@ int collect_waiting_process(int pid, int timeout)
     unsigned int timeoutRemaining=0;
     unsigned int sleepTime;
     int ret= FAILURE;
+
     requestedPid = pid;
     timeoutRemaining = timeout;
+
     if(timeoutRemaining > 0)
         waitOption = WNOHANG;
+
     timeoutRemaining = (timeoutRemaining <= 1) ?
         (timeoutRemaining + 1) : timeoutRemaining;
     while (timeoutRemaining > 0)
@@ -96,19 +102,22 @@ int collect_waiting_process(int pid, int timeout)
         {
             if (errno == ECHILD)
             {
-                DBG_PRINT("%s %d: Could not collect child pid %d, possibly stolen by SIGCHLD handler?\n", __FUNCTION__, __LINE__, requestedPid);
+                DBG_PRINT("<<DEBUG>>%s %d: Could not collect child pid %d, possibly stolen by SIGCHLD handler?\n", __FUNCTION__, __LINE__, requestedPid);
                 ret = FAILURE;
             }
             else
             {
-                DBG_PRINT("%s %d: bad pid %d, errno=%d\n", __FUNCTION__, __LINE__, requestedPid, errno);
+                DBG_PRINT("<<DEBUG>>%s %d: bad pid %d, errno=%d\n", __FUNCTION__, __LINE__, requestedPid, errno);
                 ret = FAILURE;
             }
+
             timeoutRemaining = 0;
         }
     }
+
     return ret;
 }
+
 /*
  * strtol64 ()
  * @description: utility call to check if string is a decimal number - used to check if /proc/<pid> is actually as pid
@@ -120,27 +129,31 @@ int collect_waiting_process(int pid, int timeout)
  */
 static int strtol64(const char *str, char **endptr, int32_t base, int64_t *val)
 {
-   int ret = SUCCESS;
-   char *localEndPtr=NULL;
-   errno = 0;  /* set to 0 so we can detect ERANGE */
-   *val = strtoll(str, &localEndPtr, base);
-   if ((errno != 0) || (*localEndPtr != '\0'))
-   {
-      *val = 0;
-      ret = FAILURE;
-   }
-   if (endptr != NULL)
-   {
-      *endptr = localEndPtr;
-   }
-   return ret;
-}
+    int ret = SUCCESS;
+    char *localEndPtr=NULL;
 
+    errno = 0;  /* set to 0 so we can detect ERANGE */
+
+    *val = strtoll(str, &localEndPtr, base);
+
+    if ((errno != 0) || (*localEndPtr != '\0'))
+    {
+        *val = 0;
+        ret = FAILURE;
+    }
+
+    if (endptr != NULL)
+    {
+        *endptr = localEndPtr;
+    }
+
+    return ret;
+}
 
 /*
  * find_strstr ()
  * @description: /proc/pid/cmdline contains command line args in format "args1\0args2".
-                 This function will find substring even if there is a end of string character
+                 This function will find substring even if there is a end of string character 
  * @params     : basestr - base string eg: "hello\0world"
                  basestr_len - length of basestr eg: 11 for "hello\0world"
                  substr - sub string eg: "world"
@@ -181,6 +194,7 @@ int find_strstr (char * basestr, int basestr_len, char * substr, int substr_len)
     }
     return FAILURE;
 }
+
 /*
  * check_proc_entry_for_pid ()
  * @description: check the contents of /proc directory to match the process name
@@ -191,12 +205,11 @@ int find_strstr (char * basestr, int basestr_len, char * substr, int substr_len)
  * @return     : returns the pid if proc entry exists
  *
  */
-
 static int check_proc_entry_for_pid (char * name, char * args)
 {
     if (name == NULL)
     {
-        DBG_PRINT("%s %d: Invalid args\n", __FUNCTION__, __LINE__);
+        DBG_PRINT("<<DEBUG>>%s %d: Invalid args\n", __FUNCTION__, __LINE__);
         return 0;
     }
 
@@ -205,6 +218,7 @@ static int check_proc_entry_for_pid (char * name, char * args)
     struct dirent *dent;
     bool found=false;
     int rc, p, i;
+    /* CID :192528 Out-of-bounds read (OVERRUN) */
     int64_t pid;
     int rval = 0;
     char processName[BUFLEN_256];
@@ -214,7 +228,7 @@ static int check_proc_entry_for_pid (char * name, char * args)
 
     if (NULL == (dir = opendir("/proc")))
     {
-        DBG_PRINT("%s %d:could not open /proc\n", __FUNCTION__, __LINE__);
+        DBG_PRINT("<<DEBUG>>%s %d:could not open /proc\n", __FUNCTION__, __LINE__);
         return 0;
     }
 
@@ -245,29 +259,30 @@ static int check_proc_entry_for_pid (char * name, char * args)
 
             if (!strcmp(processName, name))
             {
-                if ((status == 'R') || (status == 'S'))
+                if ((status == 'R') || (status == 'S') || (status == 'D'))
                 {
                     if (args != NULL)
                     {
                         // argument to be verified before returning pid
-                        DBG_PRINT("%s %d: %s running in pid %lld.. checking for cmdline param %s\n", __FUNCTION__, __LINE__, name, (long long int) pid, args);
+                        DBG_PRINT("<<DEBUG>>%s %d: %s running in pid %lld.. checking for cmdline param %s\n", __FUNCTION__, __LINE__, name, (long long int) pid, args);
                         snprintf(filename, sizeof(filename), "/proc/%lld/cmdline", (long long int) pid);
                         fp = fopen(filename, "r");
                         if (fp == NULL)
                         {
-                            DBG_PRINT("%s %d: could not open %s\n", __FUNCTION__, __LINE__, filename);
+                            DBG_PRINT("<<DEBUG>>%s %d: could not open %s\n", __FUNCTION__, __LINE__, filename);
                             continue;
                         }
-                        DBG_PRINT("%s %d: opening file %s\n", __FUNCTION__, __LINE__, filename);
+                        DBG_PRINT("<<DEBUG>>%s %d: opening file %s\n", __FUNCTION__, __LINE__, filename);
 
                         memset (cmdline, 0, sizeof(cmdline));
-                        char *delim = 0;
-                        size_t size = 0;
-                        while(getdelim(&delim, &size, 0, fp) != -1)
+			/* CID :258113 String not null terminated (STRING_NULL)*/
+                        int num_read ;
+                        if ((num_read = fread(cmdline, 1, sizeof(cmdline)-1 , fp)) > 0)
                         {
-                            if (strcmp(delim,args) == 0)
+		            cmdline[num_read] = '\0';
+                            DBG_PRINT("<<DEBUG>>%s %d: comparing cmdline from proc:%s with %s\n", __FUNCTION__, __LINE__, cmdline, args);
+                            if (find_strstr(cmdline, sizeof(cmdline), args, strlen(args)) == SUCCESS)
                             {
-                                DBG_PRINT("%s %d: process found with %s args is %s pid is %lld\n", __FUNCTION__, __LINE__, delim, args, (long long int)pid);
                                 rval = pid;
                                 found = true;
                             }
@@ -282,9 +297,9 @@ static int check_proc_entry_for_pid (char * name, char * args)
                         found = true;
                     }
                 }
-                else
+                else 
                 {
-                    DBG_PRINT("%s %d: %s running, but is in %c mode\n", __FUNCTION__, __LINE__, filename, status);
+                    DBG_PRINT("<<DEBUG>>%s %d: %s running, but is in %c mode\n", __FUNCTION__, __LINE__, filename, status);
                 }
             }
         }
@@ -298,7 +313,7 @@ static int check_proc_entry_for_pid (char * name, char * args)
 
 /*
  * get_process_pid ()
- * @description: checks pid of <exe> from /proc fs and returns pid
+ * @description: checks pid of <exe> from /proc fs and returns pid 
  * @params     : name - name of the exeutable file eg:udhcpc
                  args - args can be argument for the program 
                     eg:"-ierouter0" for udhcpc - format as seen in /proc fs
@@ -310,7 +325,7 @@ pid_t get_process_pid (char * name, char * args, bool waitForProcEntry)
 {
     if (name == NULL)
     {
-        DBG_PRINT("%s %d: Invalid args\n", __FUNCTION__, __LINE__);
+        DBG_PRINT("<<DEBUG>>%s %d: Invalid args\n", __FUNCTION__, __LINE__);
         return 0;
     }
 
@@ -338,10 +353,9 @@ pid_t get_process_pid (char * name, char * args, bool waitForProcEntry)
         pid = check_proc_entry_for_pid(name, args);
     }
 
-    DBG_PRINT("%s %d: %s running, in pid %d\n", __FUNCTION__, __LINE__, name, pid);
+    DBG_PRINT("<<DEBUG>>%s %d: %s running, in pid %d\n", __FUNCTION__, __LINE__, name, pid);
     return pid;
 }
-
 
 /*
  * freeArgs ()
@@ -352,6 +366,10 @@ pid_t get_process_pid (char * name, char * args, bool waitForProcEntry)
  */
 static void freeArgs(char **argv)
 {
+    if (argv == NULL)
+   {
+      return;
+   }
    int  i=0;
    while (argv[i] != NULL)
    {
@@ -362,12 +380,10 @@ static void freeArgs(char **argv)
       }
       i++;
    }
-   if (argv != NULL)
-   {
       free(argv);
       argv = NULL;
-   }
 }
+
 /*
  * parseArgs ()
  * @description: This function is a utility call to construct an array to pass to execv() call.
@@ -377,13 +393,17 @@ static void freeArgs(char **argv)
  * @return     : returns the pid of the program started.
  *
  */
+
 static int parseArgs(const char *cmd, const char *args, char ***argv)
 {
     int numArgs=3, i, len, argIndex=0;
     bool inSpace= TRUE;
     const char *cmdStr;
+    int  cmdStrlen = 0;
     char **array;
+
     len = (args == NULL) ? 0 : strlen(args);
+
     for (i=0; i < len; i++)
     {
         if ((args[i] == ' ') && (!inSpace))
@@ -396,11 +416,13 @@ static int parseArgs(const char *cmd, const char *args, char ***argv)
             inSpace = FALSE;
         }
     }
+
     array = (char **) malloc ((numArgs) * sizeof(char *));
     if (array == NULL)
     {
         return -1;
     }
+
     /* locate the command name, last part of string */
     cmdStr = strrchr(cmd, '/');
     if (cmdStr == NULL)
@@ -411,18 +433,24 @@ static int parseArgs(const char *cmd, const char *args, char ***argv)
     {
         cmdStr++;
     }
-    array[argIndex] = calloc (1, strlen(cmdStr) + 1);
+
+    cmdStrlen = strlen(cmdStr);
+    array[argIndex] = calloc (1, cmdStrlen + 1);
+
     if (array[argIndex] == NULL)
     {
-        DBG_PRINT("memory allocation of %lu failed", (ULONG)strlen(cmdStr) + 1);
+        DBG_PRINT("<<DEBUG>>memory allocation of %lu failed", (ULONG)strlen(cmdStr) + 1);
         freeArgs(array);
         return FAILURE;
     }
     else
     {
-        strncpy(array[argIndex], cmdStr, strlen(cmdStr)+1);
+        /* CID 182678 Calling risky function */
+        strncpy(array[argIndex], cmdStr, cmdStrlen);
+        array[argIndex][cmdStrlen] = '\0';
         argIndex++;
     }
+
     inSpace = TRUE;
     for (i=0; i < len; i++)
     {
@@ -434,28 +462,35 @@ static int parseArgs(const char *cmd, const char *args, char ***argv)
         else if ((args[i] != ' ') && (inSpace))
         {
             int startIndex, endIndex;
+
             startIndex = i;
             endIndex = i;
             while ((endIndex < len) && (args[endIndex] != ' '))
             {
                 endIndex++;
             }
+
             array[argIndex] = calloc(1,endIndex - startIndex + 1);
             if (array[argIndex] == NULL)
             {
-                DBG_PRINT("memory allocation of %d failed", endIndex - startIndex + 1);
+                DBG_PRINT("<<DEBUG>>memory allocation of %d failed", endIndex - startIndex + 1);
                 freeArgs(array);
                 return FAILURE;
             }
+
             memcpy(array[argIndex], &args[startIndex], endIndex - startIndex );
+
             argIndex++;
+
             inSpace = FALSE;
         }
     }
     array[argIndex] = NULL;
     (*argv) = array;
+
     return SUCCESS;
 }
+
 /*
  * start_exe ()
  * @description: This function start udhcpc client program and return pid.
@@ -468,46 +503,54 @@ pid_t start_exe(char * exe, char * args)
     int32_t pid = 0;
     char **argv = NULL;
     int ret = SUCCESS;
+
     if ((exe == NULL) || (args == NULL))
     {
-        DBG_PRINT("%s %d: Invalid arguments..\n", __FUNCTION__, __LINE__);
+        DBG_PRINT("<<DEBUG>>%s %d: Invalid arguments..\n", __FUNCTION__, __LINE__);
         return pid;
     }
-  
-    DBG_PRINT("%s %d:exe:%s buff %s\n", __FUNCTION__, __LINE__, exe, args);
-  
+
+    DBG_PRINT("<<DEBUG>>%s %d:exe:%s buff %s\n", __FUNCTION__, __LINE__, exe, args);
+
     if ((ret = parseArgs(exe, args, &argv)) != SUCCESS)
     {
-        DBG_PRINT("Failed to parse arguments %d\n",ret);
+        DBG_PRINT("<<DEBUG>>Failed to parse arguments %d\n",ret);
         return pid;
     }
-  
+
     pid = fork();
     if (pid == 0)
     {
         int32_t devNullFd=-1, fd;
+
         /*
          * This is the child.
          */
+
         devNullFd = open("/dev/null", O_RDWR);
         if (devNullFd == -1)
         {
-            DBG_PRINT("open of /dev/null failed");
+            DBG_PRINT("<<DEBUG>>open of /dev/null failed");
             exit(-1);
     }
+
         close(0);
         fd = devNullFd;
         dup2(fd, 0);
+
         close(1);
         fd = devNullFd;
         dup2(fd, 1);
+
         close(2);
         fd = devNullFd;
         dup2(fd, 2);
+
         if (devNullFd != -1)
     {
             close(devNullFd);
         }
+
         signal(SIGHUP, SIG_DFL);
         signal(SIGINT, SIG_DFL);
         signal(SIGQUIT, SIG_DFL);
@@ -541,15 +584,18 @@ pid_t start_exe(char * exe, char * args)
         signal(SIGPROF, SIG_DFL);
         signal(SIGXCPU, SIG_DFL);
         signal(SIGXFSZ, SIG_DFL);
+
         int err = execv(exe, argv);
+
         /* We should not reach this line.  If we do, exec has failed. */
-        DBG_PRINT("%s %d: execv returned %d failed due to %s.\n", __FUNCTION__, __LINE__, err, strerror(errno));
+        DBG_PRINT("<<DEBUG>>%s %d: execv returned %d failed due to %s.\n", __FUNCTION__, __LINE__, err, strerror(errno));
         exit(-1);
     }
+
     freeArgs(argv);
+
     return pid;
 }
-
 
 pid_t start_exe2(char * exe, char * args)
 {
@@ -558,53 +604,45 @@ pid_t start_exe2(char * exe, char * args)
     int32_t pid = 0;
     char **argv = NULL;
     int ret     = SUCCESS;
-
     if ((exe == NULL) || (args == NULL))
     {
-        DBG_PRINT("%s %d: Invalid arguments..\n", __FUNCTION__, __LINE__);
+        DBG_PRINT("<<DEBUG>>%s %d: Invalid arguments..\n", __FUNCTION__, __LINE__);
         return pid;
     }
-
-    DBG_PRINT("%s %d:exe:%s buff %s\n", __FUNCTION__, __LINE__, exe, args);
+    DBG_PRINT("<<DEBUG>>%s %d:exe:%s buff %s\n", __FUNCTION__, __LINE__, exe, args);
    
     if ((ret = parseArgs(exe, args, &argv)) != SUCCESS)
     {
-        DBG_PRINT("Failed to parse arguments %d\n",ret);
+        DBG_PRINT("<<DEBUG>>Failed to parse arguments %d\n",ret);
         return pid;
     }
     
-
     /* The parent process (the caller of start_exe()) blocks SIGCHLD
      * and ignore SIGINT and SIGQUIT while the child is executing.
      * We must change the signal settings prior to forking, to avoid
      * possible race conditions. This means that we must undo the
      * effects of the following in the child after fork().
      */
-
     sigemptyset(&blockSigchld);            /* Block SIGCHLD */
     sigaddset(&blockSigchld, SIGCHLD);
     sigprocmask(SIG_BLOCK, &blockSigchld, &saveMask);
-
     saIgnore.sa_handler = SIG_IGN;         /* Ignore SIGINT and SIGQUIT */
     saIgnore.sa_flags = 0;
     sigemptyset(&saIgnore.sa_mask);
     sigaction(SIGINT, &saIgnore, &saSaveInt);
     sigaction(SIGQUIT, &saIgnore, &saSaveQuit);
-
     switch ((pid = fork()))
     {
       case -1: // Failure
-               DBG_PRINT("Fork() failed!");
+               DBG_PRINT("<<DEBUG>>Fork() failed!");
                break;
-
       case 0:  // Child
           {
                int32_t devNullFd=-1, fd;
-
                devNullFd = open("/dev/null", O_RDWR);
                if (devNullFd == -1)
                {
-                   DBG_PRINT("open of /dev/null failed");
+                   DBG_PRINT("<<DEBUG>>open of /dev/null failed");
                    exit(-1);
                }
                close(0);
@@ -620,11 +658,9 @@ pid_t start_exe2(char * exe, char * args)
                {
                    close(devNullFd);
                }
-
                saDefault.sa_handler = SIG_DFL;
                saDefault.sa_flags = 0;
                sigemptyset(&saDefault.sa_mask);
-
                if (saSaveInt.sa_handler != SIG_IGN)
                {
                    sigaction(SIGINT, &saDefault, NULL);
@@ -633,26 +669,57 @@ pid_t start_exe2(char * exe, char * args)
                {
                    sigaction(SIGQUIT, &saDefault, NULL);
                }
-
                sigprocmask(SIG_SETMASK, &saveMask, NULL);
-
                int err = execv(exe, argv);
                /* We should not reach this line.  If we do, exec has failed. */
-               DBG_PRINT("%s %d: execv returned %d failed due to %s.\n",
+               DBG_PRINT("<<DEBUG>>%s %d: execv returned %d failed due to %s.\n",
                                  __FUNCTION__, __LINE__, err, strerror(errno));
                exit(-1);
           }
       default: // Parent
                break;
     }
-
     sigprocmask(SIG_SETMASK, &saveMask, NULL);
     sigaction(SIGINT, &saSaveInt, NULL);
     sigaction(SIGQUIT, &saSaveQuit, NULL);
-
     freeArgs(argv);
-
     return pid;
+}
+
+/*
+ * add_dhcp_opt_to_list ()
+ * @description: util function to add DHCP opt and DHCP opt value to list
+ * @params     : opt_list - output param to add DHCP options
+               : opt - DHCP option
+               : opt_val - DHCP option value - optional
+ * @return     : returns the SUCCESS on adding option to list, else returns failure
+ *
+ */
+int add_dhcp_opt_to_list (dhcp_opt_list ** opt_list, int opt, char * opt_val)
+{
+
+    if ((opt_list == NULL) || (opt <= 0))
+    {
+        return RETURN_ERR;
+    }
+
+    dhcp_opt_list * new_dhcp_opt = malloc (sizeof(dhcp_opt_list));
+    if (new_dhcp_opt == NULL)
+    {
+        return RETURN_ERR;
+    }
+    memset (new_dhcp_opt, 0, sizeof(dhcp_opt_list));
+    new_dhcp_opt->dhcp_opt = opt;
+    new_dhcp_opt->dhcp_opt_val = opt_val;
+
+    if (*opt_list != NULL)
+    {
+        new_dhcp_opt->next = *opt_list;
+    }
+    *opt_list = new_dhcp_opt;
+
+    return RETURN_OK;
+
 }
 
 /*
@@ -668,12 +735,44 @@ void free_opt_list_data (dhcp_opt_list * opt_list)
     {
         return;
     }
+
     dhcp_opt_list * tmp_node = NULL;
+
     while (opt_list)
     {
         tmp_node = opt_list;
         opt_list = opt_list->next;
+        if (tmp_node->dhcp_opt_val)
+        {
+            // DHCPv4 send opt will have opt_val
+            free(tmp_node->dhcp_opt_val);
+        }
         free(tmp_node);
     }
+
 }
 
+/*
+ * create_dir_path ()
+ * @description: This function is called to create a directory if it is not exist.
+ * @params     : dirpath - directory path
+ * @return     : no return.
+ *
+ */
+void create_dir_path(const char *dirpath)
+{
+    if( NULL == dirpath )
+    {
+       return;
+    }
+
+    struct stat st;
+
+    if ( ( -1 == stat(dirpath, &st) ) || ( !S_ISDIR(st.st_mode) ) )
+    {
+        // directory does not exists, so create it
+        mkdir(dirpath, 0644);
+    }
+
+    return;
+}

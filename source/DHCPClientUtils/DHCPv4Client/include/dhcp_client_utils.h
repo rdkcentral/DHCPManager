@@ -8,15 +8,14 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
-*/
-
+ */
 
 #include <stdio.h>
 #include <string.h>
@@ -33,6 +32,7 @@
 #include "syscfg/syscfg.h"
 #include <sys/stat.h>
 #include "platform_hal.h"
+#include "rdk_debug.h"
 
 #define TRUE_STR               "true"
 #define TRUE                   1
@@ -61,6 +61,9 @@
 #define MSECS_IN_SEC                      1000
 #define RETURN_PID_TIMEOUT_IN_MSEC        (5 * MSECS_IN_SEC)    // 5 sec
 #define RETURN_PID_INTERVAL_IN_MSEC       (0.5 * MSECS_IN_SEC)  // 0.5 sec - half a second
+#define INTF_V6LL_TIMEOUT_IN_MSEC        (5 * MSECS_IN_SEC)    // 5 sec
+#define INTF_V6LL_INTERVAL_IN_MSEC       (0.5 * MSECS_IN_SEC)  // 0.5 sec - half a second
+
 
 //DHCPv6 Options
 #define DHCPV6_OPT_82  82  // OPTION_SOL_MAX_RT: Solicite Maximum Retry Time
@@ -91,7 +94,7 @@
 #define DHCPV4_OPT_120 120 //DHCP Req option for sipsrv
 #define DHCPV4_OPT_121 121 //DHCP Req option for classless static routes
 
-#define DBG_PRINT(fmt ...)     {\
+/*#define DBG_PRINT(fmt ...)     {\
     FILE     *fp        = NULL;\
     fp = fopen ( CONSOLE_LOG_FILE, "a+");\
     if (fp)\
@@ -99,7 +102,10 @@
         fprintf(fp,fmt);\
         fclose(fp);\
     }\
-}\
+}\*/
+
+#define DBG_PRINT(fmt, arg...) \
+          RDK_LOG(RDK_LOG_INFO, "LOG.RDK.WANMANAGER", fmt, ##arg);
 
 #define UNUSED_VARIABLE(x) (void)(x)
 
@@ -109,20 +115,22 @@ typedef enum {
 } IfaceType;
 
 typedef struct dhcp_opt {
-    char * ifname;
+    char * ifname;      // VLAN interface name
+    char * baseIface;   // Base interface name
     IfaceType ifType;
+    bool is_release_required;
 } dhcp_params;
 
-pid_t start_dhcpv4_client (dhcp_params * params,dhcp_opt_list * req_opt_list,dhcp_opt_list * send_opt_list);
+pid_t start_dhcpv4_client (dhcp_params * params);
 int stop_dhcpv4_client (dhcp_params * params);
 int stop_udhcpc (dhcp_params * params);
-pid_t start_dhcpv6_client (dhcp_params * params, dhcp_opt_list * req_opt_list,dhcp_opt_list * send_opt_list);
+pid_t start_dhcpv6_client (dhcp_params * params);
 int stop_dhcpv6_client (dhcp_params * params);
 pid_t start_exe(char * exe, char * args);
 pid_t start_exe2(char * exe, char * args);
-pid_t return_dhcp6_client_pid ();
 pid_t get_process_pid (char * name, char * args, bool waitForProcEntry);
 int collect_waiting_process(int pid, int timeout);
 void free_opt_list_data (dhcp_opt_list * opt_list);
 int signal_process (pid_t pid, int signal);
-int add_dhcpv4_opt_to_list (dhcp_opt_list ** opt_list, int opt, char * opt_val);
+int add_dhcp_opt_to_list (dhcp_opt_list ** opt_list, int opt, char * opt_val);
+void create_dir_path(const char *dirpath);

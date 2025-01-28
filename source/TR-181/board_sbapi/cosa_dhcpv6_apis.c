@@ -9737,7 +9737,7 @@ ANSC_STATUS CosaDmlStartDhcpv6Client(ANSC_HANDLE hInsContext)
             pSentOption         = (PCOSA_DML_DHCPCV6_SENT)pCxtLink->hContext;
             if (pSentOption->bEnabled)
             {
-                add_dhcpv4_opt_to_list(&send_opt_list, (INT)pSentOption->Tag, (CHAR *)pSentOption->Value);
+                add_dhcp_opt_to_list(&send_opt_list, (INT)pSentOption->Tag, (CHAR *)pSentOption->Value);
             }
         }
     }
@@ -9747,12 +9747,12 @@ ANSC_STATUS CosaDmlStartDhcpv6Client(ANSC_HANDLE hInsContext)
     while (token != NULL)
     {
         DHCPMGR_LOG_INFO("token : %d\n", atoi(token));
-        add_dhcpv4_opt_to_list(&req_opt_list, atoi(token), "");
+        add_dhcp_opt_to_list(&req_opt_list, atoi(token), "");
         token = strtok(NULL, " , ");
     }
 
     dhcpParams.ifType = WAN_LOCAL_IFACE;
-    start_dhcpv6_client(&dhcpParams, req_opt_list, send_opt_list);
+    start_dhcpv6_client(&dhcpParams);
     free_opt_list_data (req_opt_list);
     free_opt_list_data (send_opt_list);
 #endif // RA_MONITOR_SUPPORT
@@ -9966,7 +9966,7 @@ rtadv_dbg_thread(void * in)
                        token = strtok(NULL, " , ");
                    }
                    dhcpParams.ifType = WAN_LOCAL_IFACE;
-                   start_dhcpv6_client(&dhcpParams, req_opt_list, send_opt_list);
+                   start_dhcpv6_client(&dhcpParams);
                    free_opt_list_data (req_opt_list);
                    free_opt_list_data (send_opt_list);
                }
