@@ -136,15 +136,6 @@ typedef struct udhcpc_script_t
 #define DHCP_SIPSRV "sipsrv"
 #define DHCP_STATIC_ROUTES "staticroutes"
 
-#ifdef FEATURE_RDKB_WAN_MANAGER
-/**
- * @brief Send dhcpv4 data to RdkWanmanager.
- * @param structure contains the dhcpv4 data
- * @return 0 on success else returned -1
- */
-static int send_dhcp_data_to_wanmanager (ipc_dhcpv4_data_t *dhcpv4_data);
-#endif
-
 /**
  * @brief Retrieve DHCPv4 data from environment variables and fill
  * the data structure.
@@ -153,8 +144,8 @@ static int send_dhcp_data_to_wanmanager (ipc_dhcpv4_data_t *dhcpv4_data);
  * @return 0 on success else returns -1.
  */
 static int get_and_fill_env_data (ipc_dhcpv4_data_t *dhcpv4_data, udhcpc_script_t* pinfo);
-static int send_dhcp_data_to_dhcpmanager (ipc_dhcpv4_data_t *dhcpv4_data);
 
+static int send_dhcp_data_to_dhcpmanager (ipc_dhcpv4_data_t *dhcpv4_data);
 
 static void compare_and_delete_old_dns (udhcpc_script_t *pinfo);
 static int read_cmd_output (char *cmd, char *output_buf, int size_buf);
@@ -247,7 +238,7 @@ static int handle_defconfig (udhcpc_script_t *pinfo)
     /**
      * Send data to the WanManager.
      */
-    ret = send_dhcp_data_to_wanmanager(&data);
+    ret = send_dhcp_data_to_dhcpmanager(&data);
     if (ret != 0)
     {
          OnboardLog("[%s][%d] Failed to send dhcpv4 data to wanmanager \n", __FUNCTION__,__LINE__);
@@ -858,9 +849,9 @@ static int handle_leasefail (udhcpc_script_t *pinfo)
     }
 
     /**
-     * Send data to the WanManager.
+     * Send data to the DhcpManager.
      */
-    ret = send_dhcp_data_to_wanmanager(&data);
+    ret = send_dhcp_data_to_dhcpmanager(&data);
     if (ret != 0)
     {
          OnboardLog("[%s][%d] Failed to send dhcpv4 data to wanmanager \n", __FUNCTION__,__LINE__);
@@ -915,7 +906,7 @@ static int handle_wan (udhcpc_script_t *pinfo)
     OnboardLog("[%s][%d] DHCP Server ID  = %s \n", __FUNCTION__, __LINE__, data.dhcpServerId);
     OnboardLog("[%s][%d] DHCP State      = %s \n", __FUNCTION__, __LINE__, data.dhcpState);
 
-    ret = send_dhcp_data_to_wanmanager(&data);
+    ret = send_dhcp_data_to_dhcpmanager(&data);
     if (ret != 0)
     {
          OnboardLog("[%s][%d] Failed to send dhcpv4 data to wanmanager \n", __FUNCTION__,__LINE__);
@@ -1394,61 +1385,6 @@ static int get_and_fill_env_data (ipc_dhcpv4_data_t *dhcpv4_data, udhcpc_script_
     return 0;
 }
 
-#ifdef FEATURE_RDKB_WAN_MANAGER
-static int send_dhcp_data_to_wanmanager (ipc_dhcpv4_data_t *dhcpv4_data)
-{
-    if ( NULL == dhcpv4_data)
-    {
-        DHCPMGR_LOG_INFO (" %d Invalid argument",__LINE__);
-        return -1;
-    }
-
-    /**
-     * Send data to wanmanager.
-     */
-    ipc_msg_payload_t msg;
-    memset(&msg, 0, sizeof(ipc_msg_payload_t));
-
-    msg.msg_type = DHCPC_STATE_CHANGED;
-    memcpy(&msg.data.dhcpv4, dhcpv4_data, sizeof(ipc_dhcpv4_data_t));
-
-    int sock   = -1;
-    int conn   = -1;
-    int bytes  = -1;
-    int sz_msg = sizeof(ipc_msg_payload_t);
-
-    sock = nn_socket(AF_SP, NN_PUSH);
-    if (sock < 0)
-    {
-        OnboardLog("[%s-%d] Failed to create the socket , error = [%d][%s]\n", __FUNCTION__, __LINE__, errno, strerror(errno));
-        return -1;
-    }
-
-    OnboardLog("[%s-%d] Created socket endpoint \n", __FUNCTION__, __LINE__);
-
-    conn = nn_connect(sock, WAN_MANAGER_ADDR);
-    if (conn < 0)
-    {
-        OnboardLog("[%s-%d] Failed to connect to the wanmanager [%s], error= [%d][%s] \n", __FUNCTION__, __LINE__, WAN_MANAGER_ADDR,errno, strerror(errno));
-        nn_close(sock);
-        return -1;
-    }
-
-    OnboardLog("[%s-%d] Connected to server socket [%s] \n", __FUNCTION__, __LINE__,WAN_MANAGER_ADDR);
-
-    bytes = nn_send(sock, (char *) &msg, sz_msg, 0);
-    if (bytes < 0)
-    {
-        OnboardLog("[%s-%d] Failed to send data to the wanmanager error=[%d][%s] \n", __FUNCTION__, __LINE__,errno, strerror(errno));
-        nn_close(sock);
-        return -1;
-    }
-
-    OnboardLog("Successfully send %d bytes to wanmanager \n", bytes);
-    nn_close(sock);
-    return 0;
-}
-#endif
 static int send_dhcp_data_to_dhcpmanager (ipc_dhcpv4_data_t *dhcpv4_data)
 {
     if ( NULL == dhcpv4_data)

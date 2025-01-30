@@ -144,7 +144,7 @@
 
 #define BOOTSTRAP_INFO_FILE             "/nvram/bootstrap.json"
 
-#ifndef FEATURE_RDKB_WAN_MANAGER
+static int   ipcListenFd;
 COSA_DML_DHCPC_FULL     CH_g_dhcpv4_client[COSA_DML_DHCP_MAX_ENTRIES];
 COSA_DML_DHCP_OPT       g_dhcpv4_client_sent[COSA_DML_DHCP_MAX_ENTRIES][COSA_DML_DHCP_MAX_OPT_ENTRIES];
 COSA_DML_DHCPC_REQ_OPT  g_dhcpv4_client_req[COSA_DML_DHCP_MAX_ENTRIES][COSA_DML_DHCP_MAX_OPT_ENTRIES];
@@ -152,9 +152,8 @@ COSA_DML_DHCPC_REQ_OPT  g_dhcpv4_client_req[COSA_DML_DHCP_MAX_ENTRIES][COSA_DML_
 ULONG          g_Dhcp4ClientNum = 0;
 ULONG          g_Dhcp4ClientSentOptNum[COSA_DML_DHCP_MAX_ENTRIES] = {0,0,0,0};
 ULONG          g_Dhcp4ClientReqOptNum[COSA_DML_DHCP_MAX_ENTRIES]  = {0,0,0,0};
-#endif
 
-static int   ipcListenFd;
+
 
 /*for server.pool.client*/
 PCOSA_DML_DHCPSV4_CLIENT g_dhcpv4_server_client = NULL;
@@ -519,9 +518,8 @@ int usg_get_cpe_associate_interface(char *pMac, char ifname[64])
             rc = strcpy_s(ifname, 64, "Device.MoCA.Interface.1");
             ERR_CHK(rc);
         }
-        else
+        else {
 #endif
-	{
             rc = strcpy_s(ifname, 64, "Device.Ethernet.Interface.x");
             ERR_CHK(rc);
         }
@@ -1399,8 +1397,6 @@ CosaDmlDhcpInit
     return ANSC_STATUS_SUCCESS;
 }
 
-#ifndef FEATURE_RDKB_WAN_MANAGER
-
 static ANSC_STATUS IpcServerInit()
 {
     //int i;
@@ -1911,7 +1907,7 @@ CosaDmlDhcpcGetCfg
     )
 {
     UNREFERENCED_PARAMETER(hContext);
-        char ifname[32];
+        char ifname[32] = {0};
         errno_t rc = -1;
     char *param_value= NULL;
     int instancenum = pCfg->InstanceNumber;
@@ -1924,7 +1920,8 @@ CosaDmlDhcpcGetCfg
     }
    
         pCfg->bEnabled = FALSE;
-        if(dhcpv4c_get_ert_ifname(ifname))
+        commonSyseventGet("current_wan_ifname", ifname, sizeof(ifname));
+        if (strlen(ifname) > 0)
                pCfg->Interface[0] = 0;
         else
         {
@@ -2405,7 +2402,6 @@ CosaDmlDhcpcSetReqOption
     UNREFERENCED_PARAMETER(pEntry);
     return ANSC_STATUS_FAILURE;
 }
-#endif
 /*
  *  DHCP Server
  */

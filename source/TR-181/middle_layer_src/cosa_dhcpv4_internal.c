@@ -178,10 +178,8 @@ CosaDhcpv4Initialize
     CosaDmlDhcpInit( NULL, NULL );
 
     /* Initiation all functions */
-#ifndef FEATURE_RDKB_WAN_MANAGER
     AnscSListInitializeHeader( &pMyObject->ClientList );
     pMyObject->maxInstanceOfClient  = 0;
-#endif
     AnscSListInitializeHeader( &pMyObject->PoolList );
     pMyObject->maxInstanceOfPool    = 0;
     pMyObject->maxInstanceX_CISCO_COM_SAddr = 0;
@@ -291,7 +289,6 @@ CosaDhcpv4Remove
     PSINGLE_LINK_ENTRY              pSListEntry2        = NULL;
 
     /* Remove necessary resource */
-#ifndef FEATURE_RDKB_WAN_MANAGER
     PCOSA_CONTEXT_DHCPC_LINK_OBJECT pCxtDhcpcLink       = NULL;
     pSListEntry         = AnscSListPopEntry(&pMyObject->ClientList);
     while( pSListEntry != NULL)
@@ -322,7 +319,6 @@ CosaDhcpv4Remove
         AnscFreeMemory(pCxtDhcpcLink->hContext);
         AnscFreeMemory(pCxtDhcpcLink);
     }
-#endif
     pSListEntry         = AnscSListPopEntry(&pMyObject->PoolList);
     while( pSListEntry != NULL)
     {
@@ -408,7 +404,6 @@ CosaDhcpv4BackendGetDhcpv4Info
 
     BOOL                            bNeedSave         = FALSE;
     errno_t                         rc                = -1;
-#ifndef FEATURE_RDKB_WAN_MANAGER
     PCOSA_CONTEXT_DHCPC_LINK_OBJECT pClientCxtLink    = NULL;
     PCOSA_DML_DHCPC_FULL            pDhcpc            = NULL;
     PCOSA_DML_DHCPC_REQ_OPT         pReqOption        = NULL;
@@ -755,7 +750,6 @@ CosaDhcpv4BackendGetDhcpv4Info
     {
         DHCPMGR_LOG_INFO("%s %d - IPC Thread failed to start!\n", __FUNCTION__, __LINE__ );
     }
-#endif
     /*****************************************
 
                 Get DHCPv4.Server.Pool.{i}
@@ -1159,7 +1153,6 @@ CosaDhcpv4RegGetDhcpv4Info
     PPOAM_IREP_FOLDER_OBJECT        pPoamIrepFoEnumPool         = (PPOAM_IREP_FOLDER_OBJECT )NULL;
     PPOAM_IREP_FOLDER_OBJECT        pPoamIrepFoEnumStaticAddr   = (PPOAM_IREP_FOLDER_OBJECT )NULL;
     PPOAM_IREP_FOLDER_OBJECT        pPoamIrepFoEnumOption       = (PPOAM_IREP_FOLDER_OBJECT )NULL;
-#ifndef FEATURE_RDKB_WAN_MANAGER
     PPOAM_IREP_FOLDER_OBJECT        pPoamIrepFoClient = (PPOAM_IREP_FOLDER_OBJECT )NULL;
     PPOAM_IREP_FOLDER_OBJECT        pPoamIrepFoReqOpt = (PPOAM_IREP_FOLDER_OBJECT )NULL;
     PPOAM_IREP_FOLDER_OBJECT        pPoamIrepFoEnumReqOpt       = (PPOAM_IREP_FOLDER_OBJECT )NULL;
@@ -1167,13 +1160,10 @@ CosaDhcpv4RegGetDhcpv4Info
     PPOAM_IREP_FOLDER_OBJECT        pPoamIrepFoEnumClient       = (PPOAM_IREP_FOLDER_OBJECT )NULL;
     PPOAM_IREP_FOLDER_OBJECT        pPoamIrepFoEnumSndOpt       = (PPOAM_IREP_FOLDER_OBJECT )NULL;
     PCOSA_CONTEXT_DHCPC_LINK_OBJECT pCosaDhcpcContext = NULL;
-#endif
     PCOSA_CONTEXT_POOL_LINK_OBJECT  pCosaPoolContext = NULL;
     PCOSA_CONTEXT_LINK_OBJECT       pCosaX_COM_CISCO_SAddrContext = NULL;
-#ifndef FEATURE_RDKB_WAN_MANAGER
     PCOSA_CONTEXT_LINK_OBJECT       pCosaReqOptionContext      = NULL;
     PCOSA_CONTEXT_LINK_OBJECT       pCosaSendOptionContext     = NULL;
-#endif
     PCOSA_CONTEXT_LINK_OBJECT       pCosaStaticAddrContext     = NULL;
     PCOSA_CONTEXT_LINK_OBJECT       pCosaOptionContext         = NULL;
     PSLAP_VARIABLE                  pSlapVariable     = NULL;
@@ -1189,7 +1179,6 @@ CosaDhcpv4RegGetDhcpv4Info
     char*                           pAliasStaticAddr  = NULL;
     char*                           pAliasOption      = NULL;
     char*                           pFolderName       = NULL;
-#ifndef FEATURE_RDKB_WAN_MANAGER
     char*                           pAliasReqOption   = NULL;
     char*                           pAliasSendOption  = NULL;
     char*                           pAliasClient      = NULL;
@@ -1197,7 +1186,6 @@ CosaDhcpv4RegGetDhcpv4Info
 
     PCOSA_DML_DHCPC_REQ_OPT         pDhcpv4ReqOpt     = NULL;
     PCOSA_DML_DHCP_OPT              pDhcpv4SndOpt     = NULL;
-#endif
     PCOSA_DML_DHCPS_X_CISCO_COM_SADDR pDhcpv4X_COM_CISCO_SAddr = NULL;
     PCOSA_DML_DHCPS_POOL_FULL       pDhcpv4Pool       = NULL;
     PCOSA_DML_DHCPS_SADDR           pDhcpv4StaticAddr = NULL;
@@ -1257,7 +1245,6 @@ CosaDhcpv4RegGetDhcpv4Info
             </Dhcpv4>
       ****************************************************
       */
-#ifndef FEATURE_RDKB_WAN_MANAGER
     /* Get Folder Client */
     pPoamIrepFoClient  =
         (PPOAM_IREP_FOLDER_OBJECT)pPoamIrepFoDhcpv4->GetFolder
@@ -1739,7 +1726,6 @@ CosaDhcpv4RegGetDhcpv4Info
 
     pPoamIrepFoClient->Remove((ANSC_HANDLE)pPoamIrepFoClient);
     pPoamIrepFoClient = NULL;
-#endif
 
     /*
       Begin process Server.X_COM_CISCO_StaticAddress.{j}
@@ -2400,7 +2386,6 @@ CosaDhcpv4RegGetDhcpv4Info
 
 
 EXIT3:
-#ifndef FEATURE_RDKB_WAN_MANAGER
     if(pDhcpv4Client)
         AnscFreeMemory(pDhcpv4Client);
 
@@ -2409,7 +2394,6 @@ EXIT3:
 
     if(pDhcpv4SndOpt )
         AnscFreeMemory(pDhcpv4SndOpt);
-#endif
     if(pDhcpv4Pool )
         AnscFreeMemory(pDhcpv4Pool);
 
@@ -2420,7 +2404,6 @@ EXIT3:
         AnscFreeMemory(pDhcpv4Option);
 
 EXIT2:
-#ifndef FEATURE_RDKB_WAN_MANAGER
     if(pAliasReqOption)
         AnscFreeMemory(pAliasReqOption);
 
@@ -2429,7 +2412,6 @@ EXIT2:
 
     if(pAliasClient)
         AnscFreeMemory(pAliasClient);
-#endif
     if(pAliasPool)
         AnscFreeMemory(pAliasPool);
 
@@ -2440,7 +2422,6 @@ EXIT2:
         AnscFreeMemory(pAliasOption);
 
 EXIT1:
-#ifndef FEATURE_RDKB_WAN_MANAGER
     if ( pPoamIrepFoClient )
         pPoamIrepFoClient->Remove((ANSC_HANDLE)pPoamIrepFoClient);
 
@@ -2458,7 +2439,6 @@ EXIT1:
 
     if ( pPoamIrepFoEnumSndOpt)
         pPoamIrepFoEnumSndOpt->Remove((ANSC_HANDLE)pPoamIrepFoEnumSndOpt);
-#endif
     if ( pPoamIrepFoPool)
         pPoamIrepFoPool->Remove((ANSC_HANDLE)pPoamIrepFoPool);
 
@@ -2516,30 +2496,24 @@ CosaDhcpv4RegSetDhcpv4Info
     PCOSA_DATAMODEL_DHCPV4          pMyObject         = (PCOSA_DATAMODEL_DHCPV4   )hThisObject;
 
     PPOAM_IREP_FOLDER_OBJECT        pPoamIrepFoDhcpv4 = (PPOAM_IREP_FOLDER_OBJECT )pMyObject->hIrepFolderDhcpv4;
-#ifndef FEATURE_RDKB_WAN_MANAGER
     PPOAM_IREP_FOLDER_OBJECT        pPoamIrepFoClient = (PPOAM_IREP_FOLDER_OBJECT )NULL;
     PPOAM_IREP_FOLDER_OBJECT        pPoamIrepFoReqOpt = (PPOAM_IREP_FOLDER_OBJECT )NULL;
     PPOAM_IREP_FOLDER_OBJECT        pPoamIrepFoSndOpt = (PPOAM_IREP_FOLDER_OBJECT )NULL;
-#endif
     PPOAM_IREP_FOLDER_OBJECT        pPoamIrepFoPool   = (PPOAM_IREP_FOLDER_OBJECT )NULL;
     PPOAM_IREP_FOLDER_OBJECT        pPoamIrepFoStaticAddress   = (PPOAM_IREP_FOLDER_OBJECT )NULL;
     PPOAM_IREP_FOLDER_OBJECT        pPoamIrepFoOption          = (PPOAM_IREP_FOLDER_OBJECT )NULL;
-#ifndef FEATURE_RDKB_WAN_MANAGER
     PPOAM_IREP_FOLDER_OBJECT        pPoamIrepFoEnumClient      = (PPOAM_IREP_FOLDER_OBJECT )NULL;
     PPOAM_IREP_FOLDER_OBJECT        pPoamIrepFoEnumReqOpt      = (PPOAM_IREP_FOLDER_OBJECT )NULL;
     PPOAM_IREP_FOLDER_OBJECT        pPoamIrepFoEnumSndOpt      = (PPOAM_IREP_FOLDER_OBJECT )NULL;
-#endif
     PPOAM_IREP_FOLDER_OBJECT        pPoamIrepFoEnumPool        = (PPOAM_IREP_FOLDER_OBJECT )NULL;
     PPOAM_IREP_FOLDER_OBJECT        pPoamIrepFoEnumStaticAddress   = (PPOAM_IREP_FOLDER_OBJECT )NULL;
     PPOAM_IREP_FOLDER_OBJECT        pPoamIrepFoEnumOption          = (PPOAM_IREP_FOLDER_OBJECT )NULL;
 
     PSINGLE_LINK_ENTRY              pSLinkEntry       = (PSINGLE_LINK_ENTRY       )NULL;
     PSINGLE_LINK_ENTRY              pSLinkEntry2      = (PSINGLE_LINK_ENTRY       )NULL;
-#ifndef FEATURE_RDKB_WAN_MANAGER
     PCOSA_CONTEXT_DHCPC_LINK_OBJECT pCosaDhcpcContext = NULL;
     PCOSA_CONTEXT_LINK_OBJECT       pCosaSendOptionContext      = NULL;
     PCOSA_CONTEXT_LINK_OBJECT       pCosaReqOptionContext       = NULL;
-#endif
     PCOSA_CONTEXT_POOL_LINK_OBJECT  pCosaPoolContext  = NULL;
 
 
@@ -2547,11 +2521,9 @@ CosaDhcpv4RegSetDhcpv4Info
     PCOSA_CONTEXT_LINK_OBJECT       pCosaOptionContext          = NULL;
     PSLAP_VARIABLE                  pSlapVariable     = NULL;
     char                            FolderName[16]    = {0};
-#ifndef FEATURE_RDKB_WAN_MANAGER
     PCOSA_DML_DHCPC_FULL            pDhcpv4Client     = NULL;
     PCOSA_DML_DHCPC_REQ_OPT         pDhcpv4ReqOpt     = NULL;
     PCOSA_DML_DHCP_OPT              pDhcpv4SndOpt     = NULL;
-#endif
     PCOSA_DML_DHCPS_POOL_FULL       pDhcpv4Pool       = NULL;
     PCOSA_DML_DHCPS_SADDR           pDhcpv4StaticAddress  = NULL;
     PCOSA_DML_DHCPSV4_OPTION        pDhcpv4Option         = NULL;
@@ -2628,7 +2600,6 @@ CosaDhcpv4RegSetDhcpv4Info
             </Dhcpv4>
       ****************************************************
       */
-#ifndef FEATURE_RDKB_WAN_MANAGER
     /* Add dhcpv4.client.*/
     pPoamIrepFoClient =
         pPoamIrepFoDhcpv4->AddFolder
@@ -3017,7 +2988,6 @@ CosaDhcpv4RegSetDhcpv4Info
 
     pPoamIrepFoClient->Remove((ANSC_HANDLE)pPoamIrepFoClient);
     pPoamIrepFoClient = NULL;
-#endif
 
     /*
       begin process pool and staticaddress
@@ -3417,7 +3387,6 @@ EXIT1:
         SlapFreeVariable(pSlapVariable);
         pSlapVariable = NULL;
     }
-#ifndef FEATURE_RDKB_WAN_MANAGER
     if ( pPoamIrepFoClient )
         pPoamIrepFoClient->Remove((ANSC_HANDLE)pPoamIrepFoClient);
 
@@ -3429,7 +3398,6 @@ EXIT1:
 
     /*CID 58572 Logically dead code -
       goto EXIT only hit in NULL Case*/
-#endif
 
     if ( pPoamIrepFoPool)
         pPoamIrepFoPool->Remove((ANSC_HANDLE)pPoamIrepFoPool);
@@ -3446,7 +3414,6 @@ EXIT1:
     return returnStatus;
 }
 
-#ifndef FEATURE_RDKB_WAN_MANAGER
 /**********************************************************************
 
     caller:     owner of this object
@@ -3509,7 +3476,6 @@ CosaDhcpv4ClientHasDelayAddedChild
 
     return FALSE;
 }
-#endif
 /**********************************************************************
 
     caller:     owner of this object

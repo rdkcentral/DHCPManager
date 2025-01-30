@@ -193,7 +193,6 @@ static int update_pValue (char *pValue, PULONG pulSize, char *str)
     return:     TRUE if succeeded.
 
 **********************************************************************/
-#ifndef FEATURE_RDKB_WAN_MANAGER
 BOOL
 DHCPv6_GetParamBoolValue
     (
@@ -3557,7 +3556,6 @@ dhcp6c_mapt_mape_GetParamStringValue
     /* DHCPMGR_LOG_WARNING("Unsupported parameter '%s'\n", ParamName); */
     return -1;
 }
-#endif
 /***********************************************************************
 
  APIs for Object:
