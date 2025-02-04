@@ -1687,7 +1687,7 @@ ANSC_STATUS CosaDmlStartDhcpv4Client(ANSC_HANDLE hInsContext)
         }
         else if (pDhcpReqOpt->bEnabled)
         {
-            add_dhcpv4_opt_to_list(&req_opt_list, (int)pDhcpReqOpt->Tag, NULL);
+            add_dhcp_opt_to_list(&req_opt_list, (int)pDhcpReqOpt->Tag, NULL);
         }
     }
     noOfSentOpt = CosaDmlDhcpcGetNumberOfSentOption(hInsContext, pDhcpc->Cfg.InstanceNumber);
@@ -1702,11 +1702,11 @@ ANSC_STATUS CosaDmlStartDhcpv4Client(ANSC_HANDLE hInsContext)
         }
         else if (pDhcpSentOpt->bEnabled)
         {
-            add_dhcpv4_opt_to_list(&send_opt_list, (int)pDhcpSentOpt->Tag, (char *)pDhcpSentOpt->Value);
+            add_dhcp_opt_to_list(&send_opt_list, (int)pDhcpSentOpt->Tag, (char *)pDhcpSentOpt->Value);
         }
     }
 
-    clientPid = start_dhcpv4_client(&dhcpParams, req_opt_list, send_opt_list);
+    clientPid = start_dhcpv4_client(&dhcpParams);
     free_opt_list_data (req_opt_list);
     free_opt_list_data (send_opt_list);
     if (-1 == clientPid)

@@ -23,7 +23,7 @@ AM_LDFLAGS = -lhal_platform -lz -lpthread -lccsp_common $(DBUS_LIBS)
 
 ACLOCAL_AMFLAGS = -I m4
 
-noinst_LTLIBRARIES = libCcspDhcpMgr_Dhcpv4Client.la
+lib_LTLIBRARIES = libCcspDhcpMgr_Dhcpv4Client.la
 
 libCcspDhcpMgr_Dhcpv4Client_la_CPPFLAGS = -I$(top_srcdir)/source/DHCPClientUtils/DHCPv4Client/include \
                                           -I$(top_srcdir)/source/DHCPServerUtils/utils \
