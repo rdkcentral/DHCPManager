@@ -28,6 +28,7 @@
 #include "cosa_dhcpv4_apis.h"
 #include "cosa_dhcpv4_internal.h"
 #include "cosa_dhcpv4_dml.h"
+#include "dhcpmgr_controller.h"
 
 
 

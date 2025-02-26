@@ -105,7 +105,7 @@
 }\*/
 
 #define DBG_PRINT(fmt, arg...) \
-          RDK_LOG(RDK_LOG_INFO, "LOG.RDK.WANMANAGER", fmt, ##arg);
+          RDK_LOG(RDK_LOG_INFO, "LOG.RDK.DHCPMGR", fmt, ##arg);
 
 #define UNUSED_VARIABLE(x) (void)(x)
 
