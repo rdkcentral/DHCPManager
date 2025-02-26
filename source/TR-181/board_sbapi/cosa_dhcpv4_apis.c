@@ -1778,6 +1778,9 @@ CosaDmlDhcpcGetNumberOfEntries
     )
 {
     int retPsmGet = CCSP_SUCCESS;
+    if(g_Dhcp4ClientNum > 0)
+        return g_Dhcp4ClientNum;
+    
     char param_name[512];
     _ansc_memset(param_name, 0, sizeof(param_name));
     char* param_value = NULL;
@@ -1788,7 +1791,8 @@ CosaDmlDhcpcGetNumberOfEntries
     }
     else
     {
-         return atoi(param_value);
+        g_Dhcp4ClientNum = atoi(param_value);
+         return g_Dhcp4ClientNum;
     }
     UNREFERENCED_PARAMETER(hContext);
     return 0;

@@ -22,6 +22,8 @@ AM_LDFLAGS = -lz -lpthread -lccsp_common $(DBUS_LIBS)
 noinst_LTLIBRARIES = libCcspDhcpMgrUtils.la
 
 libCcspDhcpMgrUtils_la_CPPFLAGS = -I$(top_srcdir)/source/DHCPMgrUtils/include \
+                                  -I$(top_srcdir)/source/DHCPClientUtils/DHCPv4Client/ \
+                                  -I$(top_srcdir)/source/DHCPClientUtils/ \
                                   -I$(top_srcdir)/source/TR-181/include \
                                   -I$(top_srcdir)/source/TR-181/middle_layer_src \
                                   -I$(top_srcdir)/source/DHCPServerUtils/utils/include 

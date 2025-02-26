@@ -1134,7 +1134,7 @@ Client_SetParamBoolValue
         /* save update to backup */
         pDhcpc->Cfg.bEnabled = bValue;
 
-#ifdef DHCPV4_CLIENT_SUPPORT
+#if 0// def DHCPV4_CLIENT_SUPPORT
         if (bValue == TRUE)
         {
             //dhcpv4_client_service_start(sd);

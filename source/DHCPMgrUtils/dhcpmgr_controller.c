@@ -28,6 +28,7 @@
 #include "cosa_dhcpv4_apis.h"
 #include "cosa_dhcpv4_internal.h"
 #include "cosa_dhcpv4_dml.h"
+#include "dhcpv4_interface.h"
 #include "dhcpmgr_controller.h"
 
 
@@ -64,6 +65,7 @@ static void* DhcpMgr_MainController( void *args )
     //detach thread from caller stack
     pthread_detach(pthread_self());
 
+    DHCPMGR_LOG_INFO("%s %d DhcpMgr_MainController started \n", __FUNCTION__, __LINE__);
     BOOL bRunning = TRUE;
     struct timeval tv;
     int n = 0;
@@ -104,6 +106,14 @@ static void* DhcpMgr_MainController( void *args )
                 DHCPMGR_LOG_ERROR("%s : pDhcpc is NULL\n",__FUNCTION__);
                 continue;
             }
+            
+            if(pDhcpc->Cfg.bEnabled == true && pDhcpc->Info.Status == COSA_DML_DHCP_STATUS_Disabled)
+            {
+                DHCPMGR_LOG_INFO("%s : Starting \n",__FUNCTION__);
+                start_dhcpv4_client(NULL, NULL, NULL);
+                pDhcpc->Info.Status = COSA_DML_DHCP_STATUS_Enabled;
+            }
+
 
         }
     }
