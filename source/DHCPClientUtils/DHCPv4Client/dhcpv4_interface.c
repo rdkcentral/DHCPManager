@@ -11,7 +11,7 @@ __attribute__((weak)) pid_t start_dhcpv4_client(char *interfaceName, dhcp_option
     (void)req_opt_list;
     (void)send_opt_list;
     DHCPMGR_LOG_INFO("%s %d Weak implementation of start_dhcpv4_client \n", __FUNCTION__, __LINE__);
-    return -1;
+    return 1;
 }
 
 __attribute__((weak)) int send_dhcpv4_renew(pid_t processID) 

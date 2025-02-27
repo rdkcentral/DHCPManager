@@ -1124,7 +1124,6 @@ Client_SetParamBoolValue
     BOOL                        bValue
     )
 {
-    ANSC_STATUS                     returnStatus      = ANSC_STATUS_SUCCESS;
     PCOSA_CONTEXT_DHCPC_LINK_OBJECT pCxtLink          = (PCOSA_CONTEXT_DHCPC_LINK_OBJECT)hInsContext;
     PCOSA_DML_DHCPC_FULL            pDhcpc            = (PCOSA_DML_DHCPC_FULL)pCxtLink->hContext;
 
@@ -1159,11 +1158,14 @@ Client_SetParamBoolValue
         {
             if (pDhcpc->Cfg.bEnabled)
             {
+                pDhcpc->Cfg.Renew = TRUE;
+                /* TODO : clean up
+                ANSC_STATUS                     returnStatus      = ANSC_STATUS_SUCCESS;
                 returnStatus = CosaDmlDhcpcRenew(hInsContext, pDhcpc->Cfg.InstanceNumber);
                 if ( returnStatus != ANSC_STATUS_SUCCESS )
                 {
                     return  FALSE;
-                }
+                }*/
             }
             else
                 return FALSE;

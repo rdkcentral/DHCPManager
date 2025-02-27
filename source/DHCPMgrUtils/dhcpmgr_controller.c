@@ -58,6 +58,7 @@ int DhcpMgr_StartMainController()
     return ret;
 }
 
+//static int get_dhcpv4_opt_list (dhcp_params * params, dhcp_opt_list ** req_opt_list, dhcp_opt_list ** send_opt_list)
 
 static void* DhcpMgr_MainController( void *args )
 {
@@ -107,11 +108,48 @@ static void* DhcpMgr_MainController( void *args )
                 continue;
             }
             
-            if(pDhcpc->Cfg.bEnabled == true && pDhcpc->Info.Status == COSA_DML_DHCP_STATUS_Disabled)
+            if(pDhcpc->Cfg.bEnabled == TRUE )
             {
-                DHCPMGR_LOG_INFO("%s : Starting \n",__FUNCTION__);
-                start_dhcpv4_client(NULL, NULL, NULL);
-                pDhcpc->Info.Status = COSA_DML_DHCP_STATUS_Enabled;
+                if(pDhcpc->Info.Status == COSA_DML_DHCP_STATUS_Disabled)
+                {
+                    ////DHCP client Enabled, start the client if not started.
+                    DHCPMGR_LOG_INFO("%s %d: Starting dhcpv4 client on %s\n",__FUNCTION__, __LINE__, pDhcpc->Cfg.Interface);
+                    
+                    dhcp_option_list *req_opt_list = NULL;
+                    dhcp_option_list *send_opt_list = NULL;
+                    //TODO : build option list from the DML entries.
+
+                    pDhcpc->Info.ClientProcessId  = start_dhcpv4_client(pDhcpc->Cfg.Interface, req_opt_list, send_opt_list);
+                    if(pDhcpc->Info.ClientProcessId > 0 ) 
+                    {
+                        pDhcpc->Info.Status = COSA_DML_DHCP_STATUS_Enabled;
+                        DHCPMGR_LOG_INFO("%s %d: dhcpv4 client for %s started PID : %d \n", __FUNCTION__, __LINE__, pDhcpc->Cfg.Interface, pDhcpc->Info.ClientProcessId);
+                        //TODO: add success rbus event 
+                    }
+                    else
+                    {
+                        DHCPMGR_LOG_INFO("%s %d: dhcpv4 client for %s failed to start \n", __FUNCTION__, __LINE__, pDhcpc->Cfg.Interface);
+                        //TODO: add success rbus event 
+                    }
+
+                } 
+                else if (pDhcpc->Cfg.Renew == TRUE)
+                {
+                    DHCPMGR_LOG_INFO("%s %d: Triggering renew for  dhcpv4 client : %s PID : %d\n",__FUNCTION__, __LINE__, pDhcpc->Cfg.Interface, pDhcpc->Info.ClientProcessId);
+                    send_dhcpv4_renew(pDhcpc->Info.ClientProcessId);
+                }
+
+                //TODO: Add lease handling and rbus event 
+            }
+            else
+            {
+                //DHCP client disabled, stop the client if it is running.
+                if(pDhcpc->Info.Status == COSA_DML_DHCP_STATUS_Enabled)
+                {
+                    DHCPMGR_LOG_INFO("%s %d: Stopping the dhcpv4 client : %s PID : %d \n",__FUNCTION__, __LINE__, pDhcpc->Cfg.Interface, pDhcpc->Info.ClientProcessId);
+                    stop_dhcpv4_client(pDhcpc->Info.ClientProcessId);
+                    pDhcpc->Info.Status = COSA_DML_DHCP_STATUS_Disabled;
+                }
             }
 
 

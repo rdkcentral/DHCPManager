@@ -150,6 +150,7 @@ _COSA_DML_DHCPC_CFG
     char                            Alias[COSA_DML_ALIAS_NAME_LENGTH];
 
     BOOLEAN                         bEnabled;
+    BOOLEAN                         Renew;
     char                            Interface[COSA_DML_ALIAS_NAME_LENGTH]; /* IP interface name */
     BOOLEAN                         PassthroughEnable;
     char                            PassthroughDHCPPool[64];            /* DHCP server pool alias */
@@ -163,6 +164,7 @@ _COSA_DML_DHCPC_INFO
 {
     COSA_DML_DHCP_STATUS            Status;
     COSA_DML_DHCPC_STATUS           DHCPStatus;
+    pid_t                           ClientProcessId;
     ANSC_IPV4_ADDRESS               IPAddress;
     ANSC_IPV4_ADDRESS               SubnetMask;
     ULONG                           NumIPRouters;
