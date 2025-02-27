@@ -182,6 +182,7 @@ _COSA_DML_DHCPC_FULL
 {
     COSA_DML_DHCPC_CFG              Cfg;
     COSA_DML_DHCPC_INFO             Info;
+    pthread_mutex_t                 mutex; // Mutex declaration
 }
 COSA_DML_DHCPC_FULL, *PCOSA_DML_DHCPC_FULL;
 

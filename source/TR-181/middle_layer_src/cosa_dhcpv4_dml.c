@@ -598,6 +598,13 @@ Client_AddEntry
     pCxtLink->InstanceNumber   = pDhcpc->Cfg.InstanceNumber;
     *pInsNumber                = pDhcpc->Cfg.InstanceNumber;
 
+    DHCPMGR_LOG_INFO("%s %d Initialising DHCPv4 client mutex  \n", __FUNCTION__, __LINE__);
+    pthread_mutexattr_t attr;
+    pthread_mutexattr_init(&attr);
+    pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
+    pthread_mutex_init(&pDhcpc->mutex, &attr); //Initialize the Mutex
+    pthread_mutexattr_destroy(&attr); // Clean up the attribute object
+
     rc = sprintf_s( pDhcpc->Cfg.Alias, sizeof(pDhcpc->Cfg.Alias), "Client%lu", pDhcpc->Cfg.InstanceNumber);
     if(rc < EOK)
     {
@@ -666,6 +673,9 @@ Client_DelEntry
     /* Normally, two sublinks are empty because our framework will firstly
        call delEntry for them before coming here. We needn't care them.
     */
+
+    DHCPMGR_LOG_INFO("%s %d Destroy DHCPv4 client mutex  \n", __FUNCTION__, __LINE__);
+    pthread_mutex_destroy(&pDhcpc->mutex);
     if ( !pCxtLink->bNew )
     {
         returnStatus = CosaDmlDhcpcDelEntry(NULL, pDhcpc->Cfg.InstanceNumber);
@@ -1130,8 +1140,12 @@ Client_SetParamBoolValue
     /* check the parameter name and set the corresponding value */
     if (strcmp(ParamName, "Enable") == 0)
     {
+        DHCPMGR_LOG_INFO("%s %d DHCPv4 Client %s is %s \n", __FUNCTION__, __LINE__, pDhcpc->Cfg.Interface, bValue?"Enabled":"Disabled" );
+        pthread_mutex_lock(&pDhcpc->mutex); //MUTEX lock
         /* save update to backup */
         pDhcpc->Cfg.bEnabled = bValue;
+
+        pthread_mutex_unlock(&pDhcpc->mutex); //MUTEX unlock
 
 #if 0// def DHCPV4_CLIENT_SUPPORT
         if (bValue == TRUE)
@@ -1158,7 +1172,10 @@ Client_SetParamBoolValue
         {
             if (pDhcpc->Cfg.bEnabled)
             {
+                DHCPMGR_LOG_INFO("%s %d Renew triggered for DHCPv4 Client %s \n", __FUNCTION__, __LINE__, pDhcpc->Cfg.Interface );
+                pthread_mutex_lock(&pDhcpc->mutex); //MUTEX lock
                 pDhcpc->Cfg.Renew = TRUE;
+                pthread_mutex_unlock(&pDhcpc->mutex); //MUTEX unlock
                 /* TODO : clean up
                 ANSC_STATUS                     returnStatus      = ANSC_STATUS_SUCCESS;
                 returnStatus = CosaDmlDhcpcRenew(hInsContext, pDhcpc->Cfg.InstanceNumber);

@@ -108,6 +108,7 @@ static void* DhcpMgr_MainController( void *args )
                 continue;
             }
             
+            pthread_mutex_lock(&pDhcpc->mutex); //MUTEX lock
             if(pDhcpc->Cfg.bEnabled == TRUE )
             {
                 if(pDhcpc->Info.Status == COSA_DML_DHCP_STATUS_Disabled)
@@ -137,6 +138,7 @@ static void* DhcpMgr_MainController( void *args )
                 {
                     DHCPMGR_LOG_INFO("%s %d: Triggering renew for  dhcpv4 client : %s PID : %d\n",__FUNCTION__, __LINE__, pDhcpc->Cfg.Interface, pDhcpc->Info.ClientProcessId);
                     send_dhcpv4_renew(pDhcpc->Info.ClientProcessId);
+                    pDhcpc->Cfg.Renew = FALSE;
                 }
 
                 //TODO: Add lease handling and rbus event 
@@ -149,9 +151,11 @@ static void* DhcpMgr_MainController( void *args )
                     DHCPMGR_LOG_INFO("%s %d: Stopping the dhcpv4 client : %s PID : %d \n",__FUNCTION__, __LINE__, pDhcpc->Cfg.Interface, pDhcpc->Info.ClientProcessId);
                     stop_dhcpv4_client(pDhcpc->Info.ClientProcessId);
                     pDhcpc->Info.Status = COSA_DML_DHCP_STATUS_Disabled;
+                    pDhcpc->Cfg.Renew = FALSE;
                 }
             }
 
+            pthread_mutex_unlock(&pDhcpc->mutex); //MUTEX unlock
 
         }
     }

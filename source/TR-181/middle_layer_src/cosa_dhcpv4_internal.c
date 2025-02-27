@@ -440,6 +440,13 @@ CosaDhcpv4BackendGetDhcpv4Info
             pClientCxtLink->hContext       = (ANSC_HANDLE)pDhcpc;
         pClientCxtLink->bNew           = FALSE;
 
+        DHCPMGR_LOG_INFO("%s %d Initialising DHCPv4 client mutex  \n", __FUNCTION__, __LINE__);
+        pthread_mutexattr_t attr;
+        pthread_mutexattr_init(&attr);
+        pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
+        pthread_mutex_init(&pDhcpc->mutex, &attr); //Initialize the Mutex
+        pthread_mutexattr_destroy(&attr); // Clean up the attribute object
+
         if ( !pDhcpc->Cfg.InstanceNumber )
         {
             if ( !++pDhcpv4->maxInstanceOfClient )
