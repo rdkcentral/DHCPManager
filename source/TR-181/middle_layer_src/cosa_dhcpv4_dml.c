@@ -1196,7 +1196,7 @@ Client_SetParamBoolValue
 #ifdef DHCPV4_CLIENT_SUPPORT
 //    serv_dhcp_deinit();
     //dhcpv4_client_service_stop(sd);
-	CosaDmlStopDhcpv4Client(hInsContext);
+	//CosaDmlStopDhcpv4Client(hInsContext);
     dhcpv4_client_enabled = 0;
 #endif
 

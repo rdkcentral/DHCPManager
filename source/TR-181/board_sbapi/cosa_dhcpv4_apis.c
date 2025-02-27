@@ -1639,6 +1639,7 @@ PCOSA_DML_DHCP_OPT CosaDmlDhcpcGetSentOption_Entry(ANSC_HANDLE hInsContext, ULON
        return NULL;
     }
 }
+#if 0
 /*
     Description:
         The API retrieves the Request/Send option entry from Client table by index
@@ -1767,6 +1768,7 @@ ANSC_STATUS CosaDmlStopDhcpv4Client(ANSC_HANDLE hInsContext)
     return ANSC_STATUS_SUCCESS;
 }
 
+#endif
 /*
     Description:
         The API retrieves the number of DHCP clients in the system.
@@ -2039,9 +2041,10 @@ CosaDmlDhcpcRenew
        {
            DHCPMGR_LOG_INFO("%s %d: ulInstanceNumber is 0...\n", __FUNCTION__, __LINE__);
        }
+       
 
-        CosaDmlStopDhcpv4Client(hContext);
-        CosaDmlStartDhcpv4Client(hContext);
+       // CosaDmlStopDhcpv4Client(hContext);
+       // CosaDmlStartDhcpv4Client(hContext);
 #ifndef _HUB4_PRODUCT_REQ_
         v_secure_system("sysevent set dhcp_client-renew");
 #endif

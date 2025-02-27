@@ -30,6 +30,7 @@
 #include "cosa_dhcpv4_dml.h"
 #include "dhcpv4_interface.h"
 #include "dhcpmgr_controller.h"
+#include "dhcp_client_utils.h"
 
 
 
@@ -58,7 +59,47 @@ int DhcpMgr_StartMainController()
     return ret;
 }
 
-//static int get_dhcpv4_opt_list (dhcp_params * params, dhcp_opt_list ** req_opt_list, dhcp_opt_list ** send_opt_list)
+static int DhcpMgr_build_dhcpv4_opt_list (PCOSA_CONTEXT_DHCPC_LINK_OBJECT hInsContext, dhcp_option_list ** req_opt_list, dhcp_option_list ** send_opt_list)
+{
+    PCOSA_DML_DHCPC_REQ_OPT         pDhcpReqOpt   = NULL;
+    PCOSA_DML_DHCP_OPT              pDhcpSentOpt  = NULL;
+    ULONG                           noOfReqOpt    = -1;
+    ULONG                           noOfSentOpt   = -1;
+    PCOSA_DML_DHCPC_FULL pDhcpc                   = (PCOSA_DML_DHCPC_FULL)hInsContext->hContext;
+
+    DHCPMGR_LOG_INFO("%s %d: Entered \n",__FUNCTION__, __LINE__);
+    noOfReqOpt = CosaDmlDhcpcGetNumberOfReqOption(hInsContext, pDhcpc->Cfg.InstanceNumber);
+
+    for (ULONG reqIdx = 0; reqIdx < noOfReqOpt; reqIdx++)
+    {
+        pDhcpReqOpt = CosaDmlDhcpcGetReqOption_Entry(hInsContext, reqIdx);
+        if (!pDhcpReqOpt)
+        {
+            DHCPMGR_LOG_ERROR("%s : pDhcpReqOpt is NULL",__FUNCTION__);
+        }
+        else if (pDhcpReqOpt->bEnabled)
+        {
+            add_dhcp_opt_to_list(&req_opt_list, (int)pDhcpReqOpt->Tag, NULL);
+        }
+    }
+    noOfSentOpt = CosaDmlDhcpcGetNumberOfSentOption(hInsContext, pDhcpc->Cfg.InstanceNumber);
+
+    for (ULONG sentIdx = 0; sentIdx < noOfSentOpt; sentIdx++)
+    {
+        pDhcpSentOpt = CosaDmlDhcpcGetSentOption_Entry(hInsContext, sentIdx);
+
+        if (!pDhcpSentOpt)
+        {
+            DHCPMGR_LOG_ERROR("%s : pDhcpSentOpt is NULL",__FUNCTION__);
+        }
+        else if (pDhcpSentOpt->bEnabled)
+        {
+            add_dhcp_opt_to_list(&send_opt_list, (int)pDhcpSentOpt->Tag, (char *)pDhcpSentOpt->Value);
+        }
+    }
+
+    return 0;
+}
 
 static void* DhcpMgr_MainController( void *args )
 {
@@ -118,9 +159,16 @@ static void* DhcpMgr_MainController( void *args )
                     
                     dhcp_option_list *req_opt_list = NULL;
                     dhcp_option_list *send_opt_list = NULL;
-                    //TODO : build option list from the DML entries.
+                    DhcpMgr_build_dhcpv4_opt_list (pDhcpCxtLink, &req_opt_list, &send_opt_list);
 
                     pDhcpc->Info.ClientProcessId  = start_dhcpv4_client(pDhcpc->Cfg.Interface, req_opt_list, send_opt_list);
+
+                    //Free optios list
+                    if(req_opt_list)
+                        free_opt_list_data (req_opt_list);
+                    if(send_opt_list)
+                        free_opt_list_data (send_opt_list);
+
                     if(pDhcpc->Info.ClientProcessId > 0 ) 
                     {
                         pDhcpc->Info.Status = COSA_DML_DHCP_STATUS_Enabled;

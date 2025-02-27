@@ -121,8 +121,8 @@ typedef struct dhcp_opt {
     bool is_release_required;
 } dhcp_params;
 
-pid_t start_dhcpv4_client (dhcp_params * params);
-int stop_dhcpv4_client (dhcp_params * params);
+//pid_t start_dhcpv4_client (dhcp_params * params);
+//int stop_dhcpv4_client (dhcp_params * params);
 int stop_udhcpc (dhcp_params * params);
 pid_t start_dhcpv6_client (dhcp_params * params);
 int stop_dhcpv6_client (dhcp_params * params);

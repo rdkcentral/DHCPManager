@@ -409,6 +409,9 @@ CosaDmlDhcpcGetReqOption_Entry
         ULONG InsNumber
 );
 
+PCOSA_DML_DHCP_OPT CosaDmlDhcpcGetSentOption_Entry(ANSC_HANDLE hInsContext, ULONG InsNumber);
+
+
 ANSC_STATUS
 CosaDmlDhcpInit
     (
