@@ -30,6 +30,7 @@
 #include "cosa_dhcpv4_dml.h"
 #include "dhcpv4_interface.h"
 #include "dhcpmgr_controller.h"
+
 #include "dhcp_client_utils.h"
 
 
@@ -59,7 +60,7 @@ int DhcpMgr_StartMainController()
     return ret;
 }
 
-static int DhcpMgr_build_dhcpv4_opt_list (PCOSA_CONTEXT_DHCPC_LINK_OBJECT hInsContext, dhcp_option_list ** req_opt_list, dhcp_option_list ** send_opt_list)
+static int DhcpMgr_build_dhcpv4_opt_list (PCOSA_CONTEXT_DHCPC_LINK_OBJECT hInsContext, dhcp_opt_list ** req_opt_list, dhcp_opt_list ** send_opt_list)
 {
     PCOSA_DML_DHCPC_REQ_OPT         pDhcpReqOpt   = NULL;
     PCOSA_DML_DHCP_OPT              pDhcpSentOpt  = NULL;
@@ -94,6 +95,7 @@ static int DhcpMgr_build_dhcpv4_opt_list (PCOSA_CONTEXT_DHCPC_LINK_OBJECT hInsCo
         }
         else if (pDhcpSentOpt->bEnabled)
         {
+            //TODO: add verdor specific options API call
             add_dhcp_opt_to_list(&send_opt_list, (int)pDhcpSentOpt->Tag, (char *)pDhcpSentOpt->Value);
         }
     }
@@ -117,7 +119,7 @@ static void* DhcpMgr_MainController( void *args )
         /* Wait up to 250 milliseconds */
         tv.tv_sec = 0;
         tv.tv_usec = 250000;
-
+        //TODO : add a Signaling mechanism instead of sleep.
         n = select(0, NULL, NULL, NULL, &tv);
         if (n < 0)
         {
@@ -157,8 +159,8 @@ static void* DhcpMgr_MainController( void *args )
                     ////DHCP client Enabled, start the client if not started.
                     DHCPMGR_LOG_INFO("%s %d: Starting dhcpv4 client on %s\n",__FUNCTION__, __LINE__, pDhcpc->Cfg.Interface);
                     
-                    dhcp_option_list *req_opt_list = NULL;
-                    dhcp_option_list *send_opt_list = NULL;
+                    dhcp_opt_list *req_opt_list = NULL;
+                    dhcp_opt_list *send_opt_list = NULL;
                     DhcpMgr_build_dhcpv4_opt_list (pDhcpCxtLink, &req_opt_list, &send_opt_list);
 
                     pDhcpc->Info.ClientProcessId  = start_dhcpv4_client(pDhcpc->Cfg.Interface, req_opt_list, send_opt_list);

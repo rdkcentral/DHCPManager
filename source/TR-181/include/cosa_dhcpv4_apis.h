@@ -72,6 +72,8 @@
 #ifndef  _DML_API_DHCP_
 #define  _DML_API_DHCP_
 
+
+
 /**********************************************************************
                 STRUCTURE AND CONSTANT DEFINITIONS
 **********************************************************************/
@@ -177,12 +179,24 @@ _COSA_DML_DHCPC_INFO
 COSA_DML_DHCPC_INFO,  *PCOSA_DML_DHCPC_INFO;
 
 
+// Forward declaration of the DHCPv4_PLUGIN_MSG structure
+typedef struct _DHCPv4_PLUGIN_MSG DHCPv4_PLUGIN_MSG;
+
+typedef struct _DHCPv4_LEASE_LIST 
+{
+    DHCPv4_PLUGIN_MSG               *data;
+    struct _DHCPv4_LEASE_LIST       *next;
+
+}DHCPv4_LEASE_LIST;
+
 typedef  struct
 _COSA_DML_DHCPC_FULL
 {
     COSA_DML_DHCPC_CFG              Cfg;
     COSA_DML_DHCPC_INFO             Info;
     pthread_mutex_t                 mutex; // Mutex declaration
+    DHCPv4_PLUGIN_MSG               *currentLease;
+    DHCPv4_LEASE_LIST               *NewLeases;
 }
 COSA_DML_DHCPC_FULL, *PCOSA_DML_DHCPC_FULL;
 

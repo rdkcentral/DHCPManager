@@ -5,7 +5,7 @@
 #include <unistd.h>
 
 // Weak function implementations
-__attribute__((weak)) pid_t start_dhcpv4_client(char *interfaceName, dhcp_option_list *req_opt_list, dhcp_option_list *send_opt_list) 
+__attribute__((weak)) pid_t start_dhcpv4_client(char *interfaceName, dhcp_opt_list *req_opt_list, dhcp_opt_list *send_opt_list) 
 {
     (void)interfaceName;
     (void)req_opt_list;

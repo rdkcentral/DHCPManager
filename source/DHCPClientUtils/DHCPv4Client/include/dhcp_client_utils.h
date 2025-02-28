@@ -17,6 +17,9 @@
  * limitations under the License.
  */
 
+#ifndef DHCPV_CLIENT_UTILS_H
+#define DHCPV_CLIENT_UTILS_H
+
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -31,12 +34,73 @@
 #include <sys/wait.h>
 #include "syscfg/syscfg.h"
 #include <sys/stat.h>
-#include "platform_hal.h"
+//#include "platform_hal.h"
 #include "rdk_debug.h"
 
+
+#ifndef CHAR
+#define CHAR  char
+#endif
+
+#ifndef UCHAR
+#define UCHAR unsigned char
+#endif
+
+#ifndef BOOLEAN
+#define BOOLEAN  unsigned char
+#endif
+
+#ifndef INT
+#define INT   int
+#endif
+
+#ifndef UINT
+#define UINT  unsigned int
+#endif
+
+#ifndef ULONG
+#define ULONG unsigned long
+#endif
+
+#ifndef UINT8_t
+#define UINT8_t unsigned char
+#endif
+
+#ifndef UINT16_t
+#define UINT16_t unsigned short
+#endif
+
+#ifndef UINT32_t
+#define UINT32_t unsigned int
+#endif
+
+#ifndef UINT64_t
+#define UINT64_t unsigned long long
+#endif
+
+#ifndef TRUE
+#define TRUE     1
+#endif
+
+#ifndef FALSE
+#define FALSE    0
+#endif
+
+#ifndef ENABLE
+#define ENABLE   1
+#endif
+
+#ifndef RETURN_OK
+#define RETURN_OK   0
+#endif
+
+#ifndef RETURN_ERR
+#define RETURN_ERR   -1
+#endif
+
 #define TRUE_STR               "true"
-#define TRUE                   1
-#define FALSE                  0
+//#define TRUE                   1
+//#define FALSE                  0
 #define SUCCESS                0
 #define FAILURE                1
 #define BUFLEN_4               4           //!< buffer length 4
@@ -76,9 +140,14 @@
 #define DHCPV6_OPT_15  15  // User Class Option
 #define DHCPV6_OPT_16  16  // Vendor Class Option
 #define DHCPV6_OPT_20  20  // Reconfigure Accept Option
-
+#define DHCPV6_OPT_3    3  // Identity Association for Non-temporary Addresses Option
+#define DHCPV6_OPT_5    5  // IA Address Option
+#define DHCPV6_OPT_22  22  // OPTION_SIP_SERVER_A
+#define DHCPV6_OPT_25  25  // Identity Association for Prefix Delegation Option
+#define DHCPV6_OPT_64  64  // OPTION_AFTR_NAME
 
 //DHCPv4 Options
+#define DHCPV4_OPT_2   2   // Time Offset
 #define DHCPV4_OPT_42  42  // NTP Server Addresses
 #define DHCPV4_OPT_43  43  // Vendor Specific Information
 #define DHCPV4_OPT_58  58  // DHCP Renewal (T1) Time
@@ -94,6 +163,10 @@
 #define DHCPV4_OPT_120 120 //DHCP Req option for sipsrv
 #define DHCPV4_OPT_121 121 //DHCP Req option for classless static routes
 
+//DHCPv6 Options
+
+
+
 /*#define DBG_PRINT(fmt ...)     {\
     FILE     *fp        = NULL;\
     fp = fopen ( CONSOLE_LOG_FILE, "a+");\
@@ -104,10 +177,12 @@
     }\
 }\*/
 
+
 #define DBG_PRINT(fmt, arg...) \
           RDK_LOG(RDK_LOG_INFO, "LOG.RDK.DHCPMGR", fmt, ##arg);
 
 #define UNUSED_VARIABLE(x) (void)(x)
+
 
 typedef enum {
     WAN_LOCAL_IFACE = 1,
@@ -121,11 +196,13 @@ typedef struct dhcp_opt {
     bool is_release_required;
 } dhcp_params;
 
-//pid_t start_dhcpv4_client (dhcp_params * params);
-//int stop_dhcpv4_client (dhcp_params * params);
-int stop_udhcpc (dhcp_params * params);
-pid_t start_dhcpv6_client (dhcp_params * params);
-int stop_dhcpv6_client (dhcp_params * params);
+/* DHCP options linked list */
+typedef struct dhcp_option_list {
+    int dhcp_opt;
+    char *dhcp_opt_val;
+    struct dhcp_option_list *next;
+} dhcp_opt_list;
+
 pid_t start_exe(char * exe, char * args);
 pid_t start_exe2(char * exe, char * args);
 pid_t get_process_pid (char * name, char * args, bool waitForProcEntry);
@@ -134,3 +211,5 @@ void free_opt_list_data (dhcp_opt_list * opt_list);
 int signal_process (pid_t pid, int signal);
 int add_dhcp_opt_to_list (dhcp_opt_list ** opt_list, int opt, char * opt_val);
 void create_dir_path(const char *dirpath);
+
+#endif //DHCPV_CLIENT_UTILS_H

@@ -80,7 +80,7 @@ static int get_dhcpv6_opt_list (dhcp_opt_list ** req_opt_list, dhcp_opt_list ** 
         DBG_PRINT("<<DEBUG>>Failed to get dslite_enable \n");
     }
 
-    if (platform_hal_GetDhcpv6_Options(req_opt_list, send_opt_list) == FAILURE)
+   // if (platform_hal_GetDhcpv6_Options(req_opt_list, send_opt_list) == FAILURE)
     {
         DBG_PRINT("<<DEBUG>>%s %d: failed to get option list from platform hal\n", __FUNCTION__, __LINE__);
         return FAILURE;
