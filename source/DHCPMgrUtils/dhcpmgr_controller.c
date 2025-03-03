@@ -269,7 +269,7 @@ void DHCPMgr_AddDhcpv4Lease(char * ifName, DHCPv4_PLUGIN_MSG *newLease)
         // Verify if the DHCP clients are running. There may be multiple DHCP client interfaces with the same name that are not active.
         if(pDhcpc->Info.Status == COSA_DML_DHCP_STATUS_Enabled && strcmp(ifName, pDhcpc->Cfg.Interface) == 0)
         {
-            DHCPv4_LEASE_LIST *temp = pDhcpc->NewLeases;
+            DHCPv4_PLUGIN_MSG *temp = pDhcpc->NewLeases;
             //Find the tail of the list
             while(temp != NULL)
             {
