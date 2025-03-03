@@ -54,12 +54,12 @@
 #define INT   int
 #endif
 
-#ifndef UINT
-#define UINT  unsigned int
-#endif
-
 #ifndef ULONG
 #define ULONG unsigned long
+#endif
+
+#ifndef UINT
+#define UINT  unsigned int
 #endif
 
 #ifndef UINT8_t
@@ -78,6 +78,8 @@
 #define UINT64_t unsigned long long
 #endif
 #endif
+
+typedef  unsigned long              ULONG;
 
 #ifndef TRUE
 #define TRUE     1

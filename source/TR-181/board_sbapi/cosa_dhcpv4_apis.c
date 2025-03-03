@@ -82,7 +82,7 @@
 #include "safec_lib_common.h"
 #include "cosa_apis_util.h"
 #include "util.h"
-#include "dhcp_client_utils.h"
+#include "dhcp_client_common_utils.h"
 #include "cosa_dhcpv4_internal.h"
 #include "ipc_msg.h"
 #include "cosa_dhcpv4_dml.h"

@@ -22,7 +22,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sysevent/sysevent.h>
-#include "dhcp_client_utils.h"
+#include "dhcp_client_common_utils.h"
 
 #define DIBBLER_CLIENT                    "dibbler-client"
 #define DIBBLER_CLIENT_PATH               "/usr/sbin/"DIBBLER_CLIENT

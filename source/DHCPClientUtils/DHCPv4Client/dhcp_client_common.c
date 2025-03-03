@@ -17,7 +17,7 @@
  * limitations under the License.
  */
 
-#include "dhcp_client_utils.h"
+#include "dhcp_client_common_utils.h"
 
 /*
  * signal_process ()

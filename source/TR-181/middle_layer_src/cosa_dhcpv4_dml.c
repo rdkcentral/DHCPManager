@@ -92,7 +92,7 @@
 #endif
 
 #include <syscfg/syscfg.h>
-#include "dhcp_client_utils.h"
+#include "dhcp_client_common_utils.h"
 
 extern void* g_pDslhDmlAgent;
 extern ANSC_HANDLE g_Dhcpv4Object;

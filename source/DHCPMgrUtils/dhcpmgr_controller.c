@@ -31,7 +31,7 @@
 #include "dhcpv4_interface.h"
 #include "dhcpmgr_controller.h"
 
-#include "dhcp_client_utils.h"
+#include "dhcp_client_common_utils.h"
 
 
 

@@ -3,7 +3,7 @@
 
 #include <sys/types.h>
 
-#include "dhcp_client_utils.h"
+#include "dhcp_client_common_utils.h"
 #include "util.h"
 
 typedef struct _DHCPv4_PLUGIN_MSG

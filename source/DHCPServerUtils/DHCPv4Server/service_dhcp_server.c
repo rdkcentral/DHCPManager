@@ -41,7 +41,7 @@
 #include "service_dhcp_server.h"
 #include <ccsp_base_api.h>
 #include <ccsp_memory.h>
-#include "dhcp_client_utils.h"
+#include "dhcp_client_common_utils.h"
 #include "ifl.h"
 
 #include "safec_lib_common.h"

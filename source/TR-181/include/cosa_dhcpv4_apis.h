@@ -72,6 +72,7 @@
 #ifndef  _DML_API_DHCP_
 #define  _DML_API_DHCP_
 
+#include "cosa_apis.h"
 
 
 /**********************************************************************
