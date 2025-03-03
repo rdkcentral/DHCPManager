@@ -20,6 +20,7 @@
 #ifndef _DHCP_CONTROLLER_H_
 #define _DHCP_CONTROLLER_H_
 
+#include "cosa_dhcpv4_apis.h"
 /**
  * @brief Starts the main controller thread.
  *
@@ -28,5 +29,16 @@
  * @return int Returns 0 on success, or a negative error code on failure.
  */
 int DhcpMgr_StartMainController();
+
+/**
+ * @brief Adds a new DHCPv4 lease.
+ *
+ * This function locates the DHCPv4 client interface using the provided interface name (`ifName`) and updates the `pDhcpc->NewLeases` linked list with the new lease information.
+ *  If the operation fails, it frees the memory allocated for the new lease.
+ *
+ * @param[in] ifName The name of the interface.
+ * @param[in] newLease A pointer to the new DHCPv4 lease information.
+ */
+void DHCPMgr_AddDhcpv4Lease(char * ifName, DHCPv4_PLUGIN_MSG *newLease);
 
 #endif //_DHCP_CONTROLLER_H_

@@ -710,7 +710,7 @@ int add_dhcp_opt_to_list (dhcp_opt_list ** opt_list, int opt, char * opt_val)
     }
     memset (new_dhcp_opt, 0, sizeof(dhcp_opt_list));
     new_dhcp_opt->dhcp_opt = opt;
-    new_dhcp_opt->dhcp_opt_val = opt_val;
+    new_dhcp_opt->dhcp_opt_val = (opt_val == NULL)?NULL:strdup(opt_val);
 
     if (*opt_list != NULL)
     {

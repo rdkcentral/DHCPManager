@@ -229,3 +229,71 @@ static void* DhcpMgr_MainController( void *args )
     return NULL;
 
 }
+
+/**
+ * @brief Adds a new DHCPv4 lease.
+ *
+ * This function locates the DHCPv4 client interface using the provided interface name (`ifName`) and updates the `pDhcpc->NewLeases` linked list with the new lease information.
+ *  If the operation fails, it frees the memory allocated for the new lease.
+ *
+ * @param[in] ifName The name of the interface.
+ * @param[in] newLease A pointer to the new DHCPv4 lease information.
+ */
+void DHCPMgr_AddDhcpv4Lease(char * ifName, DHCPv4_PLUGIN_MSG *newLease)
+{
+    PCOSA_DML_DHCPC_FULL            pDhcpc        = NULL;
+    PCOSA_CONTEXT_DHCPC_LINK_OBJECT pDhcpCxtLink  = NULL;
+    PSINGLE_LINK_ENTRY              pSListEntry   = NULL;
+    ULONG ulIndex;
+    ULONG instanceNum;
+    BOOL interfaceFound                           = FALSE;
+    ULONG clientCount = CosaDmlDhcpcGetNumberOfEntries(NULL);
+    //iterate all entries and find the ineterface with the ifname
+    for ( ulIndex = 0; ulIndex < clientCount; ulIndex++ )
+    {
+        pSListEntry = (PSINGLE_LINK_ENTRY)Client_GetEntry(NULL,ulIndex,&instanceNum);
+        if ( pSListEntry )
+        {
+            pDhcpCxtLink          = ACCESS_COSA_CONTEXT_DHCPC_LINK_OBJECT(pSListEntry);
+            pDhcpc            = (PCOSA_DML_DHCPC_FULL)pDhcpCxtLink->hContext;
+        }
+
+        if (!pDhcpc)
+        {
+            DHCPMGR_LOG_ERROR("%s : pDhcpc is NULL\n",__FUNCTION__);
+            continue;
+        }
+
+        pthread_mutex_lock(&pDhcpc->mutex); //MUTEX lock
+
+        // Verify if the DHCP clients are running. There may be multiple DHCP client interfaces with the same name that are not active.
+        if(pDhcpc->Info.Status == COSA_DML_DHCP_STATUS_Enabled && strcmp(ifName, pDhcpc->Cfg.Interface) == 0)
+        {
+            DHCPv4_LEASE_LIST *temp = pDhcpc->NewLeases;
+            //Find the tail of the list
+            while(temp != NULL)
+            {
+                temp= temp->next;
+            }
+
+            //Just the add the new lease details in the list. the controlled thread will hanlde it. 
+            temp = newLease;
+            interfaceFound = TRUE;
+            DHCPMGR_LOG_INFO("%s %d: New dhcpv4 lease msg added for %s \n", __FUNCTION__, __LINE__, pDhcpc->Cfg.Interface);
+            pthread_mutex_unlock(&pDhcpc->mutex); //MUTEX release before break
+            break;
+        }
+
+        pthread_mutex_unlock(&pDhcpc->mutex); //MUTEX unlock
+
+    }
+
+    if( interfaceFound == FALSE)
+    {
+        //if we are here, we didn't find the correct interface the received lease. free the memory
+        free(newLease);
+        DHCPMGR_LOG_ERROR("%s %d: Failed to add dhcpv4 lease msg for ineterface %s \n", __FUNCTION__, __LINE__, pDhcpc->Cfg.Interface);
+    }
+
+    return;
+}
