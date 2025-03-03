@@ -37,7 +37,7 @@
 //#include "platform_hal.h"
 #include "rdk_debug.h"
 
-
+#if 0 // typedef added from the rdk_debug header
 #ifndef CHAR
 #define CHAR  char
 #endif
@@ -76,6 +76,7 @@
 
 #ifndef UINT64_t
 #define UINT64_t unsigned long long
+#endif
 #endif
 
 #ifndef TRUE

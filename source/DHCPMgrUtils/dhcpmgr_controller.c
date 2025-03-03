@@ -39,7 +39,13 @@
 
 static void* DhcpMgr_MainController( void *arg );
 
-
+/**
+ * @brief Starts the main controller thread.
+ *
+ * This function initializes and starts the main controller thread for the DHCP Manager.
+ *
+ * @return int Returns 0 on success, or a negative error code on failure.
+ */
 int DhcpMgr_StartMainController()
 {
     pthread_t threadId;
@@ -60,6 +66,17 @@ int DhcpMgr_StartMainController()
     return ret;
 }
 
+/**
+ * @brief Builds the DHCPv4 option lists.
+ *
+ * This function constructs the `req_opt_list` and `send_opt_list` from the DML entries.
+ *
+ * @param[in] hInsContext A handle to the DHCP client context.
+ * @param[out] req_opt_list A pointer to the list of requested DHCP options.
+ * @param[out] send_opt_list A pointer to the list of DHCP options to be sent.
+ *
+ * @return int Returns 0 on success, or a negative error code on failure.
+ */
 static int DhcpMgr_build_dhcpv4_opt_list (PCOSA_CONTEXT_DHCPC_LINK_OBJECT hInsContext, dhcp_opt_list ** req_opt_list, dhcp_opt_list ** send_opt_list)
 {
     PCOSA_DML_DHCPC_REQ_OPT         pDhcpReqOpt   = NULL;
@@ -80,7 +97,7 @@ static int DhcpMgr_build_dhcpv4_opt_list (PCOSA_CONTEXT_DHCPC_LINK_OBJECT hInsCo
         }
         else if (pDhcpReqOpt->bEnabled)
         {
-            add_dhcp_opt_to_list(&req_opt_list, (int)pDhcpReqOpt->Tag, NULL);
+            add_dhcp_opt_to_list(req_opt_list, (int)pDhcpReqOpt->Tag, NULL);
         }
     }
     noOfSentOpt = CosaDmlDhcpcGetNumberOfSentOption(hInsContext, pDhcpc->Cfg.InstanceNumber);
@@ -96,7 +113,7 @@ static int DhcpMgr_build_dhcpv4_opt_list (PCOSA_CONTEXT_DHCPC_LINK_OBJECT hInsCo
         else if (pDhcpSentOpt->bEnabled)
         {
             //TODO: add verdor specific options API call
-            add_dhcp_opt_to_list(&send_opt_list, (int)pDhcpSentOpt->Tag, (char *)pDhcpSentOpt->Value);
+            add_dhcp_opt_to_list(send_opt_list, (int)pDhcpSentOpt->Tag, (char *)pDhcpSentOpt->Value);
         }
     }
 

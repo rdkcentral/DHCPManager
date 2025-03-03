@@ -20,7 +20,13 @@
 #ifndef _DHCP_CONTROLLER_H_
 #define _DHCP_CONTROLLER_H_
 
-
+/**
+ * @brief Starts the main controller thread.
+ *
+ * This function initializes and starts the main controller thread for the DHCP Manager.
+ *
+ * @return int Returns 0 on success, or a negative error code on failure.
+ */
 int DhcpMgr_StartMainController();
 
 #endif //_DHCP_CONTROLLER_H_

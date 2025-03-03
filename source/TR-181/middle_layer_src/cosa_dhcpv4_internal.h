@@ -232,9 +232,14 @@ COSA_DATAMODEL_DHCPV4,  *PCOSA_DATAMODEL_DHCPV4;
 
 #define DHCPV4_CLIENT_SET_DEFAULTVALUE(pDhcpc)                                         \
     (pDhcpc)->Cfg.bEnabled                    = FALSE;                                 \
-    AnscZeroMemory((pDhcpc)->Cfg.Interface, sizeof((pDhcpc)->Cfg.Interface));                     \
+    (pDhcpc)->Cfg.Renew                       = FALSE;                                 \
+    AnscZeroMemory((pDhcpc)->Cfg.Interface, sizeof((pDhcpc)->Cfg.Interface));          \
     (pDhcpc)->Info.Status                     = COSA_DML_DHCP_STATUS_Disabled;         \
     (pDhcpc)->Info.DHCPStatus                 = COSA_DML_DHCPC_STATUS_Init;            \
+    (pDhcpc)->Info.ClientProcessId            = -1;                                    \
+    (pDhcpc)->currentLease                    = NULL;                                  \
+    (pDhcpc)->NewLeases                       = NULL;                                  \
+    
 
 #define DHCPV4_SENDOPTION_SET_DEFAULTVALUE(pSendOption)                                \
     (pSendOption)->bEnabled                   = FALSE;                                 \
