@@ -37,48 +37,6 @@
 //#include "platform_hal.h"
 #include "rdk_debug.h"
 
-#if 0 // typedef added from the rdk_debug header
-#ifndef CHAR
-#define CHAR  char
-#endif
-
-#ifndef UCHAR
-#define UCHAR unsigned char
-#endif
-
-#ifndef BOOLEAN
-#define BOOLEAN  unsigned char
-#endif
-
-#ifndef INT
-#define INT   int
-#endif
-
-#ifndef ULONG
-#define ULONG unsigned long
-#endif
-
-#ifndef UINT
-#define UINT  unsigned int
-#endif
-
-#ifndef UINT8_t
-#define UINT8_t unsigned char
-#endif
-
-#ifndef UINT16_t
-#define UINT16_t unsigned short
-#endif
-
-#ifndef UINT32_t
-#define UINT32_t unsigned int
-#endif
-
-#ifndef UINT64_t
-#define UINT64_t unsigned long long
-#endif
-#endif
-
 typedef  unsigned long              ULONG;
 
 #ifndef TRUE
