@@ -82,7 +82,7 @@
 #include "safec_lib_common.h"
 #include "cosa_apis_util.h"
 #include "util.h"
-#include "dhcp_client_utils.h"
+#include "dhcp_client_common_utils.h"
 #include "cosa_dhcpv4_internal.h"
 #include "ipc_msg.h"
 #include "cosa_dhcpv4_dml.h"
@@ -1639,6 +1639,7 @@ PCOSA_DML_DHCP_OPT CosaDmlDhcpcGetSentOption_Entry(ANSC_HANDLE hInsContext, ULON
        return NULL;
     }
 }
+#if 0
 /*
     Description:
         The API retrieves the Request/Send option entry from Client table by index
@@ -1767,6 +1768,7 @@ ANSC_STATUS CosaDmlStopDhcpv4Client(ANSC_HANDLE hInsContext)
     return ANSC_STATUS_SUCCESS;
 }
 
+#endif
 /*
     Description:
         The API retrieves the number of DHCP clients in the system.
@@ -1778,6 +1780,9 @@ CosaDmlDhcpcGetNumberOfEntries
     )
 {
     int retPsmGet = CCSP_SUCCESS;
+    if(g_Dhcp4ClientNum > 0)
+        return g_Dhcp4ClientNum;
+    
     char param_name[512];
     _ansc_memset(param_name, 0, sizeof(param_name));
     char* param_value = NULL;
@@ -1788,7 +1793,8 @@ CosaDmlDhcpcGetNumberOfEntries
     }
     else
     {
-         return atoi(param_value);
+        g_Dhcp4ClientNum = atoi(param_value);
+         return g_Dhcp4ClientNum;
     }
     UNREFERENCED_PARAMETER(hContext);
     return 0;
@@ -2035,9 +2041,10 @@ CosaDmlDhcpcRenew
        {
            DHCPMGR_LOG_INFO("%s %d: ulInstanceNumber is 0...\n", __FUNCTION__, __LINE__);
        }
+       
 
-        CosaDmlStopDhcpv4Client(hContext);
-        CosaDmlStartDhcpv4Client(hContext);
+       // CosaDmlStopDhcpv4Client(hContext);
+       // CosaDmlStartDhcpv4Client(hContext);
 #ifndef _HUB4_PRODUCT_REQ_
         v_secure_system("sysevent set dhcp_client-renew");
 #endif

@@ -9752,7 +9752,7 @@ ANSC_STATUS CosaDmlStartDhcpv6Client(ANSC_HANDLE hInsContext)
     }
 
     dhcpParams.ifType = WAN_LOCAL_IFACE;
-    start_dhcpv6_client(&dhcpParams);
+    //start_dhcpv6_client(&dhcpParams);
     free_opt_list_data (req_opt_list);
     free_opt_list_data (send_opt_list);
 #endif // RA_MONITOR_SUPPORT
@@ -9765,7 +9765,7 @@ ANSC_STATUS CosaDmlStopDhcpv6Client(ANSC_HANDLE hInsContext)
 {
     PCOSA_CONTEXT_DHCPCV6_LINK_OBJECT pCxtLink      = (PCOSA_CONTEXT_DHCPCV6_LINK_OBJECT)hInsContext;
     PCOSA_DML_DHCPCV6_FULL            pDhcpcv6      = NULL;
-    dhcp_params                       dhcpParams    = {0};
+    //dhcp_params                       dhcpParams    = {0};
 
     if (!pCxtLink)
     {
@@ -9780,8 +9780,8 @@ ANSC_STATUS CosaDmlStopDhcpv6Client(ANSC_HANDLE hInsContext)
         return ANSC_STATUS_FAILURE;
     }
 
-    dhcpParams.ifname = (CHAR *)pDhcpcv6->Cfg.Interface;
-    stop_dhcpv6_client(&dhcpParams);
+    //dhcpParams.ifname = (CHAR *)pDhcpcv6->Cfg.Interface;
+    //stop_dhcpv6_client(&dhcpParams);
 
     return ANSC_STATUS_SUCCESS;
 }
@@ -9900,7 +9900,7 @@ rtadv_dbg_thread(void * in)
 #endif
               dhcpParams.ifname = rtAdvInfo[index].ra_Ifname;
 
-              stop_dhcpv6_client(&dhcpParams);
+              //stop_dhcpv6_client(&dhcpParams);
               if(rtAdvInfo[index].managedFlag == '1')
               {
                   syscfg_set_u_commit(NULL, "dibbler_requestAddress", 1 );
@@ -9966,7 +9966,7 @@ rtadv_dbg_thread(void * in)
                        token = strtok(NULL, " , ");
                    }
                    dhcpParams.ifType = WAN_LOCAL_IFACE;
-                   start_dhcpv6_client(&dhcpParams);
+                   //start_dhcpv6_client(&dhcpParams);
                    free_opt_list_data (req_opt_list);
                    free_opt_list_data (send_opt_list);
                }

@@ -72,6 +72,9 @@
 #ifndef  _DML_API_DHCP_
 #define  _DML_API_DHCP_
 
+#include "cosa_apis.h"
+
+
 /**********************************************************************
                 STRUCTURE AND CONSTANT DEFINITIONS
 **********************************************************************/
@@ -150,6 +153,7 @@ _COSA_DML_DHCPC_CFG
     char                            Alias[COSA_DML_ALIAS_NAME_LENGTH];
 
     BOOLEAN                         bEnabled;
+    BOOLEAN                         Renew;
     char                            Interface[COSA_DML_ALIAS_NAME_LENGTH]; /* IP interface name */
     BOOLEAN                         PassthroughEnable;
     char                            PassthroughDHCPPool[64];            /* DHCP server pool alias */
@@ -163,6 +167,7 @@ _COSA_DML_DHCPC_INFO
 {
     COSA_DML_DHCP_STATUS            Status;
     COSA_DML_DHCPC_STATUS           DHCPStatus;
+    pid_t                           ClientProcessId;
     ANSC_IPV4_ADDRESS               IPAddress;
     ANSC_IPV4_ADDRESS               SubnetMask;
     ULONG                           NumIPRouters;
@@ -175,11 +180,16 @@ _COSA_DML_DHCPC_INFO
 COSA_DML_DHCPC_INFO,  *PCOSA_DML_DHCPC_INFO;
 
 
+// Forward declaration of the DHCPv4_PLUGIN_MSG structure
+typedef struct _DHCPv4_PLUGIN_MSG DHCPv4_PLUGIN_MSG;
 typedef  struct
 _COSA_DML_DHCPC_FULL
 {
     COSA_DML_DHCPC_CFG              Cfg;
     COSA_DML_DHCPC_INFO             Info;
+    pthread_mutex_t                 mutex; // Mutex declaration
+    DHCPv4_PLUGIN_MSG               *currentLease;
+    DHCPv4_PLUGIN_MSG               *NewLeases;
 }
 COSA_DML_DHCPC_FULL, *PCOSA_DML_DHCPC_FULL;
 
@@ -405,6 +415,9 @@ CosaDmlDhcpcGetReqOption_Entry
         ANSC_HANDLE hInsContext,
         ULONG InsNumber
 );
+
+PCOSA_DML_DHCP_OPT CosaDmlDhcpcGetSentOption_Entry(ANSC_HANDLE hInsContext, ULONG InsNumber);
+
 
 ANSC_STATUS
 CosaDmlDhcpInit

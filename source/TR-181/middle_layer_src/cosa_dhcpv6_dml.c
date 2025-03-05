@@ -1003,7 +1003,7 @@ Client3_SetParamBoolValue
         /* save update to backup */
         pDhcpc->Cfg.bEnabled = bValue;
 
-#ifdef DHCPV6_CLIENT_SUPPORT
+#if 0//def DHCPV6_CLIENT_SUPPORT
         if (bValue == TRUE)
         {
 #ifdef DHCPV6C_COMS
