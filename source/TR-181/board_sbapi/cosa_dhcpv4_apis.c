@@ -84,7 +84,7 @@
 #include "util.h"
 #include "dhcp_client_common_utils.h"
 #include "cosa_dhcpv4_internal.h"
-#include "ipc_msg.h"
+//#include "ipc_msg.h"
 #include "cosa_dhcpv4_dml.h"
 
 #if ( defined _COSA_SIM_ )
@@ -144,7 +144,7 @@
 
 #define BOOTSTRAP_INFO_FILE             "/nvram/bootstrap.json"
 
-static int   ipcListenFd;
+//static int   ipcListenFd;
 COSA_DML_DHCPC_FULL     CH_g_dhcpv4_client[COSA_DML_DHCP_MAX_ENTRIES];
 COSA_DML_DHCP_OPT       g_dhcpv4_client_sent[COSA_DML_DHCP_MAX_ENTRIES][COSA_DML_DHCP_MAX_OPT_ENTRIES];
 COSA_DML_DHCPC_REQ_OPT  g_dhcpv4_client_req[COSA_DML_DHCP_MAX_ENTRIES][COSA_DML_DHCP_MAX_OPT_ENTRIES];
@@ -1396,7 +1396,7 @@ CosaDmlDhcpInit
     //pthread_create(&pid, NULL, usg_get_cpe_associated_ssid, NULL);
     return ANSC_STATUS_SUCCESS;
 }
-
+#if 0
 static ANSC_STATUS IpcServerInit()
 {
     //int i;
@@ -1566,7 +1566,7 @@ ANSC_STATUS DhcpMgr_StartIpcServer()
     }
     return retStatus ;
 }
-
+#endif
 /*
     Description:
         The API retrieves the Request option entry from Client table by index.
