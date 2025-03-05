@@ -248,7 +248,7 @@ pid_t start_dhcpv4_client(char *interfaceName, dhcp_opt_list *req_opt_list, dhcp
     if (udhcpc_pid > 0)
     {
         DHCPMGR_LOG_ERROR("%s %d: another instance of %s runing on %s\n", __FUNCTION__, __LINE__, UDHCPC_CLIENT, interfaceName);
-        //TODO: Existing client may not have same options, should we kill and restart?
+        //TODO: Existing client will not be handled by the sigchild handler. Selfheal will not work for this PID, should we kill and restart?
         return udhcpc_pid;
     }
 
