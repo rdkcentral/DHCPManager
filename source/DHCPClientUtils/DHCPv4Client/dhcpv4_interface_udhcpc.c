@@ -238,11 +238,21 @@ pid_t start_dhcpv4_client(char *interfaceName, dhcp_opt_list *req_opt_list, dhcp
         return -1;
     }
 
+
     char buff [BUFLEN_512] = {0};
     udhcpc_args_generator(buff,interfaceName, req_opt_list, send_opt_list);
 
-    //TODO : Do we require a check for existing process? we could have multiple clienst with different options.
-    udhcpc_pid = start_exe(UDHCPC_CLIENT_PATH, buff);
+
+    udhcpc_pid = get_process_pid(UDHCPC_CLIENT, buff, false);
+
+    if (udhcpc_pid > 0)
+    {
+        DHCPMGR_LOG_ERROR("%s %d: another instance of %s runing on %s\n", __FUNCTION__, __LINE__, UDHCPC_CLIENT, interfaceName);
+        //TODO: Existing client may not have same options, should we kill and restart?
+        return udhcpc_pid;
+    }
+
+    udhcpc_pid = start_exe2(UDHCPC_CLIENT_PATH, buff);
 
 #ifdef UDHCPC_RUN_IN_BACKGROUND
     // udhcpc-client will demonize a child thread during start, so we need to collect the exited main thread
@@ -257,43 +267,54 @@ pid_t start_dhcpv4_client(char *interfaceName, dhcp_opt_list *req_opt_list, dhcp
     return udhcpc_pid;
 }
 
-/*
+
 int send_dhcpv4_renew(pid_t processID) 
 {
-    (void)processID;
     DHCPMGR_LOG_INFO("%s %d udhcpc api called \n", __FUNCTION__, __LINE__);
-    return -1;
+    if (signal_process(processID, SIGUSR1) != RETURN_OK)
+    {
+         DBG_PRINT("<<DEBUG>>%s %d: unable to send signal to pid %d\n", __FUNCTION__, __LINE__, processID);
+         return FAILURE;
+    }
+    return SUCCESS;
 }
 
 int send_dhcpv4_release(pid_t processID) 
 {
     (void)processID;
     DHCPMGR_LOG_INFO("%s %d udhcpc api called \n", __FUNCTION__, __LINE__);
-    return -1;
-
+    //Trigger a release 
+    if (signal_process(processID, SIGUSR2) != RETURN_OK)
+    {
+        DHCPMGR_LOG_ERROR("<<DEBUG>>%s %d: unable to send signal to pid %d\n", __FUNCTION__, __LINE__, processID);
+        return FAILURE;    
+    }
+    return SUCCESS;
 }
-*/
+
 int stop_dhcpv4_client(pid_t processID) 
 {
     DHCPMGR_LOG_INFO("%s %d udhcpc api called \n", __FUNCTION__, __LINE__);
 
     if (processID <= 0)
     {
-        DBG_PRINT("<<DEBUG>>%s %d: unable to get pid of %s\n", __FUNCTION__, __LINE__, UDHCPC_CLIENT);
+        DHCPMGR_LOG_ERROR("<<DEBUG>>%s %d: unable to get pid of %s\n", __FUNCTION__, __LINE__, UDHCPC_CLIENT);
         return FAILURE;
     }
 
+    //Trigger a release. Always release when client stopped ?
     if (signal_process(processID, SIGUSR2) != RETURN_OK)
     {
-        DBG_PRINT("<<DEBUG>>%s %d: unable to send signal to pid %d\n", __FUNCTION__, __LINE__, processID);
-        return FAILURE;    }
+        DHCPMGR_LOG_ERROR("<<DEBUG>>%s %d: unable to send signal to pid %d\n", __FUNCTION__, __LINE__, processID);
+        return FAILURE;    
+    }
     if (signal_process(processID, SIGTERM) != RETURN_OK)
     {
-         DBG_PRINT("<<DEBUG>>%s %d: unable to send signal to pid %d\n", __FUNCTION__, __LINE__, processID);
+        DHCPMGR_LOG_ERROR("<<DEBUG>>%s %d: unable to send signal to pid %d\n", __FUNCTION__, __LINE__, processID);
          return FAILURE;
     }
 
+    //TODO: start_exe2 will add a sigchild handler, Do we still require this call ?
     int ret = collect_waiting_process(processID, UDHCPC_TERMINATE_TIMEOUT);
     return ret;
-
 }

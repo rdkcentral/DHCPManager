@@ -173,4 +173,6 @@ int signal_process (pid_t pid, int signal);
 int add_dhcp_opt_to_list (dhcp_opt_list ** opt_list, int opt, char * opt_val);
 void create_dir_path(const char *dirpath);
 
+void processKilled(pid_t pid);
+
 #endif //DHCPV_CLIENT_UTILS_H

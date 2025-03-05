@@ -297,3 +297,42 @@ void DHCPMgr_AddDhcpv4Lease(char * ifName, DHCPv4_PLUGIN_MSG *newLease)
 
     return;
 }
+
+void processKilled(pid_t pid)
+{
+    PCOSA_DML_DHCPC_FULL            pDhcpc        = NULL;
+    PCOSA_CONTEXT_DHCPC_LINK_OBJECT pDhcpCxtLink  = NULL;
+    PSINGLE_LINK_ENTRY              pSListEntry   = NULL;
+    ULONG ulIndex;
+    ULONG instanceNum;
+    ULONG clientCount = CosaDmlDhcpcGetNumberOfEntries(NULL);
+    //iterate all entries and find the ineterface with the ifname
+    for ( ulIndex = 0; ulIndex < clientCount; ulIndex++ )
+    {
+        pSListEntry = (PSINGLE_LINK_ENTRY)Client_GetEntry(NULL,ulIndex,&instanceNum);
+        if ( pSListEntry )
+        {
+            pDhcpCxtLink          = ACCESS_COSA_CONTEXT_DHCPC_LINK_OBJECT(pSListEntry);
+            pDhcpc            = (PCOSA_DML_DHCPC_FULL)pDhcpCxtLink->hContext;
+        }
+
+        if (!pDhcpc)
+        {
+            DHCPMGR_LOG_ERROR("%s : pDhcpc is NULL\n",__FUNCTION__);
+            continue;
+        }
+        
+        //No mutex lock, since this funtions is called from teh sigchild handler. Keep this function simple and quick
+        if(pDhcpc->Info.ClientProcessId == pid)
+        {
+            DHCPMGR_LOG_INFO("%s %d: DHCpv4 client for %s pid %d is terminated.\n", __FUNCTION__, __LINE__, pDhcpc->Cfg.Interface, pid);
+            if(pDhcpc->Info.Status == COSA_DML_DHCP_STATUS_Enabled)
+            {
+                pDhcpc->Info.Status = COSA_DML_DHCP_STATUS_Disabled;
+            }
+            break;
+        }
+    }
+
+    return;
+}
