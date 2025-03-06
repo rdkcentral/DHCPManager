@@ -226,22 +226,7 @@ static void DhcpMgr_ProcessV4Lease(PCOSA_DML_DHCPC_FULL pDhcpc)
         }
 
         //TODO: check for renew
-
-        if(leaseChanged)
-        {
-            DHCPMGR_LOG_INFO("%s %d: New lease  : %s \n",__FUNCTION__, __LINE__, newLease->isExpired?"Expired" : "Valid");
-            DHCPMGR_LOG_INFO("%s %d: current->address %s , newLease->address %s \n",__FUNCTION__, __LINE__, current->address, newLease->address);
-            DHCPMGR_LOG_INFO("%s %d: current->netmask %s , newLease->netmask %s \n",__FUNCTION__, __LINE__,current->netmask, newLease->netmask);
-            DHCPMGR_LOG_INFO("%s %d: current->gateway %s , newLease->gateway %s \n",__FUNCTION__, __LINE__,current->gateway, newLease->gateway );
-            DHCPMGR_LOG_INFO("%s %d: current->dnsServer %s , newLease->dnsServer %s \n",__FUNCTION__, __LINE__,current->dnsServer, newLease->dnsServer );
-            DHCPMGR_LOG_INFO("%s %d: current->dnsServer1 %s , newLease->dnsServer1 %s \n",__FUNCTION__, __LINE__, current->dnsServer1, newLease->dnsServer1 );
-
-            DhcpMgr_parseDHCPv4Response(pDhcpc);
-
-            //TODO: Send rbus event
-            
-        }
-
+        
         // Free the current lease
         if(pDhcpc->currentLease)
             free(pDhcpc->currentLease);
@@ -251,9 +236,25 @@ static void DhcpMgr_ProcessV4Lease(PCOSA_DML_DHCPC_FULL pDhcpc)
 
         // Update NewLeases to point to the next lease
         pDhcpc->NewLeases = newLease->next;
-
+        
         // Clear the next pointer of the new current lease
         pDhcpc->currentLease->next = NULL;
+        
+        if(leaseChanged)
+        {
+            DHCPMGR_LOG_INFO("%s %d: New lease  : %s \n",__FUNCTION__, __LINE__, newLease->isExpired?"Expired" : "Valid");
+            DHCPMGR_LOG_INFO("%s %d: NewLease->address %s  \n",__FUNCTION__, __LINE__, newLease->address);
+            DHCPMGR_LOG_INFO("%s %d: NewLease->netmask %s  \n",__FUNCTION__, __LINE__, newLease->netmask);
+            DHCPMGR_LOG_INFO("%s %d: NewLease->gateway %s  \n",__FUNCTION__, __LINE__, newLease->gateway );
+            DHCPMGR_LOG_INFO("%s %d: NewLease->dnsServer %s  \n",__FUNCTION__, __LINE__, newLease->dnsServer );
+            DHCPMGR_LOG_INFO("%s %d: NewLease->dnsServer1 %s  \n",__FUNCTION__, __LINE__,  newLease->dnsServer1 );
+
+            DhcpMgr_parseDHCPv4Response(pDhcpc);
+
+            //TODO: Send rbus event
+            
+        }
+
     }
 }
 
