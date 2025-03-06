@@ -373,7 +373,7 @@ static int send_dhcp4_data_to_leaseMonitor (DHCPv4_PLUGIN_MSG *dhcpv4_data)
 
     strcpy(msg.ifname, dhcpv4_data->InterfaceName);
     msg.version = DHCP_VERSION_4;
-    msg.payload = (void *)dhcpv4_data;
+    memcpy(&msg.data.dhcpv4, dhcpv4_data, sizeof(DHCPv4_PLUGIN_MSG));
 
     int sock   = -1;
     int conn   = -1;
