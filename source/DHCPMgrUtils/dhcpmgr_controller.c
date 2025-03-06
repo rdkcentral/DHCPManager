@@ -409,14 +409,22 @@ void DHCPMgr_AddDhcpv4Lease(char * ifName, DHCPv4_PLUGIN_MSG *newLease)
         {
             DHCPv4_PLUGIN_MSG *temp = pDhcpc->NewLeases;
             //Find the tail of the list
-            while(temp != NULL)
+            if (temp == NULL) 
             {
-                temp= temp->next;
+                // If the list is empty, add the new lease as the first element
+                pDhcpc->NewLeases = newLease;
+            } else 
+            {
+                while (temp->next != NULL) 
+                {
+                    temp = temp->next;
+                }
+                // Add the new lease details to the tail of the list
+                temp->next = newLease;
             }
 
             //Just the add the new lease details in the list. the controlled thread will hanlde it. 
             newLease->next = NULL;
-            temp = newLease;
             interfaceFound = TRUE;
             DHCPMGR_LOG_INFO("%s %d: New dhcpv4 lease msg added for %s \n", __FUNCTION__, __LINE__, pDhcpc->Cfg.Interface);
             pthread_mutex_unlock(&pDhcpc->mutex); //MUTEX release before break
