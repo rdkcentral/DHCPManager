@@ -81,7 +81,10 @@ typedef enum {
 typedef struct {
     char ifname[BUFLEN_32];
     DHCP_SOURCE version;
-    void *payload; // Dynamically allocated message (either DHCPv6_PLUGIN_MSG or DHCPv4_PLUGIN_MSG)
+    union {
+        DHCPv6_PLUGIN_MSG dhcpv6;
+        DHCPv4_PLUGIN_MSG dhcpv4;
+    } data;
 } PLUGIN_MSG;
 
 typedef enum
