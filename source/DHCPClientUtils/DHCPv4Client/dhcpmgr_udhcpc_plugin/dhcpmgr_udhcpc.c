@@ -158,20 +158,20 @@ static int get_and_fill_env_data (DHCPv4_PLUGIN_MSG *dhcpv4_data, udhcpc_env_t* 
 
     if ((env = getenv(DHCP_INTERFACE_NAME)) != NULL)
     {
-        strncpy(dhcpv4_data->InterfaceName, env, sizeof(dhcpv4_data->InterfaceName));
+        strncpy(dhcpv4_data->ifname, env, sizeof(dhcpv4_data->ifname));
     }
 	
     //need to handle the else case incase of interface name is null
 
     if ((env = getenv(DHCP_SIPSRV)) != NULL)
     {
-        strncpy(dhcpv4_data->sipsrv, env, sizeof(dhcpv4_data->sipsrv));
+        strncpy(dhcpv4_data->sipSrv, env, sizeof(dhcpv4_data->sipSrv));
     }
  
   //need to handle the else case incase of DHCP_SIPSRV name is null
     if ((env = getenv(DHCP_STATIC_ROUTES)) != NULL)
     {
-        strncpy(dhcpv4_data->staticroutes, env, sizeof(dhcpv4_data->staticroutes));
+        strncpy(dhcpv4_data->staticRoutes, env, sizeof(dhcpv4_data->staticRoutes));
     }
    
     //need to handle the else case incase of DHCP_STATIC_ROUTES name is null
@@ -203,7 +203,7 @@ static int get_and_fill_env_data (DHCPv4_PLUGIN_MSG *dhcpv4_data, udhcpc_env_t* 
         /** IP */
         if ((env = getenv(DHCP_IP_ADDRESS)) != NULL)
         {
-            strncpy(dhcpv4_data->ip, env, sizeof(dhcpv4_data->ip));
+            strncpy(dhcpv4_data->address, env, sizeof(dhcpv4_data->address));
         }
         else
         {
@@ -213,7 +213,7 @@ static int get_and_fill_env_data (DHCPv4_PLUGIN_MSG *dhcpv4_data, udhcpc_env_t* 
         /** Subnet mask. */
         if ((env = getenv(DHCP_SUBNET)) != NULL)
         {
-            strncpy(dhcpv4_data->mask, env, sizeof(dhcpv4_data->mask));
+            strncpy(dhcpv4_data->netmask, env, sizeof(dhcpv4_data->netmask));
         }
         else
         {
@@ -371,7 +371,7 @@ static int send_dhcp4_data_to_leaseMonitor (DHCPv4_PLUGIN_MSG *dhcpv4_data)
     PLUGIN_MSG msg;
     memset(&msg, 0, sizeof(PLUGIN_MSG));
 
-    strcpy(msg.ifname, dhcpv4_data->InterfaceName);
+    strcpy(msg.ifname, dhcpv4_data->ifname);
     msg.version = DHCP_VERSION_4;
     memcpy(&msg.data.dhcpv4, dhcpv4_data, sizeof(DHCPv4_PLUGIN_MSG));
 
@@ -447,12 +447,12 @@ static int handle_events (udhcpc_env_t *pinfo)
         DHCPMGR_LOG_INFO("[%s][%d] ===============DHCPv4 Configuration Received==============================\n",__FUNCTION__, __LINE__);
         DHCPMGR_LOG_INFO("[%s][%d] Address assigned = %d \n", __FUNCTION__, __LINE__, data.addressAssigned);
         DHCPMGR_LOG_INFO("[%s][%d] is expired      = %d \n", __FUNCTION__, __LINE__, data.isExpired);
-        DHCPMGR_LOG_INFO("[%s][%d] ip              = %s\n",__FUNCTION__, __LINE__, data.ip);
-        DHCPMGR_LOG_INFO("[%s][%d] mask            = %s \n", __FUNCTION__, __LINE__,data.mask);
+        DHCPMGR_LOG_INFO("[%s][%d] ip              = %s\n",__FUNCTION__, __LINE__, data.address);
+        DHCPMGR_LOG_INFO("[%s][%d] mask            = %s \n", __FUNCTION__, __LINE__,data.netmask);
         DHCPMGR_LOG_INFO("[%s][%d] gateway         = %s \n",__FUNCTION__, __LINE__,data.gateway);
         DHCPMGR_LOG_INFO("[%s][%d] dnsserver1      = %s \n",__FUNCTION__, __LINE__, data.dnsServer);
         DHCPMGR_LOG_INFO("[%s][%d] dnsserver2      = %s \n", __FUNCTION__, __LINE__,data.dnsServer1);
-        DHCPMGR_LOG_INFO("[%s][%d] Interface       = %s \n",  __FUNCTION__, __LINE__,data.InterfaceName);
+        DHCPMGR_LOG_INFO("[%s][%d] Interface       = %s \n",  __FUNCTION__, __LINE__,data.ifname);
         DHCPMGR_LOG_INFO("[%s][%d] Lease time      = %d \n",__FUNCTION__, __LINE__, data.leaseTime);
         DHCPMGR_LOG_INFO("[%s][%d] Renewal Time    = %d \n", __FUNCTION__, __LINE__, data.renewalTime);
         DHCPMGR_LOG_INFO("[%s][%d] Rebinding Time  = %d \n", __FUNCTION__, __LINE__, data.rebindingTime);
