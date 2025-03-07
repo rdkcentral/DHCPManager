@@ -41,4 +41,26 @@ int DhcpMgr_StartMainController();
  */
 void DHCPMgr_AddDhcpv4Lease(char * ifName, DHCPv4_PLUGIN_MSG *newLease);
 
+/**
+ * @brief Processes new DHCPv4 leases.
+ *
+ * This function checks for the availability of new leases in the list and processes them if found.
+ *
+ * @param[in] pDhcpc Pointer to the DHCP client structure containing lease information.
+ *
+ * @return void
+ */
+void DhcpMgr_ProcessV4Lease(PCOSA_DML_DHCPC_FULL pDhcpc);
+
+/**
+ * @brief Clears all parameters in the TR-181 DML structure.
+ *
+ * This function resets all the fields in the TR-181 Data Model Layer (DML) structure to their default values.
+ *
+ * @param[in] pDhcpc Pointer to the DHCP client structure to be cleared.
+ *
+ * @return void
+ */
+void DhcpMgr_clearDHCPv4Lease(PCOSA_DML_DHCPC_FULL pDhcpc) ;
+
 #endif //_DHCP_CONTROLLER_H_

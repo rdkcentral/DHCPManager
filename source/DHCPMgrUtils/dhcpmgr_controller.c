@@ -121,142 +121,6 @@ static int DhcpMgr_build_dhcpv4_opt_list (PCOSA_CONTEXT_DHCPC_LINK_OBJECT hInsCo
 }
 
 
-ANSC_STATUS DhcpMgr_parseDHCPv4Response(PCOSA_DML_DHCPC_FULL pDhcpc)
-{
-
-    DHCPv4_PLUGIN_MSG *current = pDhcpc->currentLease;
-    if (current == NULL) 
-    {
-        DHCPMGR_LOG_ERROR("%s %d: lease parsing failed %s \n",__FUNCTION__, __LINE__, pDhcpc->Cfg.Interface);
-        return ANSC_STATUS_FAILURE;
-
-    }
-    if (current->addressAssigned == 1)
-    {
-        /* Updatet the status */
-        pDhcpc->Info.Status = COSA_DML_DHCP_STATUS_Enabled;
-        /* Update the DHCPCStatus */
-        pDhcpc->Info.DHCPStatus = COSA_DML_DHCPC_STATUS_Bound;
-        /* Update the IP address assigned */
-        AnscWriteUlong(&pDhcpc->Info.IPAddress.Value, _ansc_inet_addr(current->address));
-        /* Update the Subnet Mask */
-        AnscWriteUlong(&pDhcpc->Info.SubnetMask.Value, _ansc_inet_addr(current->netmask));
-        /* Update the leaseTime */
-        pDhcpc->Info.LeaseTimeRemaining = current->leaseTime;
-        pDhcpc->Info.NumDnsServers = 0;
-        pDhcpc->Info.NumIPRouters = 0;
-        /* Update the DNS Servers */
-        if(strlen(current->dnsServer)>0)
-        {
-            AnscWriteUlong(&pDhcpc->Info.DNSServers[pDhcpc->Info.NumDnsServers].Value, _ansc_inet_addr(current->dnsServer));
-            pDhcpc->Info.NumDnsServers++;
-        }
-        if(strlen(current->dnsServer1)>0)
-        {
-            AnscWriteUlong(&pDhcpc->Info.DNSServers[pDhcpc->Info.NumDnsServers].Value, _ansc_inet_addr(current->dnsServer1));
-            pDhcpc->Info.NumDnsServers++;
-        }
-
-        /* Update the IPRouters */
-        char *tok = strtok (current->gateway, " ");
-        while (tok != NULL)
-        {
-            AnscWriteUlong(&pDhcpc->Info.IPRouters[pDhcpc->Info.NumIPRouters].Value, _ansc_inet_addr(tok));
-            pDhcpc->Info.NumIPRouters++;
-            tok = strtok (NULL, " ");
-        }
-        //Update the DHCP Server
-        AnscWriteUlong(&pDhcpc->Info.DHCPServer.Value, _ansc_inet_addr(current->dhcpServerId));
-    }
-    /*
-    //TODO : check the sip server options
-    noOfReqOpt = CosaDmlDhcpcGetNumberOfReqOption(pDhcpCxtLink->hContext, pDhcpc->Cfg.InstanceNumber);
-    for (unsigned int reqIdx = 0; reqIdx < noOfReqOpt; reqIdx++)
-    {
-        pDhcpReqOpt = CosaDmlDhcpcGetReqOption_Entry(pDhcpCxtLink, reqIdx);
-        if (!pDhcpReqOpt)
-        {
-            DHCPMGR_LOG_ERROR("%s : pDhcpReqOpt is NULL",__FUNCTION__);
-            return ANSC_STATUS_FAILURE;
-        }
-        if (pDhcpReqOpt->Tag == DHCPV4_OPT_120)
-        {
-            STRCPY_S_NOCLOBBER((char *)pDhcpReqOpt->Value, sizeof(pDhcpReqOpt->Value), current->sipSrv);
-        }
-        if (pDhcpReqOpt->Tag == DHCPV4_OPT_121)
-        {
-            STRCPY_S_NOCLOBBER((char *)pDhcpReqOpt->Value, sizeof(pDhcpReqOpt->Value), current->staticRoutes);
-        }
-    }
-    */
-    return ANSC_STATUS_SUCCESS;
-}
-
-static void DhcpMgr_ProcessV4Lease(PCOSA_DML_DHCPC_FULL pDhcpc) 
-{
-    BOOL leaseChanged = false;
-    while (pDhcpc->NewLeases != NULL) 
-    {
-        DHCPMGR_LOG_INFO("%s %d: New Lease found for %s \n",__FUNCTION__, __LINE__, pDhcpc->Cfg.Interface);
-        // Compare  parameters of currentLease and NewLeases
-        DHCPv4_PLUGIN_MSG *current = pDhcpc->currentLease;
-        DHCPv4_PLUGIN_MSG *newLease = pDhcpc->NewLeases;
-
-        if (current == NULL) 
-        {
-            DHCPMGR_LOG_INFO("%s %d: lease updated for %s \n",__FUNCTION__, __LINE__, pDhcpc->Cfg.Interface);
-            leaseChanged = TRUE;
-        }
-        else if ((current != NULL) &&
-            ((current->addressAssigned != newLease->addressAssigned)||
-            (current->isExpired != newLease->isExpired) ||
-            (strcmp(current->address, newLease->address) != 0) ||
-            (strcmp(current->netmask, newLease->netmask) != 0) ||
-            (strcmp(current->gateway, newLease->gateway) != 0) ||
-            (strcmp(current->dnsServer, newLease->dnsServer) != 0) ||
-            (strcmp(current->dnsServer1, newLease->dnsServer1) != 0) 
-        ))
-        {
-            DHCPMGR_LOG_INFO("%s %d: lease updated for %s \n",__FUNCTION__, __LINE__, pDhcpc->Cfg.Interface);
-            leaseChanged = TRUE;
-        }
-        else if (newLease->isExpired == FALSE && newLease->addressAssigned == TRUE )
-        {
-            DHCPMGR_LOG_INFO("%s %d: lease renewed for %s \n",__FUNCTION__, __LINE__, pDhcpc->Cfg.Interface);
-        }
-
-        //TODO: check for renew
-        
-        // Free the current lease
-        if(pDhcpc->currentLease)
-            free(pDhcpc->currentLease);
-
-        // Update currentLease to point to NewLeases
-        pDhcpc->currentLease = newLease;
-
-        // Update NewLeases to point to the next lease
-        pDhcpc->NewLeases = newLease->next;
-        
-        // Clear the next pointer of the new current lease
-        pDhcpc->currentLease->next = NULL;
-        
-        if(leaseChanged)
-        {
-            DHCPMGR_LOG_INFO("%s %d: New lease  : %s \n",__FUNCTION__, __LINE__, newLease->isExpired?"Expired" : "Valid");
-            DHCPMGR_LOG_INFO("%s %d: NewLease->address %s  \n",__FUNCTION__, __LINE__, newLease->address);
-            DHCPMGR_LOG_INFO("%s %d: NewLease->netmask %s  \n",__FUNCTION__, __LINE__, newLease->netmask);
-            DHCPMGR_LOG_INFO("%s %d: NewLease->gateway %s  \n",__FUNCTION__, __LINE__, newLease->gateway );
-            DHCPMGR_LOG_INFO("%s %d: NewLease->dnsServer %s  \n",__FUNCTION__, __LINE__, newLease->dnsServer );
-            DHCPMGR_LOG_INFO("%s %d: NewLease->dnsServer1 %s  \n",__FUNCTION__, __LINE__,  newLease->dnsServer1 );
-
-            DhcpMgr_parseDHCPv4Response(pDhcpc);
-
-            //TODO: Send rbus event
-            
-        }
-
-    }
-}
 
 static void* DhcpMgr_MainController( void *args )
 {
@@ -364,6 +228,7 @@ static void* DhcpMgr_MainController( void *args )
                     stop_dhcpv4_client(pDhcpc->Info.ClientProcessId);
                     pDhcpc->Info.Status = COSA_DML_DHCP_STATUS_Disabled;
                     pDhcpc->Cfg.Renew = FALSE;
+                    DhcpMgr_clearDHCPv4Lease(pDhcpc);
                 }
             }
 
@@ -412,7 +277,7 @@ void DHCPMgr_AddDhcpv4Lease(char * ifName, DHCPv4_PLUGIN_MSG *newLease)
         pthread_mutex_lock(&pDhcpc->mutex); //MUTEX lock
 
         // Verify if the DHCP clients are running. There may be multiple DHCP client interfaces with the same name that are not active.
-        if(pDhcpc->Info.Status == COSA_DML_DHCP_STATUS_Enabled && strcmp(ifName, pDhcpc->Cfg.Interface) == 0)
+        if(strcmp(ifName, pDhcpc->Cfg.Interface) == 0)
         {
             DHCPv4_PLUGIN_MSG *temp = pDhcpc->NewLeases;
             //Find the tail of the list

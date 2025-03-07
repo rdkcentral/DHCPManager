@@ -258,7 +258,7 @@ pid_t start_dhcpv4_client(char *interfaceName, dhcp_opt_list *req_opt_list, dhcp
     // udhcpc-client will demonize a child thread during start, so we need to collect the exited main thread
     if (collect_waiting_process(udhcpc_pid, UDHCPC_TERMINATE_TIMEOUT) != SUCCESS)
     {
-        DHCPMGR_LOG_ERROR("%s %d: unable to collect pid for %d.\n", __FUNCTION__, __LINE__, udhcpc_pid);
+        //DHCPMGR_LOG_ERROR("%s %d: unable to collect pid for %d.\n", __FUNCTION__, __LINE__, udhcpc_pid);
     }
 
     DHCPMGR_LOG_INFO("%s %d: Started udhcpc. returning pid..\n", __FUNCTION__, __LINE__);
