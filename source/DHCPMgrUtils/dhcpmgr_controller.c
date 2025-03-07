@@ -30,7 +30,7 @@
 #include "cosa_dhcpv4_dml.h"
 #include "dhcpv4_interface.h"
 #include "dhcpmgr_controller.h"
-
+#include "dhcp_lease_monitor_thrd.h"
 #include "dhcp_client_common_utils.h"
 
 
@@ -130,6 +130,12 @@ static void* DhcpMgr_MainController( void *args )
     BOOL bRunning = TRUE;
     struct timeval tv;
     int n = 0;
+
+    ANSC_STATUS retStatus = DhcpMgr_LeaseMonitor_Start();
+    if(retStatus != ANSC_STATUS_SUCCESS)
+    {
+        DHCPMGR_LOG_INFO("%s %d - Lease Monitor Thread failed to start!\n", __FUNCTION__, __LINE__ );
+    }
 
     while (bRunning)
     {

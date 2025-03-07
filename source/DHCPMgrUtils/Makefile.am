@@ -29,6 +29,6 @@ libCcspDhcpMgrUtils_la_CPPFLAGS = -I$(top_srcdir)/source/DHCPMgrUtils/include \
                                   -I$(top_srcdir)/source/TR-181/middle_layer_src \
                                   -I$(top_srcdir)/source/DHCPServerUtils/utils/include 
 
-libCcspDhcpMgrUtils_la_SOURCES = cosa_common_util.c helpers.c dhcpmgr_controller.c
+libCcspDhcpMgrUtils_la_SOURCES = cosa_common_util.c helpers.c dhcpmgr_controller.c dhcp_lease_monitor_thrd.c
 
 libCcspDhcpMgrUtils_la_LIBADD = -lccsp_common -ltelemetry_msgsender -lulog -lsyscfg -lsysevent -ltime_conversion -lprint_uptime

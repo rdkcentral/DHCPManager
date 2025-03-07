@@ -752,11 +752,13 @@ CosaDhcpv4BackendGetDhcpv4Info
             }
         }
     }
+#if 0
     ANSC_STATUS retStatus = DhcpMgr_StartIpcServer();
     if(retStatus != ANSC_STATUS_SUCCESS)
     {
         DHCPMGR_LOG_INFO("%s %d - IPC Thread failed to start!\n", __FUNCTION__, __LINE__ );
     }
+#endif
     /*****************************************
 
                 Get DHCPv4.Server.Pool.{i}
