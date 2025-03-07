@@ -60,16 +60,16 @@ static ANSC_STATUS DhcpMgr_LeaseMonitor_Init()
     return ANSC_STATUS_SUCCESS;
 }
 
-ANSC_STATUS DhcpMgr_LeaseMonitor_Start()
+int DhcpMgr_LeaseMonitor_Start()
 {
     pthread_t ipcThreadId;
-    ANSC_STATUS retStatus = ANSC_STATUS_FAILURE;
+    int retStatus = -1;
     int ret = -1;
 
     if(DhcpMgr_LeaseMonitor_Init() != ANSC_STATUS_SUCCESS)
     {
         DHCPMGR_LOG_ERROR("[%s-%d] Failed to initialise IPC messaging\n", __FUNCTION__, __LINE__);
-        return ANSC_STATUS_FAILURE;
+        return -1;
     }
 
     ret = pthread_create(&ipcThreadId, NULL, &DhcpMgr_LeaseMonitor_Thrd, NULL);
@@ -80,7 +80,7 @@ ANSC_STATUS DhcpMgr_LeaseMonitor_Start()
     else
     {
         DHCPMGR_LOG_INFO("[%s-%d] IPC Thread Started Successfully\n", __FUNCTION__, __LINE__);
-        retStatus = ANSC_STATUS_SUCCESS;
+        retStatus = 0;
     }
     return retStatus;
 }
@@ -108,8 +108,11 @@ static void* DhcpMgr_LeaseMonitor_Thrd(void *arg)
             switch (plugin_msg.version)
             {
                 case DHCP_VERSION_4:
+                    DHCPv4_PLUGIN_MSG *newLease = (DHCPv4_PLUGIN_MSG *) malloc(sizeof(DHCPv4_PLUGIN_MSG));
+                    memcpy(newLease,&plugin_msg.data.dhcpv4, sizeof(DHCPv4_PLUGIN_MSG));
+                    newLease->next = NULL;
                     DHCPMGR_LOG_INFO("[%s-%d] Processing DHCPv4 lease for interface: %s\n",__FUNCTION__, __LINE__, plugin_msg.ifname);
-                    DHCPMgr_AddDhcpv4Lease(plugin_msg.ifname, &plugin_msg.data.dhcpv4);
+                    DHCPMgr_AddDhcpv4Lease(plugin_msg.ifname, newLease);
                     break;
                 case DHCP_VERSION_6:
                     //TO-DO:Update the lease details of v6

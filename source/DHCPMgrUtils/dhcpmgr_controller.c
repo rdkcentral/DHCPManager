@@ -269,8 +269,8 @@ static void* DhcpMgr_MainController( void *args )
     struct timeval tv;
     int n = 0;
 
-    ANSC_STATUS retStatus = DhcpMgr_LeaseMonitor_Start();
-    if(retStatus != ANSC_STATUS_SUCCESS)
+    int retStatus = DhcpMgr_LeaseMonitor_Start();
+    if(retStatus < 0)
     {
         DHCPMGR_LOG_INFO("%s %d - Lease Monitor Thread failed to start!\n", __FUNCTION__, __LINE__ );
     }

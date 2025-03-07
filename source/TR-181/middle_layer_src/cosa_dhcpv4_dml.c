@@ -743,7 +743,7 @@ Client_GetParamBoolValue
     {
         /* collect value */
         *pBool   = pDhcpc->Cfg.bEnabled;
-
+        /* TODO : cleanup 
         if (dhcpv4_client_enabled == 0)
         {
             *pBool   = FALSE;
@@ -752,7 +752,7 @@ Client_GetParamBoolValue
         {
             *pBool   = TRUE;
         }
-
+        */
         return TRUE;
     }
 
