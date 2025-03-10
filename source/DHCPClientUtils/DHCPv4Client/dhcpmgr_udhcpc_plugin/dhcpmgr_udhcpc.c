@@ -5,52 +5,34 @@
 #include "util.h"
 #include "udhcpc_msg.h"
 
+#if 0  // Uncomment the following code to enable plugin logs
+
+#define PLUGIN_DBG_PRINT(fmt ...)     {\
+    FILE     *fp        = NULL;\
+    fp = fopen ( "/rdklogs/logs/DHCPMGRLog.txt.0", "a+");\
+    if (fp)\
+    {\
+        fprintf(fp,fmt);\
+        fclose(fp);\
+    }\
+}\
+
+#undef DHCPMGR_LOG_INFO
+#undef DHCPMGR_LOG_ERROR
+#undef DHCPMGR_LOG_DEBUG
+#undef DHCPMGR_LOG_WARNING
+#define DHCPMGR_LOG_INFO(fmt, ...)     PLUGIN_DBG_PRINT(fmt, ##__VA_ARGS__)
+#define DHCPMGR_LOG_ERROR(fmt, ...)    PLUGIN_DBG_PRINT(fmt, ##__VA_ARGS__)
+#define DHCPMGR_LOG_DEBUG(fmt, ...)    PLUGIN_DBG_PRINT(fmt, ##__VA_ARGS__)
+#define DHCPMGR_LOG_WARNING(fmt, ...)  PLUGIN_DBG_PRINT(fmt, ##__VA_ARGS__)
+#endif
+
 typedef struct udhcpc_env_t
 {
-    char *wan_type;
-    char *box_type;
-    char *model_num;
     char *input_option; 
     char *dns;
     char *router;
-    bool broot_is_nfs;
 }udhcpc_env_t;
-
-static char *GetDeviceProperties (char *param)
-{
-    FILE *fp1=NULL;
-    char *valPtr = NULL;
-    char out_val[BUFLEN_128]={0};
-    if (!param)
-        return NULL;
-    fp1 = fopen("/etc/device.properties", "r");
-    if (fp1 == NULL)
-    {
-        DHCPMGR_LOG_INFO("Error opening properties file!");
-        return NULL;
-    }
-
-    while (fgets(out_val,BUFLEN_128, fp1) != NULL)
-    {
-        if (strstr(out_val, param) != NULL)
-        {
-            out_val[strcspn(out_val, "\r\n")] = 0; // Strip off any carriage returns
-
-            valPtr = strstr(out_val, "=");
-            if (valPtr != NULL)
-            {
-               valPtr++;
-               break;
-            }
-        }
-    }
-    fclose(fp1);
-    if (valPtr)
-    {
-       return strdup(valPtr);
-    }
-    return valPtr;
-}
 
 static uint32_t hex2dec(char *hex)
 {
@@ -78,37 +60,6 @@ static uint32_t hex2dec(char *hex)
     return decimal;
 }
 
-static int read_cmd_output(char *cmd, char *output_buf, int size_buf)
-{
-    FILE *f = NULL;
-    char *pos = NULL;
-
-    if (!cmd || (!output_buf) || (size_buf <= 0))
-        return -1;
-
-    f = popen(cmd,"r");
-    if(f==NULL){
-        return -1;
-    }
-
-    fgets(output_buf,size_buf,f);
-    /* remove trailing newline */
-    if((pos = strrchr(output_buf, '\n')) != NULL)
-        *pos = '\0';
-     pclose(f);
-    return 0;
-}
-
-static bool root_is_nfs (void)
-{
-    int result = -1;
-    char out[BUFLEN_128];
-    memset(out,0,sizeof(out));
-    result = read_cmd_output("sed -n 's/^[^ ]* \([^ ]*) \([^ ]*) .*$/\1 \2/p' /proc/mounts | grep \"^/ \\(nfs\\|smbfs\\|ncp\\|coda\\)$\"",out,BUFLEN_128);
-    if ((0 == result) && (strlen(out) > 0))
-        return true;
-    return false;
-}
 
 static int init_udhcpc_env (udhcpc_env_t *pinfo, char *option)
 {
@@ -118,12 +69,7 @@ static int init_udhcpc_env (udhcpc_env_t *pinfo, char *option)
         return -1;
     memset(pinfo,0,sizeof(struct udhcpc_env_t));
 
-    pinfo->broot_is_nfs = root_is_nfs();
-    DHCPMGR_LOG_INFO("rootfs %d",pinfo->broot_is_nfs);
     pinfo->input_option = option;
-    pinfo->wan_type = GetDeviceProperties("WAN_TYPE");
-    pinfo->box_type = GetDeviceProperties("BOX_TYPE");
-    pinfo->model_num = GetDeviceProperties("MODEL_NUM");
     dns = getenv("dns");
     router = getenv("router");
     if (dns)
@@ -133,15 +79,6 @@ static int init_udhcpc_env (udhcpc_env_t *pinfo, char *option)
     if (router)
     {
         pinfo->router = strdup(router);
-    }
-    if (pinfo->wan_type)
-    {
-        DHCPMGR_LOG_INFO("wan_type %s",pinfo->wan_type);
-    }
- 
-    if (pinfo->box_type)
-    {
-	    DHCPMGR_LOG_INFO("box_type %s",pinfo->box_type);
     }
     return 0;
 }
@@ -495,10 +432,6 @@ int main(int argc, char *argv[])
         }
     }
 
-    if (info.wan_type)
-        free(info.wan_type);
-    if (info.box_type)
-        free(info.box_type);
     if (info.dns)
         free(info.dns);
     if (info.router)

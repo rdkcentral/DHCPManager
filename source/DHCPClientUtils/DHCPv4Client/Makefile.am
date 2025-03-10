@@ -16,7 +16,7 @@
 # SPDX-License-Identifier: Apache-2.0
 ##########################################################################
 
-SUBDIRS = service_udhcpc dhcpmgr_udhcpc_plugin
+SUBDIRS = dhcpmgr_udhcpc_plugin
 
 AM_CFLAGS = -fno-exceptions -Wall -Wextra
 AM_LDFLAGS = -lhal_platform -lz -lpthread -lccsp_common $(DBUS_LIBS)

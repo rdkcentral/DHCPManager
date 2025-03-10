@@ -6,10 +6,6 @@
 #include "dhcpv4_interface.h"
 #include "dhcp_lease_monitor_thrd.h"
 
-#define IP_ADDR_LENGTH                   46          //!< IP address length
-#define IFNAME_LENGTH                    BUFLEN_32
-#define MAX_FULLPATH_LENGTH              1024
-#define AFTR_NAME_LENGTH                 256
 #define MAX_SEND_THRESHOLD 5
 
 #define DHCP_INTERFACE_NAME "interface"
