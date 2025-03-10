@@ -105,7 +105,7 @@ static void* DhcpMgr_LeaseMonitor_Thrd(void *arg)
         bytes = nn_recv(ipcListenFd, (PLUGIN_MSG *)&plugin_msg, msg_size, 0);
         if (bytes == msg_size)
         {
-            DHCPMGR_LOG_INFO("[%s-%d] Received valid message of size %d\n", __FUNCTION__, __LINE__, bytes);
+           //DHCPMGR_LOG_INFO("[%s-%d] Received valid message of size %d\n", __FUNCTION__, __LINE__, bytes);
             switch (plugin_msg.version)
             {
                 case DHCP_VERSION_4:

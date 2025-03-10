@@ -206,12 +206,12 @@ int configureNetworkInterface(PCOSA_DML_DHCPC_FULL pDhcpc)
         close(sockfd);
         return -1;
     }
-    ifr.ifr_flags |= IFF_UP | IFF_RUNNING;
+    /* ifr.ifr_flags |= IFF_UP | IFF_RUNNING;
     if (ioctl(sockfd, SIOCSIFFLAGS, &ifr) < 0) {
         perror("ioctl(SIOCSIFFLAGS)");
         close(sockfd);
         return -1;
-    }
+    }*/
 
     close(sockfd);
     return 0;
@@ -234,8 +234,6 @@ void DhcpMgr_ProcessV4Lease(PCOSA_DML_DHCPC_FULL pDhcpc)
         // Compare  parameters of currentLease and NewLeases
         DHCPv4_PLUGIN_MSG *current = pDhcpc->currentLease;
         DHCPv4_PLUGIN_MSG *newLease = pDhcpc->NewLeases;
-        DHCPMGR_LOG_INFO("%s %d: New Lease found for %s current addr %p newLease %p \n",__FUNCTION__, __LINE__, pDhcpc->Cfg.Interface, current , newLease);
-
 
         if (current == NULL) 
         {

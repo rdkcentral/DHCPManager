@@ -389,15 +389,15 @@ static int send_dhcp4_data_to_leaseMonitor (DHCPv4_PLUGIN_MSG *dhcpv4_data)
 
     DHCPMGR_LOG_INFO("[%s-%d] Created socket endpoint \n", __FUNCTION__, __LINE__);
 
-    conn = nn_connect(sock, LEASE_MONITOR_SOCKET);
+    conn = nn_connect(sock, DHCP_MANAGER_ADDR);
     if (conn < 0)
     {
-        DHCPMGR_LOG_ERROR("[%s-%d] Failed to connect to the dhcpmanager [%s], error= [%d][%s] \n", __FUNCTION__, __LINE__, LEASE_MONITOR_SOCKET,errno, strerror(errno));
+        DHCPMGR_LOG_ERROR("[%s-%d] Failed to connect to the dhcpmanager [%s], error= [%d][%s] \n", __FUNCTION__, __LINE__, DHCP_MANAGER_ADDR,errno, strerror(errno));
         nn_close(sock);
         return -1;
     }
 
-    DHCPMGR_LOG_INFO("[%s-%d] Connected to server socket [%s] \n", __FUNCTION__, __LINE__,LEASE_MONITOR_SOCKET);
+    DHCPMGR_LOG_INFO("[%s-%d] Connected to server socket [%s] \n", __FUNCTION__, __LINE__,DHCP_MANAGER_ADDR);
 
     for (int i = 0; i < MAX_SEND_THRESHOLD; i++)
     {
