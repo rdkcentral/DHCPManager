@@ -4,13 +4,8 @@
 #include <nanomsg/nn.h>
 #include <nanomsg/pipeline.h>
 #include "dhcpv4_interface.h"
+#include "dhcp_lease_monitor_thrd.h"
 
-#define LEASE_MONITOR_SOCKET "tcp://127.0.0.1:50324"
-
-#define IP_ADDR_LENGTH                   46          //!< IP address length
-#define IFNAME_LENGTH                    BUFLEN_32
-#define MAX_FULLPATH_LENGTH              1024
-#define AFTR_NAME_LENGTH                 256
 #define MAX_SEND_THRESHOLD 5
 
 #define DHCP_INTERFACE_NAME "interface"
@@ -31,19 +26,5 @@
 #define DHCP_SERVER_ID "serverid"
 #define DHCP_SIPSRV "sipsrv"
 #define DHCP_STATIC_ROUTES "staticroutes"
-
-typedef enum {
-    DHCP_VERSION_4, 
-    DHCP_VERSION_6,
-} DHCP_SOURCE;
-
-typedef struct {
-    char ifname[BUFLEN_32];
-    DHCP_SOURCE version;
-    union {
-//        DHCPv6_PLUGIN_MSG dhcpv6;
-        DHCPv4_PLUGIN_MSG dhcpv4;
-    } data;
-} PLUGIN_MSG;
 
 #endif

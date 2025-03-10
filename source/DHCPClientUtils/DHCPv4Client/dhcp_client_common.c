@@ -18,6 +18,7 @@
  */
 
 #include "dhcp_client_common_utils.h"
+#include <sys/prctl.h>
 
 /*
  * signal_process ()
@@ -195,6 +196,14 @@ int find_strstr (char * basestr, int basestr_len, char * substr, int substr_len)
     return FAILURE;
 }
 
+void replace_null_with_space(char *str, size_t len) {
+    for (size_t i = 0; i < len; i++) {
+        if (str[i] == '\0') {
+            str[i] = ' ';
+        }
+    }
+}
+
 /*
  * check_proc_entry_for_pid ()
  * @description: check the contents of /proc directory to match the process name
@@ -275,12 +284,12 @@ static int check_proc_entry_for_pid (char * name, char * args)
                         DBG_PRINT("<<DEBUG>>%s %d: opening file %s\n", __FUNCTION__, __LINE__, filename);
 
                         memset (cmdline, 0, sizeof(cmdline));
-			/* CID :258113 String not null terminated (STRING_NULL)*/
+			            /* CID :258113 String not null terminated (STRING_NULL)*/
                         int num_read ;
                         if ((num_read = fread(cmdline, 1, sizeof(cmdline)-1 , fp)) > 0)
                         {
-		            cmdline[num_read] = '\0';
-                            DBG_PRINT("<<DEBUG>>%s %d: comparing cmdline from proc:%s with %s\n", __FUNCTION__, __LINE__, cmdline, args);
+		                    cmdline[num_read] = '\0';
+                            replace_null_with_space(cmdline, num_read);
                             if (find_strstr(cmdline, sizeof(cmdline), args, strlen(args)) == SUCCESS)
                             {
                                 rval = pid;
@@ -597,6 +606,21 @@ pid_t start_exe(char * exe, char * args)
     return pid;
 }
 
+void sigchld_handler(int sig) 
+{
+    int status;
+    pid_t pid;
+    (void) sig;
+    DBG_PRINT("<<DEBUG>>%s %d: sigchld_handler called ..\n", __FUNCTION__, __LINE__);
+
+    // Use waitpid to get the PID of the terminated child process
+    while ((pid = waitpid(-1, &status, WNOHANG)) > 0) 
+    {
+        DBG_PRINT("Child process with PID %d terminated.\n", pid);
+        processKilled(pid);
+    }
+}
+
 pid_t start_exe2(char * exe, char * args)
 {
     sigset_t blockSigchld, saveMask;
@@ -631,6 +655,21 @@ pid_t start_exe2(char * exe, char * args)
     sigemptyset(&saIgnore.sa_mask);
     sigaction(SIGINT, &saIgnore, &saSaveInt);
     sigaction(SIGQUIT, &saIgnore, &saSaveQuit);
+
+    // Set process as a subreaper
+    prctl(PR_SET_CHILD_SUBREAPER, 1, 0, 0, 0);
+    struct sigaction sa;
+    sa.sa_handler = sigchld_handler;
+    sigemptyset(&sa.sa_mask);
+    sa.sa_flags = SA_RESTART | SA_NOCLDSTOP;
+    if (sigaction(SIGCHLD, &sa, NULL) == -1) 
+    {
+        perror("sigaction");
+        exit(EXIT_FAILURE);
+    }
+    
+    DBG_PRINT("<<DEBUG>>%s %d: SIG child handler added ...\n", __FUNCTION__, __LINE__);
+
     switch ((pid = fork()))
     {
       case -1: // Failure

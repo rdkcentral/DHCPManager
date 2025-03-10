@@ -103,7 +103,8 @@ typedef struct {
  * This function initializes and starts the DHCP Lease Monitor,
  * which listens for DHCP lease events and processes lease updates.
  *
- * @return ANSC_STATUS_SUCCESS on successful start, ANSC_STATUS_FAILURE otherwise.
+ * @return 0 on successful start, -1 otherwise.
  */
-ANSC_STATUS DhcpMgr_LeaseMonitor_Start();
+int  DhcpMgr_LeaseMonitor_Start();
+
 

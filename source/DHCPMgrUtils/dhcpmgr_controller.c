@@ -120,6 +120,8 @@ static int DhcpMgr_build_dhcpv4_opt_list (PCOSA_CONTEXT_DHCPC_LINK_OBJECT hInsCo
     return 0;
 }
 
+
+
 static void* DhcpMgr_MainController( void *args )
 {
     (void) args;
@@ -131,8 +133,8 @@ static void* DhcpMgr_MainController( void *args )
     struct timeval tv;
     int n = 0;
 
-    ANSC_STATUS retStatus = DhcpMgr_LeaseMonitor_Start();
-    if(retStatus != ANSC_STATUS_SUCCESS)
+    int retStatus = DhcpMgr_LeaseMonitor_Start();
+    if(retStatus < 0)
     {
         DHCPMGR_LOG_INFO("%s %d - Lease Monitor Thread failed to start!\n", __FUNCTION__, __LINE__ );
     }
@@ -214,7 +216,8 @@ static void* DhcpMgr_MainController( void *args )
                     pDhcpc->Cfg.Renew = FALSE;
                 }
 
-                //TODO: Add lease handling and rbus event 
+                //Process new lease
+                DhcpMgr_ProcessV4Lease(pDhcpc);
             }
             else
             {
@@ -225,6 +228,7 @@ static void* DhcpMgr_MainController( void *args )
                     stop_dhcpv4_client(pDhcpc->Info.ClientProcessId);
                     pDhcpc->Info.Status = COSA_DML_DHCP_STATUS_Disabled;
                     pDhcpc->Cfg.Renew = FALSE;
+                    DhcpMgr_clearDHCPv4Lease(pDhcpc);
                 }
             }
 
@@ -273,17 +277,26 @@ void DHCPMgr_AddDhcpv4Lease(char * ifName, DHCPv4_PLUGIN_MSG *newLease)
         pthread_mutex_lock(&pDhcpc->mutex); //MUTEX lock
 
         // Verify if the DHCP clients are running. There may be multiple DHCP client interfaces with the same name that are not active.
-        if(pDhcpc->Info.Status == COSA_DML_DHCP_STATUS_Enabled && strcmp(ifName, pDhcpc->Cfg.Interface) == 0)
+        if(strcmp(ifName, pDhcpc->Cfg.Interface) == 0)
         {
             DHCPv4_PLUGIN_MSG *temp = pDhcpc->NewLeases;
             //Find the tail of the list
-            while(temp != NULL)
+            if (temp == NULL) 
             {
-                temp= temp->next;
+                // If the list is empty, add the new lease as the first element
+                pDhcpc->NewLeases = newLease;
+            } else 
+            {
+                while (temp->next != NULL) 
+                {
+                    temp = temp->next;
+                }
+                // Add the new lease details to the tail of the list
+                temp->next = newLease;
             }
 
             //Just the add the new lease details in the list. the controlled thread will hanlde it. 
-            temp = newLease;
+            newLease->next = NULL;
             interfaceFound = TRUE;
             DHCPMGR_LOG_INFO("%s %d: New dhcpv4 lease msg added for %s \n", __FUNCTION__, __LINE__, pDhcpc->Cfg.Interface);
             pthread_mutex_unlock(&pDhcpc->mutex); //MUTEX release before break
@@ -301,5 +314,56 @@ void DHCPMgr_AddDhcpv4Lease(char * ifName, DHCPv4_PLUGIN_MSG *newLease)
         DHCPMGR_LOG_ERROR("%s %d: Failed to add dhcpv4 lease msg for ineterface %s \n", __FUNCTION__, __LINE__, pDhcpc->Cfg.Interface);
     }
 
+    return;
+}
+
+/**
+ * @brief Updates the status of the DHCP client interface to 'stopped' based on the given process ID.
+ *
+ * This function iterates through the DHCPv4 and DHCPv6 client lists to find the interface
+ * associated with the specified process ID (`pid`). Once found, it updates the status of
+ * that interface to 'stopped'.
+ *
+ * This function is called from a SIGCHLD handler, so it is designed to be simple and quick.
+ *
+ * @param pid The process ID of the DHCP client to be marked as stopped.
+ */
+void processKilled(pid_t pid)
+{
+    PCOSA_DML_DHCPC_FULL            pDhcpc        = NULL;
+    PCOSA_CONTEXT_DHCPC_LINK_OBJECT pDhcpCxtLink  = NULL;
+    PSINGLE_LINK_ENTRY              pSListEntry   = NULL;
+    ULONG ulIndex;
+    ULONG instanceNum;
+    ULONG clientCount = CosaDmlDhcpcGetNumberOfEntries(NULL);
+    //iterate all entries and find the ineterface with the ifname
+    for ( ulIndex = 0; ulIndex < clientCount; ulIndex++ )
+    {
+        pSListEntry = (PSINGLE_LINK_ENTRY)Client_GetEntry(NULL,ulIndex,&instanceNum);
+        if ( pSListEntry )
+        {
+            pDhcpCxtLink          = ACCESS_COSA_CONTEXT_DHCPC_LINK_OBJECT(pSListEntry);
+            pDhcpc            = (PCOSA_DML_DHCPC_FULL)pDhcpCxtLink->hContext;
+        }
+
+        if (!pDhcpc)
+        {
+            DHCPMGR_LOG_ERROR("%s : pDhcpc is NULL\n",__FUNCTION__);
+            continue;
+        }
+
+        //No mutex lock, since this funtions is called from teh sigchild handler. Keep this function simple and quick
+        if(pDhcpc->Info.ClientProcessId == pid)
+        {
+            DHCPMGR_LOG_INFO("%s %d: DHCpv4 client for %s pid %d is terminated.\n", __FUNCTION__, __LINE__, pDhcpc->Cfg.Interface, pid);
+            if(pDhcpc->Info.Status == COSA_DML_DHCP_STATUS_Enabled)
+            {
+                pDhcpc->Info.Status = COSA_DML_DHCP_STATUS_Disabled;
+            }
+            break;
+        }
+    }
+
+    //TODO: add v6 handle
     return;
 }
