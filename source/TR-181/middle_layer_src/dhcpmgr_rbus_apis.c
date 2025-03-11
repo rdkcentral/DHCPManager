@@ -20,12 +20,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "dhcpmgr_rbus_apis.h"
+#include "cosa_dhcpv4_apis.h"
 #include "util.h"
 
 #define  ARRAY_SZ(x) (sizeof(x) / sizeof((x)[0]))
 #define  MAC_ADDR_SIZE 18
 static rbusHandle_t rbusHandle;
-char componentName[32] = "DHCP_MANAGER";
+char *componentName = "DHCPMANAGER";
 
 rbusError_t DhcpMgr_Rbus_SubscribeHandler(rbusHandle_t handle, rbusEventSubAction_t action, const char *eventName, rbusFilter_t filter, int32_t interval, bool *autoPublish);
 
@@ -36,6 +37,7 @@ rbusError_t DhcpMgr_Rbus_SubscribeHandler(rbusHandle_t handle, rbusEventSubActio
 
  ***********************************************************************/
 rbusDataElement_t DhcpMgrRbusDataElements[] = {
+    {DHCP_MGR_DHCPv4_IFACE, RBUS_ELEMENT_TYPE_TABLE, {NULL, NULL, NULL, NULL, NULL, NULL}},
     {DHCP_MGR_DHCPv4_STATUS,  RBUS_ELEMENT_TYPE_PROPERTY, {NULL, NULL, NULL, NULL, DhcpMgr_Rbus_SubscribeHandler, NULL}},
 };
 
@@ -62,6 +64,25 @@ ANSC_STATUS DhcpMgr_Rbus_Init()
         return rc;
     }
 
+    char AliasName[64] = {0};
+    ULONG clientCount = CosaDmlDhcpcGetNumberOfEntries(NULL);
+
+    for (ULONG i = 0; i < clientCount; i++)
+    {
+        rc = rbusTable_registerRow(rbusHandle, DHCP_MGR_DHCPv4_TABLE, (i+1), NULL);
+        if(rc != RBUS_ERROR_SUCCESS)
+        {
+            DHCPMGR_LOG_ERROR("%s %d - Iterface(%lu) Table (%s) Registartion failed, Error=%d \n", __FUNCTION__, __LINE__, i, DHCP_MGR_DHCPv4_TABLE, rc);
+            return rc;
+        }
+        else
+        {
+            DHCPMGR_LOG_INFO("%s %d - Iterface(%lu) Table (%s) Registartion Successfully, AliasName(%s)\n", __FUNCTION__, __LINE__, i, DHCP_MGR_DHCPv4_TABLE, AliasName);
+        }
+
+        memset(AliasName,0,64);
+     }
+
     return ANSC_STATUS_SUCCESS;
 }
 
@@ -71,9 +92,9 @@ rbusError_t DhcpMgr_Rbus_SubscribeHandler(rbusHandle_t handle, rbusEventSubActio
     (void)filter;
     (void)(interval);
     (void)(autoPublish);
-    CcspTraceInfo(("%s %d - Event %s has been subscribed from subscribed\n", __FUNCTION__, __LINE__,eventName ));
-    char *subscribe_action = action == RBUS_EVENT_ACTION_SUBSCRIBE ? "subscribe" : "unsubscribe";
-    CcspTraceInfo(("%s %d - action=%s \n", __FUNCTION__, __LINE__, subscribe_action ));
+
+    char *subscribe_action = action == RBUS_EVENT_ACTION_SUBSCRIBE ? "subscribed" : "unsubscribed";
+    DHCPMGR_LOG_INFO("%s %d - Event %s has been  %s \n", __FUNCTION__, __LINE__,eventName, subscribe_action );
 
     return RBUS_ERROR_SUCCESS;
 }

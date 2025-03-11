@@ -84,6 +84,7 @@
 #include "util.h"
 
 #include "dhcpmgr_controller.h"
+#include "dhcpmgr_rbus_apis.h"
 
 #ifdef DHCPV6_SERVER_SUPPORT
 extern void dhcpv6_server_init();
@@ -523,6 +524,9 @@ DHCPMGR_LOG_WARNING("\nAfter Cdm_Init\n");
     init_dhcp_server_service();
     DHCPMGR_LOG_INFO("init_dhcp_server_service Ended\n");
 #endif
+
+    DHCPMGR_LOG_INFO("DhcpMgr_Rbus_Init Init \n");
+    DhcpMgr_Rbus_Init();
 
     DHCPMGR_LOG_INFO("DhcpMgr_StartMainController Init \n");
     DhcpMgr_StartMainController();

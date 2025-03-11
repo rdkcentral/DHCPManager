@@ -21,9 +21,11 @@
 #define _DHCPMGR_RBUS_H_
 #include <rbus/rbus.h>
 #include "cosa_apis.h"
+#include "dhcpmgr_msg_definitions.h"
 
-
-#define DHCP_MGR_DHCPv4_STATUS "Device.DHCPv4.Client.{i}.Status"
+#define DHCP_MGR_DHCPv4_IFACE "Device.DHCPv4.Client.{i}."
+#define DHCP_MGR_DHCPv4_TABLE "Device.DHCPv4.Client"
+#define DHCP_MGR_DHCPv4_STATUS "Device.DHCPv4.Client.{i}.Events"
 
 ANSC_STATUS DhcpMgr_Rbus_Init();
 
