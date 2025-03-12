@@ -98,3 +98,58 @@ rbusError_t DhcpMgr_Rbus_SubscribeHandler(rbusHandle_t handle, rbusEventSubActio
 
     return RBUS_ERROR_SUCCESS;
 }
+
+
+int DhcpMgr_PublishDhcpV4Event(PCOSA_DML_DHCPC_FULL pDhcpc, DHCP_MESSAGE_TYPE msgType)
+{
+    if(pDhcpc == NULL)
+    {
+        DHCPMGR_LOG_ERROR("%s : pDhcpc is NULL\n",__FUNCTION__);
+        return -1;
+    }
+
+    int rc = -1;
+    rbusEvent_t event;
+    rbusObject_t rdata;
+    rbusValue_t ifNameVal , typeVal;
+
+    /*Set Interface Name */
+    rbusObject_Init(&rdata, NULL);
+    rbusValue_Init(&ifNameVal);
+    rbusValue_SetString(ifNameVal, (char*)pDhcpc->Cfg.Interface);
+
+    /*Set Msg type Name */
+    rbusValue_Init(&typeVal);
+    rbusValue_SetUInt64(typeVal, msgType);
+    
+
+    int index = 2;//TODO get the index num
+    char eventStr[64] = {0};
+    snprintf(eventStr,sizeof(eventStr), DHCPv4_EVENT_FORMAT, index);
+
+    rbusObject_SetValue(rdata, "IfName", ifNameVal);
+    rbusObject_SetValue(rdata, "msgType", typeVal);
+
+    event.name = eventStr;
+    event.data = rdata;
+    event.type = RBUS_EVENT_VALUE_CHANGED;
+
+
+    if(rbusEvent_Publish(rbusHandle, &event) != RBUS_ERROR_SUCCESS)
+    {
+        DHCPMGR_LOG_WARNING("%s %d - Event %s Publish Failed \n", __FUNCTION__, __LINE__,eventStr );
+    }
+    else
+    {
+        DHCPMGR_LOG_INFO("%s %d - Event %s Published \n", __FUNCTION__, __LINE__,eventStr );
+        rc = 0;
+    }
+
+
+    rbusValue_Release(ifNameVal);
+    rbusValue_Release(typeVal);
+    rbusObject_Release(rdata);
+
+    return rc;
+
+}

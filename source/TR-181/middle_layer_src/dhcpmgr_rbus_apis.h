@@ -21,12 +21,17 @@
 #define _DHCPMGR_RBUS_H_
 #include <rbus/rbus.h>
 #include "cosa_apis.h"
+#include "cosa_dhcpv4_apis.h"
 #include "dhcpmgr_msg_definitions.h"
 
 #define DHCP_MGR_DHCPv4_IFACE "Device.DHCPv4.Client.{i}."
 #define DHCP_MGR_DHCPv4_TABLE "Device.DHCPv4.Client"
 #define DHCP_MGR_DHCPv4_STATUS "Device.DHCPv4.Client.{i}.Events"
+#define DHCPv4_EVENT_FORMAT "Device.DHCPv4.Client.%d.Events"
+
 
 ANSC_STATUS DhcpMgr_Rbus_Init();
+
+int DhcpMgr_PublishDhcpV4Event(PCOSA_DML_DHCPC_FULL pDhcpc, DHCP_MESSAGE_TYPE msgType);
 
 #endif// _DHCPMGR_RBUS_H_

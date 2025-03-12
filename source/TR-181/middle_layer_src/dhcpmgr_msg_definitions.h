@@ -16,6 +16,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
 */
+#ifndef DHCP_MSH_H
+#define DHCP_MSH_H
+
+#define BUFLEN_32                        32          //buffer length 32
+#define BUFLEN_64                        64          //buffer length 64
+#define BUFLEN_48                        48          //buffer length 48
+#define BUFLEN_128                       128         //buffer length 128
 
 typedef struct _DHCP_MGR_IPV4_MSG
 {
@@ -78,3 +85,5 @@ typedef enum {
     DHCP_LEASE_DEL,    // Lease Expired, Released
     DHCP_LEASE_RENEW,  // Lease Renewed
 } DHCP_MESSAGE_TYPE;
+
+#endif //DHCP_MSH_H
