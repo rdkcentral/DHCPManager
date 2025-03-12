@@ -138,7 +138,7 @@ int DhcpMgr_PublishDhcpV4Event(PCOSA_DML_DHCPC_FULL pDhcpc, DHCP_MESSAGE_TYPE ms
 
     /*Set Msg type Name */
     rbusValue_Init(&typeVal);
-    rbusValue_SetUInt64(typeVal, msgType);
+    rbusValue_SetUInt32(typeVal, msgType);
     rbusObject_SetValue(rdata, "MsgType", typeVal);
 
     /*Set the lease deatails */

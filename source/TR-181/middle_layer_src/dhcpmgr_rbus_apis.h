@@ -22,7 +22,7 @@
 #include <rbus/rbus.h>
 #include "cosa_apis.h"
 #include "cosa_dhcpv4_apis.h"
-#include "dhcpmgr_msg_definitions.h"
+#include "ipc_msg.h"
 
 #define DHCP_MGR_DHCPv4_IFACE "Device.DHCPv4.Client.{i}."
 #define DHCP_MGR_DHCPv4_TABLE "Device.DHCPv4.Client"
