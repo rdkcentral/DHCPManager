@@ -22,6 +22,8 @@
 #include "dhcpmgr_rbus_apis.h"
 #include "cosa_dhcpv4_apis.h"
 #include "util.h"
+#include "dhcpv4_interface.h"
+
 
 #define  ARRAY_SZ(x) (sizeof(x) / sizeof((x)[0]))
 #define  MAC_ADDR_SIZE 18
@@ -99,6 +101,21 @@ rbusError_t DhcpMgr_Rbus_SubscribeHandler(rbusHandle_t handle, rbusEventSubActio
     return RBUS_ERROR_SUCCESS;
 }
 
+void DhcpMgr_createLeaseInfoMsg(DHCPv4_PLUGIN_MSG *src, DHCP_MGR_IPV4_MSG *dest) 
+{
+    strncpy(dest->ifname, src->ifname, sizeof(dest->ifname) - 1);
+    strncpy(dest->address, src->address, sizeof(dest->address) - 1);
+    strncpy(dest->netmask, src->netmask, sizeof(dest->netmask) - 1);
+    strncpy(dest->gateway, src->gateway, sizeof(dest->gateway) - 1);
+    strncpy(dest->dnsServer, src->dnsServer, sizeof(dest->dnsServer) - 1);
+    strncpy(dest->dnsServer1, src->dnsServer1, sizeof(dest->dnsServer1) - 1);
+    strncpy(dest->timeZone, src->timeZone, sizeof(dest->timeZone) - 1);
+    dest->mtuSize = src->mtuSize;
+    dest->timeOffset = src->timeOffset;
+    dest->isTimeOffsetAssigned = src->isTimeOffsetAssigned;
+    dest->upstreamCurrRate = src->upstreamCurrRate;
+    dest->downstreamCurrRate = src->downstreamCurrRate;
+}
 
 int DhcpMgr_PublishDhcpV4Event(PCOSA_DML_DHCPC_FULL pDhcpc, DHCP_MESSAGE_TYPE msgType)
 {
@@ -111,31 +128,46 @@ int DhcpMgr_PublishDhcpV4Event(PCOSA_DML_DHCPC_FULL pDhcpc, DHCP_MESSAGE_TYPE ms
     int rc = -1;
     rbusEvent_t event;
     rbusObject_t rdata;
-    rbusValue_t ifNameVal , typeVal;
+    rbusValue_t ifNameVal , typeVal, leaseInfoVal;
 
     /*Set Interface Name */
     rbusObject_Init(&rdata, NULL);
     rbusValue_Init(&ifNameVal);
     rbusValue_SetString(ifNameVal, (char*)pDhcpc->Cfg.Interface);
+    rbusObject_SetValue(rdata, "IfName", ifNameVal);
 
     /*Set Msg type Name */
     rbusValue_Init(&typeVal);
     rbusValue_SetUInt64(typeVal, msgType);
+    rbusObject_SetValue(rdata, "MsgType", typeVal);
+
+    /*Set the lease deatails */
+    if(msgType == DHCP_LEASE_UPDATE)
+    { 
+        DHCP_MGR_IPV4_MSG leaseInfo;
+        uint8_t byteArray[sizeof(DHCP_MGR_IPV4_MSG)];
+        memcpy(byteArray, &leaseInfo, sizeof(DHCP_MGR_IPV4_MSG));
+        DhcpMgr_createLeaseInfoMsg(&leaseInfo, pDhcpc->currentLease);
+
+        rbusValue_Init(&leaseInfoVal);
+        rbusValue_SetBytes(leaseInfoVal, byteArray, sizeof(DHCP_MGR_IPV4_MSG));
+        rbusObject_SetValue(rdata, "LeaseInfo", leaseInfoVal);
+    }
+
     
 
     int index = 2;//TODO get the index num
     char eventStr[64] = {0};
     snprintf(eventStr,sizeof(eventStr), DHCPv4_EVENT_FORMAT, index);
 
-    rbusObject_SetValue(rdata, "IfName", ifNameVal);
-    rbusObject_SetValue(rdata, "msgType", typeVal);
 
     event.name = eventStr;
     event.data = rdata;
-    event.type = RBUS_EVENT_VALUE_CHANGED;
+    event.type = RBUS_EVENT_GENERAL;
 
-
-    if(rbusEvent_Publish(rbusHandle, &event) != RBUS_ERROR_SUCCESS)
+    rbusError_t rt = rbusEvent_Publish(rbusHandle, &event); 
+    
+    if( rt != RBUS_ERROR_SUCCESS && rt != RBUS_ERROR_NOSUBSCRIBERS)
     {
         DHCPMGR_LOG_WARNING("%s %d - Event %s Publish Failed \n", __FUNCTION__, __LINE__,eventStr );
     }
