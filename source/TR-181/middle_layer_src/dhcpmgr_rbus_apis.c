@@ -147,7 +147,7 @@ int DhcpMgr_PublishDhcpV4Event(PCOSA_DML_DHCPC_FULL pDhcpc, DHCP_MESSAGE_TYPE ms
         DHCP_MGR_IPV4_MSG leaseInfo;
         uint8_t byteArray[sizeof(DHCP_MGR_IPV4_MSG)];
         memcpy(byteArray, &leaseInfo, sizeof(DHCP_MGR_IPV4_MSG));
-        DhcpMgr_createLeaseInfoMsg(&leaseInfo, pDhcpc->currentLease);
+        DhcpMgr_createLeaseInfoMsg(pDhcpc->currentLease,&leaseInfo);
 
         rbusValue_Init(&leaseInfoVal);
         rbusValue_SetBytes(leaseInfoVal, byteArray, sizeof(DHCP_MGR_IPV4_MSG));
@@ -156,7 +156,7 @@ int DhcpMgr_PublishDhcpV4Event(PCOSA_DML_DHCPC_FULL pDhcpc, DHCP_MESSAGE_TYPE ms
 
     
 
-    int index = 2;//TODO get the index num
+    int index = pDhcpc->Cfg.InstanceNumber;
     char eventStr[64] = {0};
     snprintf(eventStr,sizeof(eventStr), DHCPv4_EVENT_FORMAT, index);
 
