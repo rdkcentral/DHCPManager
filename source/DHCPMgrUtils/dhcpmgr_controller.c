@@ -31,6 +31,7 @@
 #include "dhcpv4_interface.h"
 #include "dhcpmgr_controller.h"
 #include "dhcp_lease_monitor_thrd.h"
+#include "dhcpmgr_rbus_apis.h"
 #include "dhcp_client_common_utils.h"
 
 
@@ -200,12 +201,12 @@ static void* DhcpMgr_MainController( void *args )
                     {
                         pDhcpc->Info.Status = COSA_DML_DHCP_STATUS_Enabled;
                         DHCPMGR_LOG_INFO("%s %d: dhcpv4 client for %s started PID : %d \n", __FUNCTION__, __LINE__, pDhcpc->Cfg.Interface, pDhcpc->Info.ClientProcessId);
-                        //TODO: add success rbus event 
+                        DhcpMgr_PublishDhcpV4Event(pDhcpc, DHCP_CLIENT_STARTED);
                     }
                     else
                     {
                         DHCPMGR_LOG_INFO("%s %d: dhcpv4 client for %s failed to start \n", __FUNCTION__, __LINE__, pDhcpc->Cfg.Interface);
-                        //TODO: add success rbus event 
+                        DhcpMgr_PublishDhcpV4Event(pDhcpc, DHCP_CLIENT_FAILED);
                     }
 
                 } 
@@ -229,6 +230,7 @@ static void* DhcpMgr_MainController( void *args )
                     pDhcpc->Info.Status = COSA_DML_DHCP_STATUS_Disabled;
                     pDhcpc->Cfg.Renew = FALSE;
                     DhcpMgr_clearDHCPv4Lease(pDhcpc);
+                    DhcpMgr_PublishDhcpV4Event(pDhcpc, DHCP_CLIENT_STOPPED);
                 }
             }
 

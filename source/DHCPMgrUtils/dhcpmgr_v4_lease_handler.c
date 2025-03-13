@@ -32,6 +32,8 @@
 #include "dhcpmgr_controller.h"
 #include "dhcp_lease_monitor_thrd.h"
 #include "dhcp_client_common_utils.h"
+#include "dhcpmgr_rbus_apis.h"
+
 
 #include <string.h>
 #include <unistd.h>
@@ -255,6 +257,7 @@ void DhcpMgr_ProcessV4Lease(PCOSA_DML_DHCPC_FULL pDhcpc)
         }
         else if (newLease->isExpired == FALSE && newLease->addressAssigned == TRUE )
         {
+            DhcpMgr_PublishDhcpV4Event(pDhcpc, DHCP_LEASE_RENEW);
             DHCPMGR_LOG_INFO("%s %d: lease renewed for %s \n",__FUNCTION__, __LINE__, pDhcpc->Cfg.Interface);
         }
 
@@ -282,6 +285,7 @@ void DhcpMgr_ProcessV4Lease(PCOSA_DML_DHCPC_FULL pDhcpc)
             if(newLease->isExpired == TRUE)
             {
                 //TODO: Handle lease delete
+                DhcpMgr_PublishDhcpV4Event(pDhcpc, DHCP_LEASE_DEL);
                 continue;
             }
             DHCPMGR_LOG_INFO("%s %d: NewLease->address %s  \n",__FUNCTION__, __LINE__, newLease->address);
@@ -292,7 +296,7 @@ void DhcpMgr_ProcessV4Lease(PCOSA_DML_DHCPC_FULL pDhcpc)
             configureNetworkInterface(pDhcpc);
             DhcpMgr_updateDHCPv4DML(pDhcpc);
 
-            //TODO: Send rbus event
+            DhcpMgr_PublishDhcpV4Event(pDhcpc, DHCP_LEASE_UPDATE);
             
         }
 
