@@ -145,12 +145,9 @@ int DhcpMgr_PublishDhcpV4Event(PCOSA_DML_DHCPC_FULL pDhcpc, DHCP_MESSAGE_TYPE ms
     if(msgType == DHCP_LEASE_UPDATE)
     { 
         DHCP_MGR_IPV4_MSG leaseInfo;
-        uint8_t byteArray[sizeof(DHCP_MGR_IPV4_MSG)];
-        memcpy(byteArray, &leaseInfo, sizeof(DHCP_MGR_IPV4_MSG));
         DhcpMgr_createLeaseInfoMsg(pDhcpc->currentLease,&leaseInfo);
-
         rbusValue_Init(&leaseInfoVal);
-        rbusValue_SetBytes(leaseInfoVal, byteArray, sizeof(DHCP_MGR_IPV4_MSG));
+        rbusValue_SetBytes(leaseInfoVal, &leaseInfo, sizeof(leaseInfo));
         rbusObject_SetValue(rdata, "LeaseInfo", leaseInfoVal);
     }
 
