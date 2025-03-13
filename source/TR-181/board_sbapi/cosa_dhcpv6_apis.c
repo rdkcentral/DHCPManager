@@ -89,6 +89,7 @@ extern void* g_pDslhDmlAgent;
 extern ANSC_HANDLE bus_handle;
 extern char g_Subsystem[32];
 extern int executeCmd(char *cmd);
+ULONG          g_Dhcp6ClientNum = 0;
 //extern int g_iSyseventfd;
 //extern token_t g_tSysevent_token;
 
@@ -2228,6 +2229,8 @@ CosaDmlDhcpv6cGetNumberOfEntries
     int retPsmGet        = CCSP_SUCCESS;
     char param_name[512] = {0};
     char* param_value    = NULL;
+    if(g_Dhcp6ClientNum > 0)
+    return g_Dhcp6ClientNum;
 
     retPsmGet = PSM_Get_Record_Value2(bus_handle,g_Subsystem, PSM_DHCPMANAGER_DHCPV6C_CLIENTCOUNT, NULL, &param_value);
     if (retPsmGet != CCSP_SUCCESS) {
@@ -2236,7 +2239,8 @@ CosaDmlDhcpv6cGetNumberOfEntries
     }
     else
     {
-        return atoi(param_value);
+        g_Dhcp6ClientNum = atoi(param_value);
+        return g_Dhcp6ClientNum;
     }
 #else
     return 1;

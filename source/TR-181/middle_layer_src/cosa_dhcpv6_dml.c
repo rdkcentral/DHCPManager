@@ -1001,7 +1001,6 @@ Client3_SetParamBoolValue
         BOOL                        bValue
     )
 {
-    ANSC_STATUS                       returnStatus      = ANSC_STATUS_SUCCESS;
     PCOSA_CONTEXT_DHCPCV6_LINK_OBJECT pCxtLink          = (PCOSA_CONTEXT_DHCPCV6_LINK_OBJECT)hInsContext;
     PCOSA_DML_DHCPCV6_FULL            pDhcpc            = (PCOSA_DML_DHCPCV6_FULL)pCxtLink->hContext;
 
@@ -1009,7 +1008,10 @@ Client3_SetParamBoolValue
     if (strcmp(ParamName, "Enable") == 0)
     {
         /* save update to backup */
+        DHCPMGR_LOG_INFO("%s %d DHCPv6 Client %s is %s \n", __FUNCTION__, __LINE__, pDhcpc->Cfg.Interface, bValue?"Enabled":"Disabled" );
+        pthread_mutex_lock(&pDhcpc->mutex); //MUTEX lock
         pDhcpc->Cfg.bEnabled = bValue;
+        pthread_mutex_unlock(&pDhcpc->mutex); //MUTEX unlock
 
 #if 0//def DHCPV6_CLIENT_SUPPORT
         if (bValue == TRUE)
@@ -1061,7 +1063,11 @@ Client3_SetParamBoolValue
 
     if (strcmp(ParamName, "Renew") == 0)
     {
-        /* save update to backup */
+        DHCPMGR_LOG_INFO("%s %d Renew triggered for DHCPv6 Client %s \n", __FUNCTION__, __LINE__, pDhcpc->Cfg.Interface );
+        pthread_mutex_lock(&pDhcpc->mutex); //MUTEX lock
+        pDhcpc->Cfg.Renew = TRUE;
+        pthread_mutex_unlock(&pDhcpc->mutex); //MUTEX unlock
+        /* TODO : clean up
         if ( bValue )
         {
             returnStatus = CosaDmlDhcpv6cRenew(NULL, pDhcpc->Cfg.InstanceNumber);
@@ -1069,14 +1075,14 @@ Client3_SetParamBoolValue
             {
                 return  FALSE;
             }
-        }
+        } */
 
         return  TRUE;
     }
 
     /* DHCPMGR_LOG_WARNING("Unsupported parameter '%s'\n", ParamName); */
    
-#ifdef DHCPV6_CLIENT_SUPPORT 
+#if 0 // TODO : clean up //def DHCPV6_CLIENT_SUPPORT 
 #ifdef DHCPV6C_COMS
     dhcpv6_client_service_disable();
     dhcpv6_client_enabled = 0;

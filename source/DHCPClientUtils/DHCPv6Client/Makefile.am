@@ -30,6 +30,6 @@ libCcspDhcpMgr_Dhcpv6Client_la_CPPFLAGS = -I$(top_srcdir)/source/DHCPClientUtils
                                           -I$(top_srcdir)/source/DHCPMgrInterface \
                                           -I$(top_srcdir)/source/DHCPMgrInterface/include
 
-libCcspDhcpMgr_Dhcpv6Client_la_SOURCES = service_dhcpv6_client.c dibbler_client_utils.c dhcpv6_client_utils.c
+libCcspDhcpMgr_Dhcpv6Client_la_SOURCES = service_dhcpv6_client.c dibbler_client_utils.c dhcpv6_interface.c
 
 libCcspDhcpMgr_Dhcpv6Client_la_LIBADD = -lccsp_common -ltelemetry_msgsender -lulog -lsyscfg -lsysevent -ltime_conversion -lprint_uptime -lhal_platform -lnet
