@@ -23,6 +23,7 @@ bin_PROGRAMS = dhcpmgr_udhcpc_plugin
 
 dhcpmgr_udhcpc_plugin_CPPFLAGS = -I$(top_srcdir)/source/DHCPClientUtils/DHCPv4Client/include \
                                     -I$(top_srcdir)/source/DHCPServerUtils/utils/include/ \
+                                    -I$(top_srcdir)/source/DHCPClientUtils/DHCPv6Client/ \
                                     -I$(top_srcdir)/source/DHCPMgrUtils \
                                    -I$(top_srcdir)/source/DHCPClientUtils/DHCPv4Client
 

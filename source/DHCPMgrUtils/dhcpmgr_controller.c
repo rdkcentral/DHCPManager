@@ -29,6 +29,10 @@
 #include "cosa_dhcpv4_internal.h"
 #include "cosa_dhcpv4_dml.h"
 #include "dhcpv4_interface.h"
+#include "cosa_dhcpv6_dml.h"
+#include "cosa_dhcpv6_apis.h"
+#include "cosa_dhcpv6_internal.h"
+#include "dhcpv6_interface.h"
 #include "dhcpmgr_controller.h"
 #include "dhcp_lease_monitor_thrd.h"
 #include "dhcpmgr_rbus_apis.h"
@@ -247,7 +251,7 @@ static void* DhcpMgr_MainController( void *args )
         pSListEntry   = NULL;
         ulIndex = 0;
         instanceNum =0;
-        ULONG clientCount = CosaDmlDhcpv6cGetNumberOfEntries(NULL);
+        clientCount = CosaDmlDhcpv6cGetNumberOfEntries(NULL);
 
         for ( ulIndex = 0; ulIndex < clientCount; ulIndex++ )
         {

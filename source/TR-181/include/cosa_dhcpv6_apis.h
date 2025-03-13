@@ -152,7 +152,7 @@ _COSA_DML_DHCPCV6_CFG
     UCHAR                           Alias[COSA_DML_ALIAS_NAME_LENGTH];
     LONG                            SuggestedT1;
     LONG                            SuggestedT2;
-    UCHAR                           Interface[COSA_DML_ALIAS_NAME_LENGTH]; /* IP interface name */
+    char                            Interface[COSA_DML_ALIAS_NAME_LENGTH]; /* IP interface name */
     UCHAR                           RequestedOptions[512];
     BOOLEAN                         bEnabled;
     BOOLEAN                         RequestAddresses;
