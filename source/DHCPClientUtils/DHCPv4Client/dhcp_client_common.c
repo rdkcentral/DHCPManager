@@ -33,17 +33,17 @@ int signal_process (pid_t pid, int signal)
 {
     if ((pid <= 0) || (signal < 0))
     {
-        DBG_PRINT("<<DEBUG>>%s %d: Invalid args..\n", __FUNCTION__, __LINE__);
+        DBG_PRINT("%s %d: Invalid args..\n", __FUNCTION__, __LINE__);
         return FAILURE;
     }
 
     int ret;
 
-    DBG_PRINT("<<DEBUG>>%s %d: Sending signal %d to pid %d\n", __FUNCTION__, __LINE__, signal, pid);
+    DBG_PRINT("%s %d: Sending signal %d to pid %d\n", __FUNCTION__, __LINE__, signal, pid);
 
     if ((ret = kill(pid, signal)) < 0)
     {
-        DBG_PRINT("<<DEBUG>>%s %d: Invalid pid %d or signal %d\n", __FUNCTION__, __LINE__, pid, signal);
+        DBG_PRINT("%s %d: Invalid pid %d or signal %d\n", __FUNCTION__, __LINE__, pid, signal);
         return FAILURE;
     }
 
@@ -103,12 +103,12 @@ int collect_waiting_process(int pid, int timeout)
         {
             if (errno == ECHILD)
             {
-                DBG_PRINT("<<DEBUG>>%s %d: Could not collect child pid %d, possibly stolen by SIGCHLD handler?\n", __FUNCTION__, __LINE__, requestedPid);
+                DBG_PRINT("%s %d: Could not collect child pid %d, possibly stolen by SIGCHLD handler?\n", __FUNCTION__, __LINE__, requestedPid);
                 ret = FAILURE;
             }
             else
             {
-                DBG_PRINT("<<DEBUG>>%s %d: bad pid %d, errno=%d\n", __FUNCTION__, __LINE__, requestedPid, errno);
+                DBG_PRINT("%s %d: bad pid %d, errno=%d\n", __FUNCTION__, __LINE__, requestedPid, errno);
                 ret = FAILURE;
             }
 
@@ -218,7 +218,7 @@ static int check_proc_entry_for_pid (char * name, char * args)
 {
     if (name == NULL)
     {
-        DBG_PRINT("<<DEBUG>>%s %d: Invalid args\n", __FUNCTION__, __LINE__);
+        DBG_PRINT("%s %d: Invalid args\n", __FUNCTION__, __LINE__);
         return 0;
     }
 
@@ -237,7 +237,7 @@ static int check_proc_entry_for_pid (char * name, char * args)
 
     if (NULL == (dir = opendir("/proc")))
     {
-        DBG_PRINT("<<DEBUG>>%s %d:could not open /proc\n", __FUNCTION__, __LINE__);
+        DBG_PRINT("%s %d:could not open /proc\n", __FUNCTION__, __LINE__);
         return 0;
     }
 
@@ -273,15 +273,15 @@ static int check_proc_entry_for_pid (char * name, char * args)
                     if (args != NULL)
                     {
                         // argument to be verified before returning pid
-                        DBG_PRINT("<<DEBUG>>%s %d: %s running in pid %lld.. checking for cmdline param %s\n", __FUNCTION__, __LINE__, name, (long long int) pid, args);
+                        DBG_PRINT("%s %d: %s running in pid %lld.. checking for cmdline param %s\n", __FUNCTION__, __LINE__, name, (long long int) pid, args);
                         snprintf(filename, sizeof(filename), "/proc/%lld/cmdline", (long long int) pid);
                         fp = fopen(filename, "r");
                         if (fp == NULL)
                         {
-                            DBG_PRINT("<<DEBUG>>%s %d: could not open %s\n", __FUNCTION__, __LINE__, filename);
+                            DBG_PRINT("%s %d: could not open %s\n", __FUNCTION__, __LINE__, filename);
                             continue;
                         }
-                        DBG_PRINT("<<DEBUG>>%s %d: opening file %s\n", __FUNCTION__, __LINE__, filename);
+                        DBG_PRINT("%s %d: opening file %s\n", __FUNCTION__, __LINE__, filename);
 
                         memset (cmdline, 0, sizeof(cmdline));
 			            /* CID :258113 String not null terminated (STRING_NULL)*/
@@ -308,7 +308,7 @@ static int check_proc_entry_for_pid (char * name, char * args)
                 }
                 else 
                 {
-                    DBG_PRINT("<<DEBUG>>%s %d: %s running, but is in %c mode\n", __FUNCTION__, __LINE__, filename, status);
+                    DBG_PRINT("%s %d: %s running, but is in %c mode\n", __FUNCTION__, __LINE__, filename, status);
                 }
             }
         }
@@ -334,7 +334,7 @@ pid_t get_process_pid (char * name, char * args, bool waitForProcEntry)
 {
     if (name == NULL)
     {
-        DBG_PRINT("<<DEBUG>>%s %d: Invalid args\n", __FUNCTION__, __LINE__);
+        DBG_PRINT("%s %d: Invalid args\n", __FUNCTION__, __LINE__);
         return 0;
     }
 
@@ -362,7 +362,7 @@ pid_t get_process_pid (char * name, char * args, bool waitForProcEntry)
         pid = check_proc_entry_for_pid(name, args);
     }
 
-    DBG_PRINT("<<DEBUG>>%s %d: %s running, in pid %d\n", __FUNCTION__, __LINE__, name, pid);
+    DBG_PRINT("%s %d: %s running, in pid %d\n", __FUNCTION__, __LINE__, name, pid);
     return pid;
 }
 
@@ -448,7 +448,7 @@ static int parseArgs(const char *cmd, const char *args, char ***argv)
 
     if (array[argIndex] == NULL)
     {
-        DBG_PRINT("<<DEBUG>>memory allocation of %lu failed", (ULONG)strlen(cmdStr) + 1);
+        DBG_PRINT("memory allocation of %lu failed", (ULONG)strlen(cmdStr) + 1);
         freeArgs(array);
         return FAILURE;
     }
@@ -482,7 +482,7 @@ static int parseArgs(const char *cmd, const char *args, char ***argv)
             array[argIndex] = calloc(1,endIndex - startIndex + 1);
             if (array[argIndex] == NULL)
             {
-                DBG_PRINT("<<DEBUG>>memory allocation of %d failed", endIndex - startIndex + 1);
+                DBG_PRINT("memory allocation of %d failed", endIndex - startIndex + 1);
                 freeArgs(array);
                 return FAILURE;
             }
@@ -515,15 +515,15 @@ pid_t start_exe(char * exe, char * args)
 
     if ((exe == NULL) || (args == NULL))
     {
-        DBG_PRINT("<<DEBUG>>%s %d: Invalid arguments..\n", __FUNCTION__, __LINE__);
+        DBG_PRINT("%s %d: Invalid arguments..\n", __FUNCTION__, __LINE__);
         return pid;
     }
 
-    DBG_PRINT("<<DEBUG>>%s %d:exe:%s buff %s\n", __FUNCTION__, __LINE__, exe, args);
+    DBG_PRINT("%s %d:exe:%s buff %s\n", __FUNCTION__, __LINE__, exe, args);
 
     if ((ret = parseArgs(exe, args, &argv)) != SUCCESS)
     {
-        DBG_PRINT("<<DEBUG>>Failed to parse arguments %d\n",ret);
+        DBG_PRINT("Failed to parse arguments %d\n",ret);
         return pid;
     }
 
@@ -539,7 +539,7 @@ pid_t start_exe(char * exe, char * args)
         devNullFd = open("/dev/null", O_RDWR);
         if (devNullFd == -1)
         {
-            DBG_PRINT("<<DEBUG>>open of /dev/null failed");
+            DBG_PRINT("open of /dev/null failed");
             exit(-1);
     }
 
@@ -597,7 +597,7 @@ pid_t start_exe(char * exe, char * args)
         int err = execv(exe, argv);
 
         /* We should not reach this line.  If we do, exec has failed. */
-        DBG_PRINT("<<DEBUG>>%s %d: execv returned %d failed due to %s.\n", __FUNCTION__, __LINE__, err, strerror(errno));
+        DBG_PRINT("%s %d: execv returned %d failed due to %s.\n", __FUNCTION__, __LINE__, err, strerror(errno));
         exit(-1);
     }
 
@@ -611,7 +611,7 @@ void sigchld_handler(int sig)
     int status;
     pid_t pid;
     (void) sig;
-    DBG_PRINT("<<DEBUG>>%s %d: sigchld_handler called ..\n", __FUNCTION__, __LINE__);
+    DBG_PRINT("%s %d: sigchld_handler called ..\n", __FUNCTION__, __LINE__);
 
     // Use waitpid to get the PID of the terminated child process
     while ((pid = waitpid(-1, &status, WNOHANG)) > 0) 
@@ -630,14 +630,14 @@ pid_t start_exe2(char * exe, char * args)
     int ret     = SUCCESS;
     if ((exe == NULL) || (args == NULL))
     {
-        DBG_PRINT("<<DEBUG>>%s %d: Invalid arguments..\n", __FUNCTION__, __LINE__);
+        DBG_PRINT("%s %d: Invalid arguments..\n", __FUNCTION__, __LINE__);
         return pid;
     }
-    DBG_PRINT("<<DEBUG>>%s %d:exe:%s buff %s\n", __FUNCTION__, __LINE__, exe, args);
+    DBG_PRINT("%s %d:exe:%s buff %s\n", __FUNCTION__, __LINE__, exe, args);
    
     if ((ret = parseArgs(exe, args, &argv)) != SUCCESS)
     {
-        DBG_PRINT("<<DEBUG>>Failed to parse arguments %d\n",ret);
+        DBG_PRINT("Failed to parse arguments %d\n",ret);
         return pid;
     }
     
@@ -668,12 +668,12 @@ pid_t start_exe2(char * exe, char * args)
         exit(EXIT_FAILURE);
     }
     
-    DBG_PRINT("<<DEBUG>>%s %d: SIG child handler added ...\n", __FUNCTION__, __LINE__);
+    DBG_PRINT("%s %d: SIG child handler added ...\n", __FUNCTION__, __LINE__);
 
     switch ((pid = fork()))
     {
       case -1: // Failure
-               DBG_PRINT("<<DEBUG>>Fork() failed!");
+               DBG_PRINT("Fork() failed!");
                break;
       case 0:  // Child
           {
@@ -681,7 +681,7 @@ pid_t start_exe2(char * exe, char * args)
                devNullFd = open("/dev/null", O_RDWR);
                if (devNullFd == -1)
                {
-                   DBG_PRINT("<<DEBUG>>open of /dev/null failed");
+                   DBG_PRINT("open of /dev/null failed");
                    exit(-1);
                }
                close(0);
@@ -711,7 +711,7 @@ pid_t start_exe2(char * exe, char * args)
                sigprocmask(SIG_SETMASK, &saveMask, NULL);
                int err = execv(exe, argv);
                /* We should not reach this line.  If we do, exec has failed. */
-               DBG_PRINT("<<DEBUG>>%s %d: execv returned %d failed due to %s.\n",
+               DBG_PRINT("%s %d: execv returned %d failed due to %s.\n",
                                  __FUNCTION__, __LINE__, err, strerror(errno));
                exit(-1);
           }

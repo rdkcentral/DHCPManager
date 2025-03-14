@@ -44,6 +44,16 @@ rbusDataElement_t DhcpMgrRbusDataElements[] = {
 };
 
 
+/**
+ * @brief Initializes the DHCP Manager by opening an rbus handle and registering rbus DML, DML tables, and rbus events.
+ *
+ * This function is responsible for setting up the necessary rbus components for the DHCP Manager to operate.
+ * It opens an rbus handle and registers the required rbus DML, DML tables, and rbus events.
+ *
+ * @return ANSC_STATUS
+ * @retval ANSC_STATUS_SUCCESS if the initialization is successful.
+ * @retval ANSC_STATUS_FAILURE if the initialization fails.
+ */
 ANSC_STATUS DhcpMgr_Rbus_Init()
 {
     DHCPMGR_LOG_INFO("%s %d: rbus init called\n",__FUNCTION__, __LINE__);
@@ -88,6 +98,24 @@ ANSC_STATUS DhcpMgr_Rbus_Init()
     return ANSC_STATUS_SUCCESS;
 }
 
+/**
+ * @brief Rbus subscribe handler.
+ *
+ * This function is called when other components subscribe to the events registered with this callback.
+ * It handles the subscription actions for the specified rbus events.
+ *
+ * @param handle The rbus handle.
+ * @param action The subscription action to be performed.
+ * @param eventName The name of the event being subscribed to.
+ * @param filter The filter applied to the event.
+ * @param interval The interval for event notifications.
+ * @param autoPublish A flag indicating whether the event should be auto-published.
+ *
+ * @return rbusError_t
+ * @retval RBUS_ERROR_SUCCESS if the subscription is handled successfully.
+ * @retval RBUS_ERROR_FAILURE if there is an error handling the subscription.
+ */
+
 rbusError_t DhcpMgr_Rbus_SubscribeHandler(rbusHandle_t handle, rbusEventSubAction_t action, const char *eventName, rbusFilter_t filter, int32_t interval, bool *autoPublish)
 {
     (void)handle;
@@ -101,7 +129,16 @@ rbusError_t DhcpMgr_Rbus_SubscribeHandler(rbusHandle_t handle, rbusEventSubActio
     return RBUS_ERROR_SUCCESS;
 }
 
-void DhcpMgr_createLeaseInfoMsg(DHCPv4_PLUGIN_MSG *src, DHCP_MGR_IPV4_MSG *dest) 
+/**
+ * @brief Copies DHCPv4_PLUGIN_MSG to DHCP_MGR_IPV4_MSG struct for the rbus event publish.
+ *
+ * This function copies the contents of a DHCPv4_PLUGIN_MSG structure to a DHCP_MGR_IPV4_MSG structure.
+ * It is used for preparing the data to be published as an rbus event.
+ *
+ * @param src Pointer to the source DHCPv4_PLUGIN_MSG structure.
+ * @param dest Pointer to the destination DHCP_MGR_IPV4_MSG structure.
+ */
+static void DhcpMgr_createLeaseInfoMsg(DHCPv4_PLUGIN_MSG *src, DHCP_MGR_IPV4_MSG *dest) 
 {
     strncpy(dest->ifname, src->ifname, sizeof(dest->ifname) - 1);
     strncpy(dest->address, src->address, sizeof(dest->address) - 1);
@@ -117,6 +154,26 @@ void DhcpMgr_createLeaseInfoMsg(DHCPv4_PLUGIN_MSG *src, DHCP_MGR_IPV4_MSG *dest)
     dest->downstreamCurrRate = src->downstreamCurrRate;
 }
 
+/**
+ * @brief Publishes DHCPv4 rbus events.
+ *
+ * This function publishes DHCPv4 rbus events based on the specified message type.
+ * The rbus event will include the tags "IfName" and "MsgType". For the `DHCP_LEASE_UPDATE` message type,
+ * it additionally sends "LeaseInfo".
+ *
+ * @param pDhcpc Pointer to the DHCP client structure.
+ * @param msgType The type of DHCP message to be published. The possible values are:
+ * - DHCP_CLIENT_STARTED: Indicates the DHCP client has started.
+ * - DHCP_CLIENT_STOPPED: Indicates the DHCP client has stopped.
+ * - DHCP_CLIENT_FAILED: Indicates the DHCP client has failed.
+ * - DHCP_LEASE_UPDATE: Indicates a new lease or a change in the lease value.
+ * - DHCP_LEASE_DEL: Indicates the lease has expired or been released.
+ * - DHCP_LEASE_RENEW: Indicates the lease has been renewed.
+ *
+ * @return int
+ * @retval 0 if the event is published successfully.
+ * @retval -1 if there is an error in publishing the event.
+ */
 int DhcpMgr_PublishDhcpV4Event(PCOSA_DML_DHCPC_FULL pDhcpc, DHCP_MESSAGE_TYPE msgType)
 {
     if(pDhcpc == NULL)

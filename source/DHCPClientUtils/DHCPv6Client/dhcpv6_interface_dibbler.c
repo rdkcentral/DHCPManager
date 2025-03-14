@@ -43,7 +43,7 @@ static int copy_file (char * src, char * dst)
 {
     if ((src == NULL) || (dst == NULL))
     {
-        DHCPMGR_LOG_ERROR("<<DEBUG>>%s %d: Invalid args..\n", __FUNCTION__, __LINE__);
+        DHCPMGR_LOG_ERROR("%s %d: Invalid args..\n", __FUNCTION__, __LINE__);
         return FAILURE;
     }
 
@@ -53,7 +53,7 @@ static int copy_file (char * src, char * dst)
     fout = fopen(dst, "wb");
     if (fout == NULL)
     {
-        DHCPMGR_LOG_ERROR("<<DEBUG>>%s %d: failed to open file %s\n", __FUNCTION__, __LINE__, dst);
+        DHCPMGR_LOG_ERROR("%s %d: failed to open file %s\n", __FUNCTION__, __LINE__, dst);
         return FAILURE;
     }
     
@@ -61,7 +61,7 @@ static int copy_file (char * src, char * dst)
 
     if (fin == NULL)
     {
-        DHCPMGR_LOG_ERROR("<<DEBUG>>%s %d: failed to open file %s\n", __FUNCTION__, __LINE__, src);
+        DHCPMGR_LOG_ERROR("%s %d: failed to open file %s\n", __FUNCTION__, __LINE__, src);
         fclose (fout);
         return FAILURE;
     }
@@ -82,11 +82,23 @@ static int copy_file (char * src, char * dst)
     fclose(fin);
     fclose(fout);
 
-    DHCPMGR_LOG_INFO("<<DEBUG>>%s %d: successfully copied content from %s to %s\n", __FUNCTION__, __LINE__, src, dst);
+    DHCPMGR_LOG_INFO("%s %d: successfully copied content from %s to %s\n", __FUNCTION__, __LINE__, src, dst);
     return SUCCESS;
 
 }
 
+/**
+ * @brief Adds all request option list configurations to the DHCP configuration file.
+ *
+ * This function iterates through the request option list and writes the configurations
+ * to the specified DHCP configuration file.
+ *
+ * @param fout Pointer to the DHCP configuration file.
+ * @param send_opt_list Pointer to the list of DHCP request options to be sent.
+ * @return int
+ * @retval 0 if the options are added successfully.
+ * @retval -1 if there is an error in adding the options.
+ */
 static int dibbler_get_req_options(FILE * fout,  dhcp_opt_list * req_opt_list)
 {
     if(fout == NULL)
@@ -159,6 +171,18 @@ static int dibbler_get_req_options(FILE * fout,  dhcp_opt_list * req_opt_list)
 
 }
 
+/**
+ * @brief Adds all send option list configurations to the DHCP configuration file.
+ *
+ * This function iterates through the send option list and writes the configurations
+ * to the specified DHCP configuration file.
+ *
+ * @param fout Pointer to the DHCP configuration file.
+ * @param send_opt_list Pointer to the list of DHCP options to be sent.
+ * @return int
+ * @retval 0 if the options are added successfully.
+ * @retval -1 if there is an error in adding the options.
+ */
 static int dibbler_get_send_options(FILE * fout,  dhcp_opt_list * send_opt_list)
 {
     if(fout == NULL)
@@ -212,6 +236,17 @@ static int dibbler_get_send_options(FILE * fout,  dhcp_opt_list * send_opt_list)
 
 }
 
+/**
+ * @brief Checks if the DHCPv6 option 20 (Reconfigure Accept) is present in the send option list.
+ *
+ * This function iterates through the send option list and returns true if the DHCPv6 option 20
+ * (Reconfigure Accept) is found, otherwise it returns false.
+ *
+ * @param send_opt_list Pointer to the list of DHCP options to be sent.
+ * @return int
+ * @retval 1 if DHCPv6 option 20 is found.
+ * @retval 0 if DHCPv6 option 20 is not found.
+ */
 static int dibbler_get_reconfigureAccept(dhcp_opt_list * send_opt_list)
 {
     dhcp_opt_list * opt_list = send_opt_list;
@@ -341,6 +376,17 @@ static int dibbler_client_config_generator(char *config_path, char *interfaceNam
 
 }
 
+/**
+ * @brief Interface API for starting the DHCPv6 client.
+ *
+ * This function creates the configuration file using the provided request and send option lists,
+ * starts the DHCPv6 client, and collects the process ID (PID).
+ *
+ * @param[in] interfaceName The name of the network interface.
+ * @param[in] req_opt_list Pointer to the list of requested DHCP options.
+ * @param[in] send_opt_list Pointer to the list of options to be sent.
+ * @return The process ID (PID) of the started DHCPv6 client.
+ */
 pid_t start_dhcpv6_client(char *interfaceName, dhcp_opt_list *req_opt_list, dhcp_opt_list *send_opt_list) 
 {
     DHCPMGR_LOG_INFO("%s %d start_dhcpv6_client dibbler API called \n", __FUNCTION__, __LINE__);
@@ -434,31 +480,55 @@ pid_t start_dhcpv6_client(char *interfaceName, dhcp_opt_list *req_opt_list, dhcp
 
 }
 
+/**
+ * @brief Interface API for triggering a renew from the DHCPv6 client.
+ *
+ * This function sends the respective signal to the DHCPv6 client application to trigger a renew.
+ *
+ * @param[in] processID The process ID (PID) of the DHCPv6 client.
+ * @return 0 on success, -1 on failure.
+ */
 int send_dhcpv6_renew(pid_t processID) {
     (void)processID;
     DHCPMGR_LOG_INFO("%s %d  send_dhcpv6_renew\n", __FUNCTION__, __LINE__);
     return 0;
 }
 
+/**
+ * @brief Interface API for triggering a release from the DHCPv6 client.
+ *
+ * This function sends the respective signal to the DHCPv6 client application to trigger a release and terminate.
+ *
+ * @param[in] processID The process ID (PID) of the DHCPv6 client.
+ * @return 0 on success, -1 on failure.
+ */
 int send_dhcpv6_release(pid_t processID) {
     (void)processID;
     DHCPMGR_LOG_INFO("%s %d  send_dhcpv6_release\n", __FUNCTION__, __LINE__);
     return 0;
 }
 
+/**
+ * @brief Interface API for stopping the DHCPv6 client.
+ *
+ * This function sends the respective signal to the DHCPv6 client application to stop the client.
+ *
+ * @param[in] processID The process ID (PID) of the DHCPv6 client.
+ * @return 0 on success, -1 on failure.
+ */
  int stop_dhcpv6_client(pid_t processID) 
  {
     DHCPMGR_LOG_INFO("%s %d dibbler-client api called \n", __FUNCTION__, __LINE__);
 
     if (processID <= 0)
     {
-        DHCPMGR_LOG_ERROR("<<DEBUG>>%s %d: unable to get pid of dibbler\n", __FUNCTION__, __LINE__);
+        DHCPMGR_LOG_ERROR("%s %d: unable to get pid of dibbler\n", __FUNCTION__, __LINE__);
         return FAILURE;
     }
 
     if (signal_process(processID, SIGTERM) != RETURN_OK)
     {
-        DHCPMGR_LOG_ERROR("<<DEBUG>>%s %d: unable to send signal to pid %d\n", __FUNCTION__, __LINE__, processID);
+        DHCPMGR_LOG_ERROR("%s %d: unable to send signal to pid %d\n", __FUNCTION__, __LINE__, processID);
          return FAILURE;
     }
 

@@ -29,9 +29,38 @@
 #define DHCP_MGR_DHCPv4_STATUS "Device.DHCPv4.Client.{i}.Events"
 #define DHCPv4_EVENT_FORMAT "Device.DHCPv4.Client.%d.Events"
 
-
+/**
+ * @brief Initializes the DHCP Manager by opening an rbus handle and registering rbus DML, DML tables, and rbus events.
+ *
+ * This function is responsible for setting up the necessary rbus components for the DHCP Manager to operate.
+ * It opens an rbus handle and registers the required rbus DML, DML tables, and rbus events.
+ *
+ * @return ANSC_STATUS
+ * @retval ANSC_STATUS_SUCCESS if the initialization is successful.
+ * @retval ANSC_STATUS_FAILURE if the initialization fails.
+ */
 ANSC_STATUS DhcpMgr_Rbus_Init();
 
+/**
+ * @brief Publishes DHCPv4 rbus events.
+ *
+ * This function publishes DHCPv4 rbus events based on the specified message type.
+ * The rbus event will include the tags "IfName" and "MsgType". For the `DHCP_LEASE_UPDATE` message type,
+ * it additionally sends "LeaseInfo".
+ *
+ * @param pDhcpc Pointer to the DHCP client structure.
+ * @param msgType The type of DHCP message to be published. The possible values are:
+ * - DHCP_CLIENT_STARTED: Indicates the DHCP client has started.
+ * - DHCP_CLIENT_STOPPED: Indicates the DHCP client has stopped.
+ * - DHCP_CLIENT_FAILED: Indicates the DHCP client has failed.
+ * - DHCP_LEASE_UPDATE: Indicates a new lease or a change in the lease value.
+ * - DHCP_LEASE_DEL: Indicates the lease has expired or been released.
+ * - DHCP_LEASE_RENEW: Indicates the lease has been renewed.
+ *
+ * @return int
+ * @retval 0 if the event is published successfully.
+ * @retval -1 if there is an error in publishing the event.
+ */
 int DhcpMgr_PublishDhcpV4Event(PCOSA_DML_DHCPC_FULL pDhcpc, DHCP_MESSAGE_TYPE msgType);
 
 #endif// _DHCPMGR_RBUS_H_

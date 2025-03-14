@@ -273,7 +273,7 @@ int send_dhcpv4_renew(pid_t processID)
     DHCPMGR_LOG_INFO("%s %d udhcpc api called \n", __FUNCTION__, __LINE__);
     if (signal_process(processID, SIGUSR1) != RETURN_OK)
     {
-         DBG_PRINT("<<DEBUG>>%s %d: unable to send signal to pid %d\n", __FUNCTION__, __LINE__, processID);
+         DBG_PRINT("%s %d: unable to send signal to pid %d\n", __FUNCTION__, __LINE__, processID);
          return FAILURE;
     }
     return SUCCESS;
@@ -286,7 +286,7 @@ int send_dhcpv4_release(pid_t processID)
     //Trigger a release 
     if (signal_process(processID, SIGUSR2) != RETURN_OK)
     {
-        DHCPMGR_LOG_ERROR("<<DEBUG>>%s %d: unable to send signal to pid %d\n", __FUNCTION__, __LINE__, processID);
+        DHCPMGR_LOG_ERROR("%s %d: unable to send signal to pid %d\n", __FUNCTION__, __LINE__, processID);
         return FAILURE;    
     }
     return SUCCESS;
@@ -298,19 +298,19 @@ int stop_dhcpv4_client(pid_t processID)
 
     if (processID <= 0)
     {
-        DHCPMGR_LOG_ERROR("<<DEBUG>>%s %d: unable to get pid of %s\n", __FUNCTION__, __LINE__, UDHCPC_CLIENT);
+        DHCPMGR_LOG_ERROR("%s %d: unable to get pid of %s\n", __FUNCTION__, __LINE__, UDHCPC_CLIENT);
         return FAILURE;
     }
 
     //Trigger a release. Always release when client stopped ?
     if (signal_process(processID, SIGUSR2) != RETURN_OK)
     {
-        DHCPMGR_LOG_ERROR("<<DEBUG>>%s %d: unable to send signal to pid %d\n", __FUNCTION__, __LINE__, processID);
+        DHCPMGR_LOG_ERROR("%s %d: unable to send signal to pid %d\n", __FUNCTION__, __LINE__, processID);
         return FAILURE;    
     }
     if (signal_process(processID, SIGTERM) != RETURN_OK)
     {
-        DHCPMGR_LOG_ERROR("<<DEBUG>>%s %d: unable to send signal to pid %d\n", __FUNCTION__, __LINE__, processID);
+        DHCPMGR_LOG_ERROR("%s %d: unable to send signal to pid %d\n", __FUNCTION__, __LINE__, processID);
          return FAILURE;
     }
 
