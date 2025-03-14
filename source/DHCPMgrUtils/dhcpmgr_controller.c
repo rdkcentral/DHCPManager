@@ -453,10 +453,44 @@ void processKilled(pid_t pid)
             {
                 pDhcpc->Info.Status = COSA_DML_DHCP_STATUS_Disabled;
             }
-            break;
+            return;
         }
     }
 
-    //TODO: add v6 handle
+    //DHCPv6 client entries
+    PCOSA_DML_DHCPCV6_FULL            pDhcp6c        = NULL;
+    PCOSA_CONTEXT_DHCPCV6_LINK_OBJECT pDhcp6cxtLink  = NULL;
+    pSListEntry   = NULL;
+    ulIndex = 0;
+    instanceNum =0;
+    clientCount = CosaDmlDhcpv6cGetNumberOfEntries(NULL);
+
+    for ( ulIndex = 0; ulIndex < clientCount; ulIndex++ )
+    {
+        pSListEntry = (PSINGLE_LINK_ENTRY)Client3_GetEntry(NULL,ulIndex,&instanceNum);
+        if ( pSListEntry )
+        {
+            pDhcp6cxtLink          = ACCESS_COSA_CONTEXT_DHCPCV6_LINK_OBJECT(pSListEntry);
+            pDhcp6c            = (PCOSA_DML_DHCPC_FULL)pDhcp6cxtLink->hContext;
+        }
+
+        if (!pDhcp6c)
+        {
+            DHCPMGR_LOG_ERROR("%s : pDhcp6c is NULL\n",__FUNCTION__);
+            continue;
+        }
+
+        //No mutex lock, since this funtions is called from teh sigchild handler. Keep this function simple and quick
+        if(pDhcp6c->Info.ClientProcessId == pid)
+        {
+            DHCPMGR_LOG_INFO("%s %d: DHCpv6 client for %s pid %d is terminated.\n", __FUNCTION__, __LINE__, pDhcp6c->Cfg.Interface, pid);
+            if(pDhcp6c->Info.Status == COSA_DML_DHCP_STATUS_Enabled)
+            {
+                pDhcp6c->Info.Status = COSA_DML_DHCP_STATUS_Disabled;
+            }
+            return;
+        }
+
+    }
     return;
 }

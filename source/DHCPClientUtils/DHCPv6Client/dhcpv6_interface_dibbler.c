@@ -489,8 +489,9 @@ pid_t start_dhcpv6_client(char *interfaceName, dhcp_opt_list *req_opt_list, dhcp
  * @return 0 on success, -1 on failure.
  */
 int send_dhcpv6_renew(pid_t processID) {
-    (void)processID;
     DHCPMGR_LOG_INFO("%s %d  send_dhcpv6_renew\n", __FUNCTION__, __LINE__);
+    DHCPMGR_LOG_INFO("sending SIGUSR2 to dhcp6c, this will let the dhcp6c to send renew packet out \n");
+    signal_process(processID, SIGUSR2);
     return 0;
 }
 
@@ -503,8 +504,16 @@ int send_dhcpv6_renew(pid_t processID) {
  * @return 0 on success, -1 on failure.
  */
 int send_dhcpv6_release(pid_t processID) {
-    (void)processID;
     DHCPMGR_LOG_INFO("%s %d  send_dhcpv6_release\n", __FUNCTION__, __LINE__);
+    // send unicast DHCPv6 RELEASE
+    int fd = 0;
+    //TODO : copiedfrom legacy implementation, change it to user def signal
+    fd = creat("/tmp/dhcpv6_release",S_IRUSR | S_IWUSR | S_IRGRP);
+    if(fd != -1)
+    {
+        close(fd);
+    }
+    stop_dhcpv6_client(processID);
     return 0;
 }
 

@@ -281,7 +281,6 @@ int send_dhcpv4_renew(pid_t processID)
 
 int send_dhcpv4_release(pid_t processID) 
 {
-    (void)processID;
     DHCPMGR_LOG_INFO("%s %d udhcpc api called \n", __FUNCTION__, __LINE__);
     //Trigger a release 
     if (signal_process(processID, SIGUSR2) != RETURN_OK)
@@ -289,6 +288,7 @@ int send_dhcpv4_release(pid_t processID)
         DHCPMGR_LOG_ERROR("%s %d: unable to send signal to pid %d\n", __FUNCTION__, __LINE__, processID);
         return FAILURE;    
     }
+    stop_dhcpv4_client(processID);
     return SUCCESS;
 }
 
@@ -302,12 +302,6 @@ int stop_dhcpv4_client(pid_t processID)
         return FAILURE;
     }
 
-    //Trigger a release. Always release when client stopped ?
-    if (signal_process(processID, SIGUSR2) != RETURN_OK)
-    {
-        DHCPMGR_LOG_ERROR("%s %d: unable to send signal to pid %d\n", __FUNCTION__, __LINE__, processID);
-        return FAILURE;    
-    }
     if (signal_process(processID, SIGTERM) != RETURN_OK)
     {
         DHCPMGR_LOG_ERROR("%s %d: unable to send signal to pid %d\n", __FUNCTION__, __LINE__, processID);
