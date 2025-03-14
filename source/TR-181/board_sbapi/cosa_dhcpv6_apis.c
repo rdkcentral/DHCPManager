@@ -2571,6 +2571,7 @@ iface wan0 {
 
 static int _prepare_client_conf(PCOSA_DML_DHCPCV6_CFG       pCfg)
 {
+    
     FILE * fp = fopen(DIBBLER_TMP_CONFIG_FILE, "w+");
     char line[256] = {0};
 
@@ -2743,6 +2744,8 @@ int  CosaDmlStartDHCP6Client()
 #endif
     return 0;
 }
+#ifdef DHCPV6C_COMS
+
 /*
 Description:
     The API re-configures the designated DHCP client entry.
@@ -2855,6 +2858,7 @@ CosaDmlDhcpv6cSetCfg
 
     Utopia_Free(&utctx,1);
 
+    #if 0 //TODO: cleanup dhcp services
     /*update dibbler-client service if necessary*/
     if (need_to_restart_service)
     {
@@ -2877,11 +2881,13 @@ CosaDmlDhcpv6cSetCfg
             dhcpv6_client_service_start();
         }
     }
-
+    #endif
     AnscCopyMemory(&g_dhcpv6_client.Cfg, pCfg, sizeof(COSA_DML_DHCPCV6_CFG));
 
     return ANSC_STATUS_SUCCESS;
 }
+
+#endif
 
 ANSC_STATUS
 CosaDmlDhcpv6cGetCfg
@@ -9679,6 +9685,7 @@ EXIT:
     return NULL;
 }
 
+#if 0 //TODO: cleanup dhcp 
 ANSC_STATUS CosaDmlStartDhcpv6Client(ANSC_HANDLE hInsContext)
 {
     PCOSA_CONTEXT_DHCPCV6_LINK_OBJECT pCxtLink      = (PCOSA_CONTEXT_DHCPCV6_LINK_OBJECT)hInsContext;
@@ -9789,6 +9796,7 @@ ANSC_STATUS CosaDmlStopDhcpv6Client(ANSC_HANDLE hInsContext)
 
     return ANSC_STATUS_SUCCESS;
 }
+#endif
 
 #ifdef RA_MONITOR_SUPPORT
 static void *

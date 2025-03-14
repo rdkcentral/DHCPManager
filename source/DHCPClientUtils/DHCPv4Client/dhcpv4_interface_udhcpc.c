@@ -262,7 +262,7 @@ pid_t start_dhcpv4_client(char *interfaceName, dhcp_opt_list *req_opt_list, dhcp
     }
 
     DHCPMGR_LOG_INFO("%s %d: Started udhcpc. returning pid..\n", __FUNCTION__, __LINE__);
-    udhcpc_pid = get_process_pid (UDHCPC_CLIENT, NULL, true);
+    udhcpc_pid = get_process_pid (UDHCPC_CLIENT, buff, true);
 #endif
     return udhcpc_pid;
 }

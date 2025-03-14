@@ -1063,10 +1063,18 @@ Client3_SetParamBoolValue
 
     if (strcmp(ParamName, "Renew") == 0)
     {
-        DHCPMGR_LOG_INFO("%s %d Renew triggered for DHCPv6 Client %s \n", __FUNCTION__, __LINE__, pDhcpc->Cfg.Interface );
-        pthread_mutex_lock(&pDhcpc->mutex); //MUTEX lock
-        pDhcpc->Cfg.Renew = TRUE;
-        pthread_mutex_unlock(&pDhcpc->mutex); //MUTEX unlock
+        if (pDhcpc->Cfg.bEnabled)
+        {
+            DHCPMGR_LOG_INFO("%s %d Renew triggered for DHCPv6 Client %s \n", __FUNCTION__, __LINE__, pDhcpc->Cfg.Interface );
+            pthread_mutex_lock(&pDhcpc->mutex); //MUTEX lock
+            pDhcpc->Cfg.Renew = TRUE;
+            pthread_mutex_unlock(&pDhcpc->mutex); //MUTEX unlock
+            return  TRUE;
+        }
+        else
+        {
+            return FALSE;
+        }
         /* TODO : clean up
         if ( bValue )
         {
@@ -1077,7 +1085,7 @@ Client3_SetParamBoolValue
             }
         } */
 
-        return  TRUE;
+        
     }
 
     /* DHCPMGR_LOG_WARNING("Unsupported parameter '%s'\n", ParamName); */
