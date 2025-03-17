@@ -21,6 +21,8 @@
 #include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/ioctl.h>
+#include <net/if.h>
 #include "util.h"
 #include "ansc_platform.h"
 #include "cosa_apis.h"
@@ -125,7 +127,111 @@ static int DhcpMgr_build_dhcpv4_opt_list (PCOSA_CONTEXT_DHCPC_LINK_OBJECT hInsCo
     return 0;
 }
 
+/**
+ * @brief Checks the status of a network interface.
+ *
+ * This function verifies that the length of the interface name is greater than 0
+ * and checks if the specified network interface is up and running.
+ *
+ * @param ifName The name of the network interface to check.
+ * @return true if the interface name length is greater than 0 and the interface is up and running, false otherwise.
+ */
+static bool DhcpMgr_checkInterfaceStatus(const char * ifName)
+{
+    if(ifName == NULL || (strlen(ifName) <=0))
+    {
+        DHCPMGR_LOG_ERROR("%s : DHCP interface name is Empty",__FUNCTION__);
+        return FALSE;
+    }
 
+    int sockfd = socket(AF_INET, SOCK_DGRAM, 0);
+    if (sockfd < 0) 
+    {
+        perror("socket");
+        return FALSE;
+    }
+
+    struct ifreq ifr;
+    strncpy(ifr.ifr_name, ifName, IFNAMSIZ-1);
+    ifr.ifr_name[IFNAMSIZ-1] = '\0';
+
+    if (ioctl(sockfd, SIOCGIFFLAGS, &ifr) < 0) 
+    {
+        perror("ioctl");
+        close(sockfd);
+        return FALSE;
+    }
+
+    close(sockfd);
+
+    if ((ifr.ifr_flags & IFF_UP) && (ifr.ifr_flags & IFF_RUNNING)) 
+    {
+        DHCPMGR_LOG_INFO("Interface %s is up and running.\n", ifName);
+    } 
+    else 
+    {
+        DHCPMGR_LOG_ERROR("Interface %s is down or not running.\n", ifName);
+        return FALSE;
+    }
+    return TRUE;
+}
+
+/**
+ * @brief Checks for the presence of a link-local address and its DAD status on a network interface.
+ *
+ * This function checks if the specified network interface has a link-local address (LLA) by
+ * executing the command `ip address show dev %s tentative`. It also verifies the link-local
+ * Duplicate Address Detection (DAD) status. If no LLA is found, it restarts the IPv6 stack
+ * on the interface.
+ *
+ * @param interfaceName The name of the network interface to check.
+ * @return true if the link-local address is found and DAD status is verified, false otherwise.
+ */
+static bool DhcpMgr_checkLinkLocalAddress(const char * interfaceName)
+{ 
+    // check if interface is ipv6 ready with a link-local address
+    unsigned int waitTime = INTF_V6LL_TIMEOUT_IN_MSEC;
+    char cmd[BUFLEN_128] = {0};
+    snprintf(cmd, sizeof(cmd), "ip address show dev %s tentative", interfaceName);
+    while (waitTime > 0)
+    {
+        FILE *fp_dad   = NULL;
+        char buffer[BUFLEN_256] = {0};
+
+        fp_dad = popen(cmd, "r");
+        if(fp_dad != NULL)
+        {
+            if ((fgets(buffer, BUFLEN_256, fp_dad) == NULL) || (strlen(buffer) == 0))
+            {
+                pclose(fp_dad);
+                break;
+            }
+            DHCPMGR_LOG_WARNING("%s %d: interface still tentative: %s\n", __FUNCTION__, __LINE__, buffer);
+            pclose(fp_dad);
+        }
+        usleep(INTF_V6LL_INTERVAL_IN_MSEC * USECS_IN_MSEC);
+        waitTime -= INTF_V6LL_INTERVAL_IN_MSEC;
+    }
+
+    if (waitTime <= 0)
+    {
+        DHCPMGR_LOG_ERROR("%s %d: interface %s doesnt have link local address\n", __FUNCTION__, __LINE__, interfaceName);
+        /* No link-local address. Restart IPv6 stack and retry. Rare edge case. */
+        DHCPMGR_LOG_INFO("%s %d force toggle initiated\n", __FUNCTION__, __LINE__);
+        if (sysctl_iface_set("/proc/sys/net/ipv6/conf/%s/disable_ipv6", interfaceName, "1") != 0)
+        {
+            DHCPMGR_LOG_WARNING("%s-%d : Failure writing to /proc file\n", __FUNCTION__, __LINE__);
+        }
+
+        if (sysctl_iface_set("/proc/sys/net/ipv6/conf/%s/disable_ipv6", interfaceName, "0") != 0)
+        {
+            DHCPMGR_LOG_WARNING("%s-%d : Failure writing to /proc file\n", __FUNCTION__, __LINE__);
+        }
+        return FALSE;
+    }
+
+    return TRUE;
+}
 
 static void* DhcpMgr_MainController( void *args )
 {
@@ -188,31 +294,37 @@ static void* DhcpMgr_MainController( void *args )
                 {
                     ////DHCP client Enabled, start the client if not started.
                     DHCPMGR_LOG_INFO("%s %d: Starting dhcpv4 client on %s\n",__FUNCTION__, __LINE__, pDhcpc->Cfg.Interface);
-                    
-                    dhcp_opt_list *req_opt_list = NULL;
-                    dhcp_opt_list *send_opt_list = NULL;
-                    DhcpMgr_build_dhcpv4_opt_list (pDhcpCxtLink, &req_opt_list, &send_opt_list);
-
-                    pDhcpc->Info.ClientProcessId  = start_dhcpv4_client(pDhcpc->Cfg.Interface, req_opt_list, send_opt_list);
-
-                    //Free optios list
-                    if(req_opt_list)
-                        free_opt_list_data (req_opt_list);
-                    if(send_opt_list)
-                        free_opt_list_data (send_opt_list);
-
-                    if(pDhcpc->Info.ClientProcessId > 0 ) 
+                    if(DhcpMgr_checkInterfaceStatus(pDhcpc->Cfg.Interface)== FALSE)
                     {
-                        pDhcpc->Info.Status = COSA_DML_DHCP_STATUS_Enabled;
-                        DHCPMGR_LOG_INFO("%s %d: dhcpv4 client for %s started PID : %d \n", __FUNCTION__, __LINE__, pDhcpc->Cfg.Interface, pDhcpc->Info.ClientProcessId);
-                        DhcpMgr_PublishDhcpV4Event(pDhcpc, DHCP_CLIENT_STARTED);
+                        pDhcpc->Cfg.bEnabled = FALSE;
+                        DhcpMgr_PublishDhcpV4Event(pDhcpc, DHCP_CLIENT_FAILED);
                     }
                     else
                     {
-                        DHCPMGR_LOG_INFO("%s %d: dhcpv4 client for %s failed to start \n", __FUNCTION__, __LINE__, pDhcpc->Cfg.Interface);
-                        DhcpMgr_PublishDhcpV4Event(pDhcpc, DHCP_CLIENT_FAILED);
-                    }
+                        dhcp_opt_list *req_opt_list = NULL;
+                        dhcp_opt_list *send_opt_list = NULL;
+                        DhcpMgr_build_dhcpv4_opt_list (pDhcpCxtLink, &req_opt_list, &send_opt_list);
 
+                        pDhcpc->Info.ClientProcessId  = start_dhcpv4_client(pDhcpc->Cfg.Interface, req_opt_list, send_opt_list);
+
+                        //Free optios list
+                        if(req_opt_list)
+                            free_opt_list_data (req_opt_list);
+                        if(send_opt_list)
+                            free_opt_list_data (send_opt_list);
+
+                        if(pDhcpc->Info.ClientProcessId > 0 ) 
+                        {
+                            pDhcpc->Info.Status = COSA_DML_DHCP_STATUS_Enabled;
+                            DHCPMGR_LOG_INFO("%s %d: dhcpv4 client for %s started PID : %d \n", __FUNCTION__, __LINE__, pDhcpc->Cfg.Interface, pDhcpc->Info.ClientProcessId);
+                            DhcpMgr_PublishDhcpV4Event(pDhcpc, DHCP_CLIENT_STARTED);
+                        }
+                        else
+                        {
+                            DHCPMGR_LOG_INFO("%s %d: dhcpv4 client for %s failed to start \n", __FUNCTION__, __LINE__, pDhcpc->Cfg.Interface);
+                            DhcpMgr_PublishDhcpV4Event(pDhcpc, DHCP_CLIENT_FAILED);
+                        }
+                    }
                 } 
                 else if (pDhcpc->Cfg.Renew == TRUE)
                 {
@@ -275,29 +387,40 @@ static void* DhcpMgr_MainController( void *args )
                 {
                     ////DHCP client Enabled, start the client if not started.
                     DHCPMGR_LOG_INFO("%s %d: Starting dhcpv6 client on %s\n",__FUNCTION__, __LINE__, pDhcp6c->Cfg.Interface);
-                    
-                    dhcp_opt_list *req_opt_list = NULL;
-                    dhcp_opt_list *send_opt_list = NULL;
-                    //DhcpMgr_build_dhcpv4_opt_list (pDhcp6cxtLink, &req_opt_list, &send_opt_list);
-
-                    pDhcp6c->Info.ClientProcessId  = start_dhcpv6_client(pDhcp6c->Cfg.Interface, req_opt_list, send_opt_list);
-
-                    //Free optios list
-                    if(req_opt_list)
-                        free_opt_list_data (req_opt_list);
-                    if(send_opt_list)
-                        free_opt_list_data (send_opt_list);
-
-                    if(pDhcp6c->Info.ClientProcessId > 0 ) 
+                    if(DhcpMgr_checkInterfaceStatus(pDhcp6c->Cfg.Interface)== FALSE)
                     {
-                        pDhcp6c->Info.Status = COSA_DML_DHCP_STATUS_Enabled;
-                        DHCPMGR_LOG_INFO("%s %d: dhcpv6 client for %s started PID : %d \n", __FUNCTION__, __LINE__, pDhcp6c->Cfg.Interface, pDhcp6c->Info.ClientProcessId);
-                        //DhcpMgr_PublishDhcpV4Event(pDhcp6c, DHCP_CLIENT_STARTED);
+                        pDhcp6c->Cfg.bEnabled = FALSE;
+                        //DhcpMgr_PublishDhcpV4Event(pDhcp6c, DHCP_CLIENT_FAILED);
+                    }
+                    else if(DhcpMgr_checkLinkLocalAddress(pDhcp6c->Cfg.Interface)== FALSE)
+                    {
+                        //Link local failed. Retry
                     }
                     else
                     {
-                        DHCPMGR_LOG_INFO("%s %d: dhcpv6 client for %s failed to start \n", __FUNCTION__, __LINE__, pDhcp6c->Cfg.Interface);
-                        //DhcpMgr_PublishDhcpV4Event(pDhcp6c, DHCP_CLIENT_FAILED);
+                        dhcp_opt_list *req_opt_list = NULL;
+                        dhcp_opt_list *send_opt_list = NULL;
+                        //DhcpMgr_build_dhcpv4_opt_list (pDhcp6cxtLink, &req_opt_list, &send_opt_list);
+
+                        pDhcp6c->Info.ClientProcessId  = start_dhcpv6_client(pDhcp6c->Cfg.Interface, req_opt_list, send_opt_list);
+
+                        //Free optios list
+                        if(req_opt_list)
+                            free_opt_list_data (req_opt_list);
+                        if(send_opt_list)
+                            free_opt_list_data (send_opt_list);
+
+                        if(pDhcp6c->Info.ClientProcessId > 0 ) 
+                        {
+                            pDhcp6c->Info.Status = COSA_DML_DHCP_STATUS_Enabled;
+                            DHCPMGR_LOG_INFO("%s %d: dhcpv6 client for %s started PID : %d \n", __FUNCTION__, __LINE__, pDhcp6c->Cfg.Interface, pDhcp6c->Info.ClientProcessId);
+                            //DhcpMgr_PublishDhcpV4Event(pDhcp6c, DHCP_CLIENT_STARTED);
+                        }
+                        else
+                        {
+                            DHCPMGR_LOG_INFO("%s %d: dhcpv6 client for %s failed to start \n", __FUNCTION__, __LINE__, pDhcp6c->Cfg.Interface);
+                            //DhcpMgr_PublishDhcpV4Event(pDhcp6c, DHCP_CLIENT_FAILED);
+                        }
                     }
 
                 } 

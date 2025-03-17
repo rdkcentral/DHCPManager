@@ -203,7 +203,17 @@ static int dibbler_get_send_options(FILE * fout,  dhcp_opt_list * send_opt_list)
     while (opt_list)
     {
         memset (&args, 0, sizeof(args));
-        if (opt_list->dhcp_opt == DHCPV6_OPT_15)
+        if (opt_list->dhcp_opt == DHCPV6_OPT_5)
+        {
+            snprintf (args, sizeof(args), "\n\t%s \n", (opt_list->dhcp_opt_val == NULL)?"ia":opt_list->dhcp_opt_val);
+            fputs(args, fout);
+        }
+        else if (opt_list->dhcp_opt == DHCPV6_OPT_25)
+        {
+            snprintf (args, sizeof(args), "\n\t%s \n", (opt_list->dhcp_opt_val == NULL)?"pd":opt_list->dhcp_opt_val);
+            fputs(args, fout);
+        }
+        else if (opt_list->dhcp_opt == DHCPV6_OPT_15)
         {
             char str[32]={0};
             char option15[100]={0};
@@ -404,37 +414,6 @@ pid_t start_dhcpv6_client(char *interfaceName, dhcp_opt_list *req_opt_list, dhcp
     if (dibbler_pid > 0)
     {
         DHCPMGR_LOG_ERROR("%s %d: another instance of %s running on %s \n", __FUNCTION__, __LINE__, DIBBLER_CLIENT, interfaceName);
-        return dibbler_pid;
-    }
-
-    // check if interface is ipv6 ready with a link-local address
-    unsigned int waitTime = INTF_V6LL_TIMEOUT_IN_MSEC;
-    char cmd[BUFLEN_128] = {0};
-    snprintf(cmd, sizeof(cmd), "ip address show dev %s tentative", interfaceName);
-    while (waitTime > 0)
-    {
-        FILE *fp_dad   = NULL;
-        char buffer[BUFLEN_256] = {0};
-
-        fp_dad = popen(cmd, "r");
-        if(fp_dad != NULL)
-        {
-            if ((fgets(buffer, BUFLEN_256, fp_dad) == NULL) || (strlen(buffer) == 0))
-            {
-                pclose(fp_dad);
-                break;
-            }
-            DHCPMGR_LOG_WARNING("%s %d: interface still tentative: %s\n", __FUNCTION__, __LINE__, buffer);
-            pclose(fp_dad);
-        }
-        usleep(INTF_V6LL_INTERVAL_IN_MSEC * USECS_IN_MSEC);
-        waitTime -= INTF_V6LL_INTERVAL_IN_MSEC;
-    }
-
-    if (waitTime <= 0)
-    {
-        DHCPMGR_LOG_ERROR("%s %d: interface %s doesnt have link local address\n", __FUNCTION__, __LINE__, interfaceName);
-        //TODO: linklocal isn't present, should we toggle IPv6 on the interface here?
         return dibbler_pid;
     }
 
