@@ -119,50 +119,41 @@ static int dibbler_get_req_options(FILE * fout,  dhcp_opt_list * req_opt_list)
     while (opt_list)
     {
         memset (&args, 0, sizeof(args));
+        switch (opt_list->dhcp_opt)
+        {
+            case DHCPV6_OPT_5:
+                snprintf(args, sizeof(args), "\n\t%s \n", (opt_list->dhcp_opt_val == NULL) ? "ia" : opt_list->dhcp_opt_val);
+                fputs(args, fout);
+                break;
 
-        if (opt_list->dhcp_opt == DHCPV6_OPT_5)
-        {
-            snprintf (args, sizeof(args), "\n\t%s \n", (opt_list->dhcp_opt_val == NULL)?"ia":opt_list->dhcp_opt_val);
-            fputs(args, fout);
-        }
-        else if (opt_list->dhcp_opt == DHCPV6_OPT_23)
-        {
-            snprintf (args, sizeof(args), "\n\t%s \n", "option dns-server");
-            fputs(args, fout);
-        }
-        else if (opt_list->dhcp_opt == DHCPV6_OPT_25)
-        {
-            snprintf (args, sizeof(args), "\n\t%s \n", (opt_list->dhcp_opt_val == NULL)?"pd":opt_list->dhcp_opt_val);
-            fputs(args, fout);
-        }
-        else if (opt_list->dhcp_opt == DHCPV6_OPT_24)
-        {
-            snprintf (args, sizeof(args), "\n\t%s \n", "option domain");
-            fputs(args, fout);
-        }
-        else if (opt_list->dhcp_opt == DHCPV6_OPT_95)
-        {
-#if defined(FEATURE_MAPT) || defined(FEATURE_SUPPORT_MAPT_NAT46)
-            if (syscfg_get(NULL, SYSCFG_MAPT_FEATURE_ENABLE, mapt_feature_enable, sizeof(mapt_feature_enable)) == 0)
-            {
-                if (strncmp(mapt_feature_enable, "true", 4) == 0)
-                {
-#endif
-                    snprintf (args, sizeof(args), "\n\toption 00%d hex \n", opt_list->dhcp_opt);
-                    fputs(args, fout);
-#if defined(FEATURE_MAPT) || defined(FEATURE_SUPPORT_MAPT_NAT46)
-                }
-            }
-#endif
-        }
-        else if (opt_list->dhcp_opt == DHCPV6_OPT_64)
-        {
-            fputs("\n\toption aftr\n", fout);
-        }
-        else
-        {
-            snprintf (args, sizeof(args), "\n\toption 00%d hex \n", opt_list->dhcp_opt);
-            fputs(args, fout);
+            case DHCPV6_OPT_23:
+                snprintf(args, sizeof(args), "\n\t%s \n", "option dns-server");
+                fputs(args, fout);
+                break;
+
+            case DHCPV6_OPT_25:
+                snprintf(args, sizeof(args), "\n\t%s \n", (opt_list->dhcp_opt_val == NULL) ? "pd" : opt_list->dhcp_opt_val);
+                fputs(args, fout);
+                break;
+
+            case DHCPV6_OPT_24:
+                snprintf(args, sizeof(args), "\n\t%s \n", "option domain");
+                fputs(args, fout);
+                break;
+
+            case DHCPV6_OPT_95:
+                snprintf(args, sizeof(args), "\n\toption 00%d hex \n", opt_list->dhcp_opt);
+                fputs(args, fout);
+                break;
+
+            case DHCPV6_OPT_64:
+                fputs("\n\toption aftr\n", fout);
+                break;
+
+            default:
+                snprintf(args, sizeof(args), "\n\toption 00%d hex \n", opt_list->dhcp_opt);
+                fputs(args, fout);
+                break;
         }
         opt_list = opt_list->next;
     }
@@ -203,44 +194,51 @@ static int dibbler_get_send_options(FILE * fout,  dhcp_opt_list * send_opt_list)
     while (opt_list)
     {
         memset (&args, 0, sizeof(args));
-        if (opt_list->dhcp_opt == DHCPV6_OPT_5)
+        switch (opt_list->dhcp_opt)
         {
-            snprintf (args, sizeof(args), "\n\t%s \n", (opt_list->dhcp_opt_val == NULL)?"ia":opt_list->dhcp_opt_val);
-            fputs(args, fout);
-        }
-        else if (opt_list->dhcp_opt == DHCPV6_OPT_25)
-        {
-            snprintf (args, sizeof(args), "\n\t%s \n", (opt_list->dhcp_opt_val == NULL)?"pd":opt_list->dhcp_opt_val);
-            fputs(args, fout);
-        }
-        else if (opt_list->dhcp_opt == DHCPV6_OPT_15)
-        {
-            char str[BUFLEN_64]={0};
-            char option15[100]={0};
-            char temp[16]={0};
-
-            strncpy(str,opt_list->dhcp_opt_val,sizeof(str)-1);
-
-            snprintf(temp, 8, "0x%04X",(int)strlen(str)+1);
-            strncat(option15,temp,8);
-
-            for(int i=0; i<(int)strlen(str)+1; i++)
+            case DHCPV6_OPT_5:
+                snprintf(args, sizeof(args), "\n\t%s \n", (opt_list->dhcp_opt_val == NULL) ? "ia" : opt_list->dhcp_opt_val);
+                fputs(args, fout);
+                break;
+        
+            case DHCPV6_OPT_25:
+                snprintf(args, sizeof(args), "\n\t%s \n", (opt_list->dhcp_opt_val == NULL) ? "pd" : opt_list->dhcp_opt_val);
+                fputs(args, fout);
+                break;
+        
+            case DHCPV6_OPT_15:
             {
-                snprintf(temp, 3, "%02X",str[i]);
-                strncat(option15,temp,3);
+                char str[BUFLEN_64] = {0};
+                char option15[100] = {0};
+                char temp[16] = {0};
+        
+                strncpy(str, opt_list->dhcp_opt_val, sizeof(str) - 1);
+        
+                snprintf(temp, sizeof(temp), "0x%04X", (int)strlen(str) + 1);
+                strncat(option15, temp, sizeof(option15) - strlen(option15) - 1);
+        
+                for (int i = 0; i < (int)strlen(str) + 1; i++)
+                {
+                    snprintf(temp, sizeof(temp), "%02X", str[i]);
+                    strncat(option15, temp, sizeof(option15) - strlen(option15) - 1);
+                }
+        
+                snprintf(args, sizeof(args), "\n\toption 00%d hex %s\n", opt_list->dhcp_opt, option15);
+                fputs(args, fout);
+                break;
             }
-
-            snprintf (args, sizeof(args), "\n\toption 00%d hex %s\n", opt_list->dhcp_opt,option15 );
-            fputs(args, fout);
-        }
-        else if (opt_list->dhcp_opt == DHCPV6_OPT_20)
-        {
-            //Do nothing, will be checked later.
-        }
-        else if (opt_list->dhcp_opt_val != NULL) /* Generic Dibbler option format */
-        {
-            snprintf (args, sizeof(args), "\n\toption 00%d hex 0x%s\n", opt_list->dhcp_opt, opt_list->dhcp_opt_val);
-            fputs(args, fout);
+        
+            case DHCPV6_OPT_20:
+                // Do nothing, will be checked later.
+                break;
+        
+            default:
+                if (opt_list->dhcp_opt_val != NULL) /* Generic Dibbler option format */
+                {
+                    snprintf(args, sizeof(args), "\n\toption 00%d hex 0x%s\n", opt_list->dhcp_opt, opt_list->dhcp_opt_val);
+                    fputs(args, fout);
+                }
+                break;
         }
 
         opt_list = opt_list->next;
