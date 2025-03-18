@@ -109,7 +109,7 @@ static int dibbler_get_req_options(FILE * fout,  dhcp_opt_list * req_opt_list)
 
     if(req_opt_list == NULL)
     {
-        DHCPMGR_LOG_WARNING("%s %d: Invalid file pointer.\n", __FUNCTION__, __LINE__);
+        DHCPMGR_LOG_WARNING("%s %d: req_opt_list empty.\n", __FUNCTION__, __LINE__);
         return 0;
     }
 
@@ -193,7 +193,7 @@ static int dibbler_get_send_options(FILE * fout,  dhcp_opt_list * send_opt_list)
 
     if(send_opt_list == NULL)
     {
-        DHCPMGR_LOG_WARNING("%s %d: Invalid file pointer.\n", __FUNCTION__, __LINE__);
+        DHCPMGR_LOG_WARNING("%s %d: send_opt_list empty.\n", __FUNCTION__, __LINE__);
         return 0;
     }
 
@@ -215,11 +215,11 @@ static int dibbler_get_send_options(FILE * fout,  dhcp_opt_list * send_opt_list)
         }
         else if (opt_list->dhcp_opt == DHCPV6_OPT_15)
         {
-            char str[32]={0};
+            char str[BUFLEN_64]={0};
             char option15[100]={0};
             char temp[16]={0};
 
-            strncpy(str,opt_list->dhcp_opt_val,strlen(opt_list->dhcp_opt_val)+1);
+            strncpy(str,opt_list->dhcp_opt_val,sizeof(str)-1);
 
             snprintf(temp, 8, "0x%04X",(int)strlen(str)+1);
             strncat(option15,temp,8);
@@ -233,9 +233,13 @@ static int dibbler_get_send_options(FILE * fout,  dhcp_opt_list * send_opt_list)
             snprintf (args, sizeof(args), "\n\toption 00%d hex %s\n", opt_list->dhcp_opt,option15 );
             fputs(args, fout);
         }
+        else if (opt_list->dhcp_opt == DHCPV6_OPT_20)
+        {
+            //Do nothing, will be checked later.
+        }
         else if (opt_list->dhcp_opt_val != NULL) /* Generic Dibbler option format */
         {
-            snprintf (args, sizeof(args), "\n\toption 00%d hex %s\n", opt_list->dhcp_opt, opt_list->dhcp_opt_val);
+            snprintf (args, sizeof(args), "\n\toption 00%d hex 0x%s\n", opt_list->dhcp_opt, opt_list->dhcp_opt_val);
             fputs(args, fout);
         }
 
@@ -328,7 +332,7 @@ static int dibbler_client_config_generator(char *config_path, char *interfaceNam
         return FAILURE;
     }
 
-    DHCPMGR_LOG_INFO("%s %d: Constructing SEND option args to udhcpc.\n", __FUNCTION__, __LINE__);
+    DHCPMGR_LOG_INFO("%s %d: Constructing SEND option args to dibbler.\n", __FUNCTION__, __LINE__);
     if ((dibbler_get_send_options(fout, send_opt_list) != SUCCESS))
     {
         DHCPMGR_LOG_ERROR("%s %d: Unable to get DHCPv6 SEND OPT.\n", __FUNCTION__, __LINE__);
@@ -339,7 +343,7 @@ static int dibbler_client_config_generator(char *config_path, char *interfaceNam
     fputs("\n}", fout);
     
     // write common config
-    fputs("skip-confirm\n", fout);
+    fputs("\nskip-confirm\n", fout);
     fputs("downlink-prefix-ifaces \"brlan0\"\n", fout);
 
     if(dibbler_get_reconfigureAccept(send_opt_list))
@@ -422,7 +426,7 @@ pid_t start_dhcpv6_client(char *interfaceName, dhcp_opt_list *req_opt_list, dhcp
     snprintf(config_path, sizeof(config_path), "%s%s", DIBBLER_DFT_PATH, interfaceName);
     if (mkdir(config_path, 0644) == 0)
     {
-        DHCPMGR_LOG_ERROR ("%s %d: created directory %s\n", __FUNCTION__, __LINE__, config_path);
+        DHCPMGR_LOG_INFO ("%s %d: created directory %s\n", __FUNCTION__, __LINE__, config_path);
     }
     else
     {

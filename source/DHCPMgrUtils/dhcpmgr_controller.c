@@ -39,6 +39,7 @@
 #include "dhcp_lease_monitor_thrd.h"
 #include "dhcpmgr_rbus_apis.h"
 #include "dhcp_client_common_utils.h"
+#include "cosa_apis.h"
 
 
 
@@ -88,8 +89,8 @@ static int DhcpMgr_build_dhcpv4_opt_list (PCOSA_CONTEXT_DHCPC_LINK_OBJECT hInsCo
 {
     PCOSA_DML_DHCPC_REQ_OPT         pDhcpReqOpt   = NULL;
     PCOSA_DML_DHCP_OPT              pDhcpSentOpt  = NULL;
-    ULONG                           noOfReqOpt    = -1;
-    ULONG                           noOfSentOpt   = -1;
+    ULONG                           noOfReqOpt    = 0;
+    ULONG                           noOfSentOpt   = 0;
     PCOSA_DML_DHCPC_FULL pDhcpc                   = (PCOSA_DML_DHCPC_FULL)hInsContext->hContext;
 
     DHCPMGR_LOG_INFO("%s %d: Entered \n",__FUNCTION__, __LINE__);
@@ -123,6 +124,58 @@ static int DhcpMgr_build_dhcpv4_opt_list (PCOSA_CONTEXT_DHCPC_LINK_OBJECT hInsCo
             add_dhcp_opt_to_list(send_opt_list, (int)pDhcpSentOpt->Tag, (char *)pDhcpSentOpt->Value);
         }
     }
+
+    return 0;
+}
+
+/**
+ * @brief Builds the DHCPv6 option lists.
+ *
+ * This function constructs the `req_opt_list` and `send_opt_list` from the DML entries.
+ *
+ * @param[in] hInsContext A handle to the DHCPv6 client context.
+ * @param[out] req_opt_list A pointer to the list of requested DHCP options.
+ * @param[out] send_opt_list A pointer to the list of DHCP options to be sent.
+ *
+ * @return int Returns 0 on success, or a negative error code on failure.
+ */
+static int DhcpMgr_build_dhcpv6_opt_list (PCOSA_CONTEXT_DHCPCV6_LINK_OBJECT hInsContext, dhcp_opt_list ** req_opt_list, dhcp_opt_list ** send_opt_list)
+{
+    PCOSA_DML_DHCPCV6_SENT          pSentOption  = NULL;
+    ULONG                           noOfSentOpt   = 0;
+    PSINGLE_LINK_ENTRY                pSListEntry   = NULL;
+    ULONG                             instanceNum   = 0;
+    PCOSA_DML_DHCPCV6_FULL pDhcp6c                   = (PCOSA_DML_DHCPCV6_FULL)hInsContext->hContext;
+
+    DHCPMGR_LOG_INFO("%s %d: Entered \n",__FUNCTION__, __LINE__);
+   
+    noOfSentOpt = CosaDmlDhcpv6cGetNumberOfSentOption(NULL, pDhcp6c->Cfg.InstanceNumber);
+    for (ULONG sentOptIdx = 0; sentOptIdx < noOfSentOpt; sentOptIdx++)
+    {
+        pSListEntry = (PSINGLE_LINK_ENTRY)SentOption1_GetEntry(hInsContext, sentOptIdx, &instanceNum);
+        if (pSListEntry)
+        {
+            PCOSA_CONTEXT_LINK_OBJECT pCxtLink            = ACCESS_COSA_CONTEXT_LINK_OBJECT(pSListEntry);
+            pSentOption         = (PCOSA_DML_DHCPCV6_SENT)pCxtLink->hContext;
+            if (pSentOption->bEnabled)
+            {
+                add_dhcp_opt_to_list(send_opt_list, (INT)pSentOption->Tag, (CHAR *)pSentOption->Value);
+            }
+        }
+    }
+
+    //TODO : Why DHCPv6 request DMl is different from v4 and othet options ?
+    char *reqOptions = strdup((CHAR *)pDhcp6c->Cfg.RequestedOptions);
+    char *token = NULL;
+    token = strtok(reqOptions, " , ");
+    while (token != NULL)
+    {
+        DHCPMGR_LOG_INFO("token : %d\n", atoi(token));
+        add_dhcp_opt_to_list(req_opt_list, atoi(token), NULL);
+        token = strtok(NULL, " , ");
+    }
+    if(reqOptions)
+        free(reqOptions);
 
     return 0;
 }
@@ -400,7 +453,7 @@ static void* DhcpMgr_MainController( void *args )
                     {
                         dhcp_opt_list *req_opt_list = NULL;
                         dhcp_opt_list *send_opt_list = NULL;
-                        //DhcpMgr_build_dhcpv4_opt_list (pDhcp6cxtLink, &req_opt_list, &send_opt_list);
+                        DhcpMgr_build_dhcpv6_opt_list (pDhcp6cxtLink, &req_opt_list, &send_opt_list);
 
                         pDhcp6c->Info.ClientProcessId  = start_dhcpv6_client(pDhcp6c->Cfg.Interface, req_opt_list, send_opt_list);
 
@@ -443,7 +496,7 @@ static void* DhcpMgr_MainController( void *args )
                     stop_dhcpv6_client(pDhcp6c->Info.ClientProcessId);
                     pDhcp6c->Info.Status = COSA_DML_DHCP_STATUS_Disabled;
                     pDhcp6c->Cfg.Renew = FALSE;
-                    DhcpMgr_clearDHCPv4Lease(pDhcp6c);
+                    //DhcpMgr_clearDHCPv4Lease(pDhcp6c);
                     //DhcpMgr_PublishDhcpV4Event(pDhcp6c, DHCP_CLIENT_STOPPED);
                 }
             }
