@@ -587,6 +587,82 @@ void DHCPMgr_AddDhcpv4Lease(char * ifName, DHCPv4_PLUGIN_MSG *newLease)
 }
 
 /**
+ * @brief Adds a new DHCPv6 lease.
+ *
+ * This function locates the DHCPv6 client interface using the provided interface name (`ifName`) and updates the `pDhcp6c->NewLeases` linked list with the new lease information.
+ *  If the operation fails, it frees the memory allocated for the new lease.
+ *
+ * @param[in] ifName The name of the interface.
+ * @param[in] newLease A pointer to the new DHCPv6 lease information.
+ */
+void DHCPMgr_AddDHCPv6Lease(char * ifName, DHCPv6_PLUGIN_MSG *newLease)
+{
+    PCOSA_DML_DHCPCV6_FULL            pDhcp6c        = NULL;
+    PCOSA_CONTEXT_DHCPCV6_LINK_OBJECT pDhcp6cxtLink  = NULL;
+    PSINGLE_LINK_ENTRY              pSListEntry   = NULL;
+    ULONG ulIndex;
+    ULONG instanceNum;
+    BOOL interfaceFound                           = FALSE;
+    ULONG clientCount = CosaDmlDhcpv6cGetNumberOfEntries(NULL);
+    //iterate all entries and find the ineterface with the ifname
+    for ( ulIndex = 0; ulIndex < clientCount; ulIndex++ )
+    {
+        pSListEntry = (PSINGLE_LINK_ENTRY)Client3_GetEntry(NULL,ulIndex,&instanceNum);
+        if ( pSListEntry )
+        {
+            pDhcp6cxtLink          = ACCESS_COSA_CONTEXT_DHCPC_LINK_OBJECT(pSListEntry);
+            pDhcp6c            = (PCOSA_DML_DHCPCV6_FULL)pDhcp6cxtLink->hContext;
+        }
+
+        if (!pDhcp6c)
+        {
+            DHCPMGR_LOG_ERROR("%s : pDhcp6c is NULL\n",__FUNCTION__);
+            continue;
+        }
+
+        pthread_mutex_lock(&pDhcp6c->mutex); //MUTEX lock
+
+        // Verify if the DHCP clients are running. There may be multiple DHCP client interfaces with the same name that are not active.
+        if(strcmp(ifName, pDhcp6c->Cfg.Interface) == 0)
+        {
+            DHCPv6_PLUGIN_MSG *temp = pDhcp6c->NewLeases;
+            //Find the tail of the list
+            if (temp == NULL) 
+            {
+                // If the list is empty, add the new lease as the first element
+                pDhcp6c->NewLeases = newLease;
+            } else 
+            {
+                while (temp->next != NULL) 
+                {
+                    temp = temp->next;
+                }
+                // Add the new lease details to the tail of the list
+                temp->next = newLease;
+            }
+
+            //Just the add the new lease details in the list. the controlled thread will hanlde it. 
+            newLease->next = NULL;
+            interfaceFound = TRUE;
+            DHCPMGR_LOG_INFO("%s %d: New DHCPv6 lease msg added for %s \n", __FUNCTION__, __LINE__, pDhcp6c->Cfg.Interface);
+            pthread_mutex_unlock(&pDhcp6c->mutex); //MUTEX release before break
+            break;
+        }
+
+        pthread_mutex_unlock(&pDhcp6c->mutex); //MUTEX unlock
+    }
+
+    if( interfaceFound == FALSE)
+    {
+        //if we are here, we didn't find the correct interface the received lease. free the memory
+        free(newLease);
+        DHCPMGR_LOG_ERROR("%s %d: Failed to add dhcpv6 lease msg for ineterface %s \n", __FUNCTION__, __LINE__, pDhcp6c->Cfg.Interface);
+    }
+    
+    return;
+}
+
+/**
  * @brief Updates the status of the DHCP client interface to 'stopped' based on the given process ID.
  *
  * This function iterates through the DHCPv4 and DHCPv6 client lists to find the interface

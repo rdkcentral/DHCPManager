@@ -63,4 +63,15 @@ void DhcpMgr_ProcessV4Lease(PCOSA_DML_DHCPC_FULL pDhcpc);
  */
 void DhcpMgr_clearDHCPv4Lease(PCOSA_DML_DHCPC_FULL pDhcpc) ;
 
+/**
+ * @brief Adds a new DHCPv6 lease.
+ *
+ * This function locates the DHCPv6 client interface using the provided interface name (`ifName`) and updates the `pDhcp6c->NewLeases` linked list with the new lease information.
+ *  If the operation fails, it frees the memory allocated for the new lease.
+ *
+ * @param[in] ifName The name of the interface.
+ * @param[in] newLease A pointer to the new DHCPv6 lease information.
+ */
+void DHCPMgr_AddDHCPv6Lease(char * ifName, DHCPv6_PLUGIN_MSG *newLease);
+
 #endif //_DHCP_CONTROLLER_H_
