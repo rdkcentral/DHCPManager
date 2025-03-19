@@ -595,7 +595,7 @@ void DHCPMgr_AddDhcpv4Lease(char * ifName, DHCPv4_PLUGIN_MSG *newLease)
  * @param[in] ifName The name of the interface.
  * @param[in] newLease A pointer to the new DHCPv6 lease information.
  */
-void DHCPMgr_AddDHCPv6Lease(char * ifName, DHCPv6_PLUGIN_MSG *newLease)
+void DHCPMgr_AddDhcpv6Lease(char * ifName, DHCPv6_PLUGIN_MSG *newLease)
 {
     PCOSA_DML_DHCPCV6_FULL            pDhcp6c        = NULL;
     PCOSA_CONTEXT_DHCPCV6_LINK_OBJECT pDhcp6cxtLink  = NULL;
@@ -658,7 +658,7 @@ void DHCPMgr_AddDHCPv6Lease(char * ifName, DHCPv6_PLUGIN_MSG *newLease)
         free(newLease);
         DHCPMGR_LOG_ERROR("%s %d: Failed to add dhcpv6 lease msg for ineterface %s \n", __FUNCTION__, __LINE__, pDhcp6c->Cfg.Interface);
     }
-    
+
     return;
 }
 

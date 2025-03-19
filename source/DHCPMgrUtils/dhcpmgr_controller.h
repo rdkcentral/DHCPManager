@@ -21,6 +21,9 @@
 #define _DHCP_CONTROLLER_H_
 
 #include "cosa_dhcpv4_apis.h"
+#include "dhcpv4_interface.h"
+#include "dhcpv6_interface.h"
+
 /**
  * @brief Starts the main controller thread.
  *
@@ -72,6 +75,6 @@ void DhcpMgr_clearDHCPv4Lease(PCOSA_DML_DHCPC_FULL pDhcpc) ;
  * @param[in] ifName The name of the interface.
  * @param[in] newLease A pointer to the new DHCPv6 lease information.
  */
-void DHCPMgr_AddDHCPv6Lease(char * ifName, DHCPv6_PLUGIN_MSG *newLease);
+void DHCPMgr_AddDhcpv6Lease(char * ifName, DHCPv6_PLUGIN_MSG *newLease);
 
 #endif //_DHCP_CONTROLLER_H_
