@@ -485,7 +485,7 @@ static void* DhcpMgr_MainController( void *args )
                 }
 
                 //Process new lease
-                //DhcpMgr_ProcessV4Lease(pDhcp6c);
+                DhcpMgr_ProcessV6Lease(pDhcp6c);
             }
             else
             {

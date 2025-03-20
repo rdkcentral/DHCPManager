@@ -22,6 +22,7 @@
 
 #include "cosa_dhcpv4_apis.h"
 #include "dhcpv4_interface.h"
+#include "cosa_dhcpv6_apis.h"
 #include "dhcpv6_interface.h"
 
 /**
@@ -76,5 +77,16 @@ void DhcpMgr_clearDHCPv4Lease(PCOSA_DML_DHCPC_FULL pDhcpc) ;
  * @param[in] newLease A pointer to the new DHCPv6 lease information.
  */
 void DHCPMgr_AddDhcpv6Lease(char * ifName, DHCPv6_PLUGIN_MSG *newLease);
+
+/**
+ * @brief Processes new DHCPv6 leases.
+ *
+ * This function checks for the availability of new leases in the list and processes them if found.
+ *
+ * @param[in] pDhcpc Pointer to the DHCP client structure containing lease information.
+ *
+ * @return void
+ */
+void DhcpMgr_ProcessV6Lease(PCOSA_DML_DHCPCV6_FULL pDhcp6c);
 
 #endif //_DHCP_CONTROLLER_H_

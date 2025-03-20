@@ -34,6 +34,7 @@ typedef struct _DHCPv6_PLUGIN_MSG
 
     //address details
     struct {
+        bool     assigned;     /**< Have we been assigned an address ? */
         char     address[BUFLEN_48];      /**< New IPv6 address */
         uint32_t IA_ID;
         uint32_t PreferedLifeTime;
@@ -44,6 +45,7 @@ typedef struct _DHCPv6_PLUGIN_MSG
 
     //IAPD details
     struct {
+        bool     assigned;     /**< Have we been assigned an prefix ? */
         char     Prefix[BUFLEN_48];   /**< New site prefix, if prefixAssigned==TRUE */
         uint32_t PrefixLength;
         uint32_t IA_ID;
