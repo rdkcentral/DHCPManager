@@ -39,13 +39,14 @@
 #include "dhcp_client_common_utils.h"
 
 
-#define EXIT_FAIL -1
+#define EXIT_FAILURE -1
 #define EXIT_SUCCESS 0
-#define PID_PATTERN "/tmp/udhcpc_*.pid"
+#define PID_PATTERN "/tmp/udhcpc.*.pid"
 #define CMDLINE_PATH "/proc/%d/cmdline"
 #define MAX_PIDS 5
 #define MAX_PROC_LEN 24
 #define MAX_CMDLINE_LEN 512
+#define 
 /* ---- Global Constants -------------------------- */
 
 static void* DhcpMgr_MainController( void *arg );
@@ -57,7 +58,7 @@ static void udhcpc_pid_mon();
 static int read_pid_from_file(const char *filepath, int *pid_count, int *pids) {
     FILE *file = fopen(filepath, "r");
     if (!file) {
-        return EXIT_FAIL;
+        return EXIT_FAILURE;
     }
     int pid;
     if (fscanf(file, "%d", &pid) == 1) {
@@ -76,8 +77,8 @@ static int read_pid_from_file(const char *filepath, int *pid_count, int *pids) {
  *
  * @param[in] pid The process ID.
  */
-static int get_interface_from_pid(int pid, char *Interface) {
-    char path[MAX_PROC_LEN]={0};
+static int get_interface_from_pid(int pid, char *interface) {
+    char path[MAX_PROC_LEN]={0}
     char cmdline[MAX_CMDLINE_LEN]={0};
     size_t len=0;
     snprintf(path, sizeof(path), CMDLINE_PATH, pid);
@@ -85,21 +86,21 @@ static int get_interface_from_pid(int pid, char *Interface) {
     FILE *file = fopen(path, "r");
     if (!file) {
         DHCPMGR_LOG_ERROR("%s %d Failed to open cmdline file for PID %d\n", __FUNCTION__, __LINE__, pid);
-        return EXIT_FAIL;
+        return EXIT_FAILURE;
     }
 
-    len = fread(cmdline, 1, MAX_CMDLINE_LEN - 1, file);
+    size_t len = fread(cmdline, 1, MAX_CMDLINE_LEN - 1, file);
     fclose(file);
     if (len == 0) {
         DHCPMGR_LOG_ERROR("%s %d Empty cmdline for PID %d\n", __FUNCTION__, __LINE__, pid);
-        return EXIT_FAIL;
+        return EXIT_FAILURE;
     }
 
     char *match = strstr(cmdline, Interface);
     if (match) {
       return EXIT_SUCCESS;
     } else {
-      return EXIT_FAIL;
+      return EXIT_FAILURE;
     }
 }
 
@@ -110,7 +111,8 @@ static int get_interface_from_pid(int pid, char *Interface) {
  */
 static void udhcpc_pid_mon() {
     pthread_detach(pthread_self());
-
+ 
+    DHCPMGR_LOG_INFO("%s:%d Inside-----",__FUNCTION__,__LINE__);
     PCOSA_DML_DHCPC_FULL            pDhcpc        = NULL;
     PCOSA_CONTEXT_DHCPC_LINK_OBJECT pDhcpCxtLink  = NULL;
     PSINGLE_LINK_ENTRY              pSListEntry   = NULL;
@@ -125,10 +127,13 @@ static void udhcpc_pid_mon() {
     struct pollfd poll_fds[MAX_PIDS]; // Poll file descriptors
 
     // Read the PID from the udhcpc pid files
+    DHCPMGR_LOG_INFO("%s:%d DEBUG------PID_PATTERN\n",__FUNCTION__,__LINE__,PID_PATTERN);
     if (glob(PID_PATTERN, 0, NULL, &results) == 0) {
         for (size_t i = 0; i < results.gl_pathc ; i++) {
+            DHCPMGR_LOG_INFO("%s:%d DEBUG------filepath=%s\n",__FUNCTION__,__LINE__,results.gl_pathv[i]);
             if (read_pid_from_file(results.gl_pathv[i], &pid_count, pids) != EXIT_SUCCESS) {
                 DHCPMGR_LOG_ERROR("%s %d Error reading pid from file %s\n", __FUNCTION__, __LINE__, results.gl_pathv[i]);
+                continue;
             }
             DHCPMGR_LOG_INFO("%s %d PID found for interface %s : %d\n", __FUNCTION__, __LINE__, results.gl_pathv[i], pids[pid_count - 1]);
         }
@@ -137,6 +142,7 @@ static void udhcpc_pid_mon() {
     //Fill the pid and status in the global structure if the udhcpc is already running for the interface
 
     for (ulIndex = 0; ulIndex < clientCount; ulIndex++) {
+        DHCPMGR_LOG_INFO("%s:%d DEBUG------INSIDE for  pid_count=%d\n",__FUNCTION__,__LINE__,pid_count);
         pSListEntry = (PSINGLE_LINK_ENTRY)Client_GetEntry(NULL, ulIndex, &instanceNum);
         if (pSListEntry) {
             pDhcpCxtLink = ACCESS_COSA_CONTEXT_DHCPC_LINK_OBJECT(pSListEntry);
@@ -159,6 +165,7 @@ static void udhcpc_pid_mon() {
 
     //Monitoring the pid for the udhcpc process
     for (int i = 0; i < pid_count; i++) {
+        DHCPMGR_LOG_INFO("%s:%d DEBUG------INSIDE Monitoring the pid for the udhcpc process\n",__FUNCTION__,__LINE__);
         pidfds[i] = syscall(SYS_pidfd_open, pids[i], 0);
         if (pidfds[i] == -1) {
             DHCPMGR_LOG_ERROR("%s : %d pidfd_open syscall failed\n", __FUNCTION__, __LINE__);
@@ -168,23 +175,27 @@ static void udhcpc_pid_mon() {
         poll_fds[i].fd = pidfds[i];
         poll_fds[i].events = POLLIN; // Watch for process exit event
 
-        DHCPMGR_LOG_INFO("%s:%d Monitoring process %d...\n",__FUNCTION__,__LINE__,pids[i]);
+        DHCPMGR_LOG_INFO("%s:%d Monitoring process %s:%d...\n",__FUNCTION__,__LINE__,pids[i]);
     }
 
     // Wait for any process to exit
-    while (1) {
+    int rem_pid=pid_count;
+    while (rem_pid <= 0) {
+        DHCPMGR_LOG_INFO("%s:%d DEBUG------INSIDE while poll\n",__FUNCTION__,__LINE__);
         int ret = poll(poll_fds, pid_count, -1); // Block until an event occurs
         if (ret == -1) {
             DHCPMGR_LOG_ERROR("%s : %d Poll failed \n", __FUNCTION__, __LINE__);
-            return;
+            return EXIT_FAIL;
         }
 
         // Check which process exited
         for (int i = 0; i < pid_count; i++) {
-            if (poll_fds[i].revents & POLLIN) {
+            DHCPMGR_LOG_INFO("%s:%d DEBUG------INSIDE after  while poll to check process exited\n",__FUNCTION__,__LINE__);
+            if ( poll_fds[i].fd != -1 && poll_fds[i].revents & POLLIN) {
                 DHCPMGR_LOG_INFO("%s:%d Process %s : %d exited!\n",__FUNCTION__, __LINE__,results.gl_pathv[i],pids[i]);
-                processKilled(pids[i]);
-                poll_fds[i].fd = -1;  // Mark this as handled
+                processKilled(pids[i]);      // notify the processKilled that udhcpc pid exited
+                poll_fds[i].fd = -1;             // Mark this as handled
+                rem_pid--;                         //Reduce count of active processes
                 if (close(pidfds[i]) == -1) {
                     DHCPMGR_LOG_ERROR("%s : %d Error closing pidfd\n", __FUNCTION__, __LINE__);
                 }
@@ -192,7 +203,7 @@ static void udhcpc_pid_mon() {
         }
     }
     globfree(&results);
-
+    DHCPMGR_LOG_INFO("%s:%d DEBUG------END\n",__FUNCTION__,__LINE__);
 }
 
 /**
