@@ -21,6 +21,10 @@
 #include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/syscall.h>
+#include <unistd.h>
+#include <sys/poll.h>
+#include <glob.h>
 #include "util.h"
 #include "ansc_platform.h"
 #include "cosa_apis.h"
@@ -35,10 +39,161 @@
 #include "dhcp_client_common_utils.h"
 
 
-
+#define EXIT_FAIL -1
+#define EXIT_SUCCESS 0
+#define PID_PATTERN "/tmp/udhcpc_*.pid"
+#define CMDLINE_PATH "/proc/%d/cmdline"
+#define MAX_PIDS 5
+#define MAX_PROC_LEN 24
+#define MAX_CMDLINE_LEN 512
 /* ---- Global Constants -------------------------- */
 
 static void* DhcpMgr_MainController( void *arg );
+void processKilled(pid_t pid);
+
+static int read_pid_from_file(const char *filepath, int *pid_count, int *pids);
+static void udhcpc_pid_mon();
+
+static int read_pid_from_file(const char *filepath, int *pid_count, int *pids) {
+    FILE *file = fopen(filepath, "r");
+    if (!file) {
+        return EXIT_FAIL;
+    }
+    int pid;
+    if (fscanf(file, "%d", &pid) == 1) {
+        if (*pid_count < MAX_PIDS) {
+            pids[(*pid_count)++] = pid;
+        }
+    }
+    fclose(file);
+    return EXIT_SUCCESS;
+}
+
+/**
+ * @brief Gets the interface name from the command line of a process.
+ *
+ * This function reads the command line of a process to find the interface name.
+ *
+ * @param[in] pid The process ID.
+ */
+static int get_interface_from_pid(int pid, char *Interface) {
+    char path[MAX_PROC_LEN]={0};
+    char cmdline[MAX_CMDLINE_LEN]={0};
+    size_t len=0;
+    snprintf(path, sizeof(path), CMDLINE_PATH, pid);
+
+    FILE *file = fopen(path, "r");
+    if (!file) {
+        DHCPMGR_LOG_ERROR("%s %d Failed to open cmdline file for PID %d\n", __FUNCTION__, __LINE__, pid);
+        return EXIT_FAIL;
+    }
+
+    len = fread(cmdline, 1, MAX_CMDLINE_LEN - 1, file);
+    fclose(file);
+    if (len == 0) {
+        DHCPMGR_LOG_ERROR("%s %d Empty cmdline for PID %d\n", __FUNCTION__, __LINE__, pid);
+        return EXIT_FAIL;
+    }
+
+    char *match = strstr(cmdline, Interface);
+    if (match) {
+      return EXIT_SUCCESS;
+    } else {
+      return EXIT_FAIL;
+    }
+}
+
+/**
+ * @brief Monitors the udhcpc pid files.
+ *
+ * This function reads the PID from the udhcpc pid files and logs the PID for each interface.
+ */
+static void udhcpc_pid_mon() {
+    pthread_detach(pthread_self());
+
+    PCOSA_DML_DHCPC_FULL            pDhcpc        = NULL;
+    PCOSA_CONTEXT_DHCPC_LINK_OBJECT pDhcpCxtLink  = NULL;
+    PSINGLE_LINK_ENTRY              pSListEntry   = NULL;
+    ULONG                           ulIndex;
+    ULONG                           instanceNum;
+    ULONG                           clientCount = CosaDmlDhcpcGetNumberOfEntries(NULL);
+    int pidfds[MAX_PIDS];
+
+    int pid_count = 0;
+    int pids[MAX_PIDS];
+    glob_t results;
+    struct pollfd poll_fds[MAX_PIDS]; // Poll file descriptors
+
+    // Read the PID from the udhcpc pid files
+    if (glob(PID_PATTERN, 0, NULL, &results) == 0) {
+        for (size_t i = 0; i < results.gl_pathc ; i++) {
+            if (read_pid_from_file(results.gl_pathv[i], &pid_count, pids) != EXIT_SUCCESS) {
+                DHCPMGR_LOG_ERROR("%s %d Error reading pid from file %s\n", __FUNCTION__, __LINE__, results.gl_pathv[i]);
+            }
+            DHCPMGR_LOG_INFO("%s %d PID found for interface %s : %d\n", __FUNCTION__, __LINE__, results.gl_pathv[i], pids[pid_count - 1]);
+        }
+    }
+
+    //Fill the pid and status in the global structure if the udhcpc is already running for the interface
+
+    for (ulIndex = 0; ulIndex < clientCount; ulIndex++) {
+        pSListEntry = (PSINGLE_LINK_ENTRY)Client_GetEntry(NULL, ulIndex, &instanceNum);
+        if (pSListEntry) {
+            pDhcpCxtLink = ACCESS_COSA_CONTEXT_DHCPC_LINK_OBJECT(pSListEntry);
+            pDhcpc = (PCOSA_DML_DHCPC_FULL)pDhcpCxtLink->hContext;
+        }
+
+        if (!pDhcpc) {
+            DHCPMGR_LOG_ERROR("%s : pDhcpc is NULL\n", __FUNCTION__);
+            continue;
+        }
+
+        for (int i = 0; i < pid_count; i++) {
+            if(get_interface_from_pid(pids[i], pDhcpc->Cfg.Interface) == EXIT_SUCCESS) {
+                DHCPMGR_LOG_INFO("%s %d: Found interface %s for pid %d\n", __FUNCTION__, __LINE__, pDhcpc->Cfg.Interface, pids[i]);
+                pDhcpc->Info.ClientProcessId = pids[i];
+                pDhcpc->Info.Status = COSA_DML_DHCP_STATUS_Enabled;
+            }
+        }
+    }
+
+    //Monitoring the pid for the udhcpc process
+    for (int i = 0; i < pid_count; i++) {
+        pidfds[i] = syscall(SYS_pidfd_open, pids[i], 0);
+        if (pidfds[i] == -1) {
+            DHCPMGR_LOG_ERROR("%s : %d pidfd_open syscall failed\n", __FUNCTION__, __LINE__);
+            continue;
+        }
+
+        poll_fds[i].fd = pidfds[i];
+        poll_fds[i].events = POLLIN; // Watch for process exit event
+
+        DHCPMGR_LOG_INFO("%s:%d Monitoring process %d...\n",__FUNCTION__,__LINE__,pids[i]);
+    }
+
+    // Wait for any process to exit
+    while (1) {
+        int ret = poll(poll_fds, pid_count, -1); // Block until an event occurs
+        if (ret == -1) {
+            DHCPMGR_LOG_ERROR("%s : %d Poll failed \n", __FUNCTION__, __LINE__);
+            return;
+        }
+
+        // Check which process exited
+        for (int i = 0; i < pid_count; i++) {
+            if (poll_fds[i].revents & POLLIN) {
+                DHCPMGR_LOG_INFO("%s:%d Process %s : %d exited!\n",__FUNCTION__, __LINE__,results.gl_pathv[i],pids[i]);
+                processKilled(pids[i]);
+                poll_fds[i].fd = -1;  // Mark this as handled
+                if (close(pidfds[i]) == -1) {
+                    DHCPMGR_LOG_ERROR("%s : %d Error closing pidfd\n", __FUNCTION__, __LINE__);
+                }
+            }
+        }
+    }
+    globfree(&results);
+
+}
 
 /**
  * @brief Starts the main controller thread.
@@ -49,7 +204,8 @@ static void* DhcpMgr_MainController( void *arg );
  */
 int DhcpMgr_StartMainController()
 {
-    pthread_t threadId;
+    const char *filename = "/tmp/dhcpmanager_restarted";
+    pthread_t threadId, udhcpc_pid_mon_thread;
     int ret = -1;
 
     ret = pthread_create( &threadId, NULL, &DhcpMgr_MainController, NULL );
@@ -62,6 +218,22 @@ int DhcpMgr_StartMainController()
     {
         DHCPMGR_LOG_INFO("%s %d - Main Controller Thread Started Successfully\n", __FUNCTION__, __LINE__);
         ret = 0;
+    }
+   
+    if (access(filename, F_OK) == 0) {
+        ret = pthread_create( &udhcpc_pid_mon_thread, NULL, &udhcpc_pid_mon, NULL );
+        if( 0 != ret )
+        {
+            DHCPMGR_LOG_ERROR("%s %d - Failed to start udhcpc_pid_mon Thread Error:%d\n", __FUNCTION__, __LINE__, ret);
+        }
+        else
+        {
+            DHCPMGR_LOG_INFO("%s %d - udhcpc_pid_mon Thread Started Successfully\n", __FUNCTION__, __LINE__);
+            ret = 0;
+        }
+        if (remove(filename) != 0) {
+            DHCPMGR_LOG_ERROR("%s %d Error deleting %s file\n", __FUNCTION__, __LINE__, filename);
+        }
     }
 
     return ret;
