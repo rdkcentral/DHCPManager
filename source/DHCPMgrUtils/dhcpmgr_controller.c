@@ -39,14 +39,13 @@
 #include "dhcp_client_common_utils.h"
 
 
-#define EXIT_FAILURE -1
+#define EXIT_FAIL -1
 #define EXIT_SUCCESS 0
 #define PID_PATTERN "/tmp/udhcpc.*.pid"
 #define CMDLINE_PATH "/proc/%d/cmdline"
 #define MAX_PIDS 5
 #define MAX_PROC_LEN 24
 #define MAX_CMDLINE_LEN 512
-#define 
 /* ---- Global Constants -------------------------- */
 
 static void* DhcpMgr_MainController( void *arg );
@@ -58,7 +57,7 @@ static void udhcpc_pid_mon();
 static int read_pid_from_file(const char *filepath, int *pid_count, int *pids) {
     FILE *file = fopen(filepath, "r");
     if (!file) {
-        return EXIT_FAILURE;
+        return EXIT_FAIL;
     }
     int pid;
     if (fscanf(file, "%d", &pid) == 1) {
@@ -77,8 +76,8 @@ static int read_pid_from_file(const char *filepath, int *pid_count, int *pids) {
  *
  * @param[in] pid The process ID.
  */
-static int get_interface_from_pid(int pid, char *interface) {
-    char path[MAX_PROC_LEN]={0}
+static int get_interface_from_pid(int pid, char *Interface) {
+    char path[MAX_PROC_LEN]={0};
     char cmdline[MAX_CMDLINE_LEN]={0};
     size_t len=0;
     snprintf(path, sizeof(path), CMDLINE_PATH, pid);
@@ -86,21 +85,21 @@ static int get_interface_from_pid(int pid, char *interface) {
     FILE *file = fopen(path, "r");
     if (!file) {
         DHCPMGR_LOG_ERROR("%s %d Failed to open cmdline file for PID %d\n", __FUNCTION__, __LINE__, pid);
-        return EXIT_FAILURE;
+        return EXIT_FAIL;
     }
 
-    size_t len = fread(cmdline, 1, MAX_CMDLINE_LEN - 1, file);
+    len = fread(cmdline, 1, MAX_CMDLINE_LEN - 1, file);
     fclose(file);
     if (len == 0) {
         DHCPMGR_LOG_ERROR("%s %d Empty cmdline for PID %d\n", __FUNCTION__, __LINE__, pid);
-        return EXIT_FAILURE;
+        return EXIT_FAIL;
     }
 
     char *match = strstr(cmdline, Interface);
     if (match) {
       return EXIT_SUCCESS;
     } else {
-      return EXIT_FAILURE;
+      return EXIT_FAIL;
     }
 }
 
@@ -175,7 +174,7 @@ static void udhcpc_pid_mon() {
         poll_fds[i].fd = pidfds[i];
         poll_fds[i].events = POLLIN; // Watch for process exit event
 
-        DHCPMGR_LOG_INFO("%s:%d Monitoring process %s:%d...\n",__FUNCTION__,__LINE__,pids[i]);
+        DHCPMGR_LOG_INFO("%s:%d Monitoring process %d...\n",__FUNCTION__,__LINE__,pids[i]);
     }
 
     // Wait for any process to exit
@@ -185,7 +184,7 @@ static void udhcpc_pid_mon() {
         int ret = poll(poll_fds, pid_count, -1); // Block until an event occurs
         if (ret == -1) {
             DHCPMGR_LOG_ERROR("%s : %d Poll failed \n", __FUNCTION__, __LINE__);
-            return EXIT_FAIL;
+            return;
         }
 
         // Check which process exited
