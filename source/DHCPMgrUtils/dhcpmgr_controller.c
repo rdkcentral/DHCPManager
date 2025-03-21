@@ -126,7 +126,7 @@ static void udhcpc_pid_mon() {
     struct pollfd poll_fds[MAX_PIDS]; // Poll file descriptors
 
     // Read the PID from the udhcpc pid files
-    DHCPMGR_LOG_INFO("%s:%d DEBUG------PID_PATTERN\n",__FUNCTION__,__LINE__,PID_PATTERN);
+    DHCPMGR_LOG_INFO("%s:%d DEBUG------PID_PATTERN=%s\n",__FUNCTION__,__LINE__,PID_PATTERN);
     if (glob(PID_PATTERN, 0, NULL, &results) == 0) {
         for (size_t i = 0; i < results.gl_pathc ; i++) {
             DHCPMGR_LOG_INFO("%s:%d DEBUG------filepath=%s\n",__FUNCTION__,__LINE__,results.gl_pathv[i]);
