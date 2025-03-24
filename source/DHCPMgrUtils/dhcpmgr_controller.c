@@ -66,6 +66,7 @@ static int read_pid_from_file(const char *filepath, int *pid_count, int *pids) {
         }
     }
     fclose(file);
+    DHCPMGR_LOG_INFO("%s %d pid_count= %d\n", __FUNCTION__, __LINE__, pid_count);
     return EXIT_SUCCESS;
 }
 
@@ -77,6 +78,7 @@ static int read_pid_from_file(const char *filepath, int *pid_count, int *pids) {
  * @param[in] pid The process ID.
  */
 static int get_interface_from_pid(int pid, char *Interface) {
+    DHCPMGR_LOG_INFO("%s %d  Interface=%s \n",Interface);
     char path[MAX_PROC_LEN]={0};
     char cmdline[MAX_CMDLINE_LEN]={0};
     size_t len=0;
@@ -96,6 +98,7 @@ static int get_interface_from_pid(int pid, char *Interface) {
     }
 
     char *match = strstr(cmdline, Interface);
+    DHCPMGR_LOG_INFO("%s %d  match=%s \n",match);
     if (match) {
       return EXIT_SUCCESS;
     } else {
@@ -165,7 +168,7 @@ static void udhcpc_pid_mon() {
 
     //Monitoring the pid for the udhcpc process
     for (int i = 0; i < pid_count; i++) {
-        DHCPMGR_LOG_INFO("%s:%d DEBUG------INSIDE Monitoring the pid for the udhcpc process\n",__FUNCTION__,__LINE__);
+        DHCPMGR_LOG_INFO("%s:%d DEBUG------INSIDE Monitoring the pid for the udhcpc process pid_count=%d\n",__FUNCTION__,__LINE__,pid_count);
         pidfds[i] = syscall(SYS_pidfd_open, pids[i], 0);
         if (pidfds[i] == -1) {
             DHCPMGR_LOG_ERROR("%s : %d pidfd_open syscall failed\n", __FUNCTION__, __LINE__);
@@ -179,8 +182,9 @@ static void udhcpc_pid_mon() {
     }
 
     // Wait for any process to exit
+    DHCPMGR_LOG_INFO("%s:%d DEBUG------pid_count=%d\n",__FUNCTION__,__LINE__,pid_count);
     int rem_pid=pid_count;
-    while (rem_pid <= 0) {
+    while (rem_pid == 0) {
         DHCPMGR_LOG_INFO("%s:%d DEBUG------INSIDE while poll\n",__FUNCTION__,__LINE__);
         int ret = poll(poll_fds, pid_count, -1); // Block until an event occurs
         if (ret == -1) {
