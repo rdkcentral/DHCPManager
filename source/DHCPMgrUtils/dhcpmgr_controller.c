@@ -66,7 +66,6 @@ static int read_pid_from_file(const char *filepath, int *pid_count, int *pids) {
         }
     }
     fclose(file);
-    DHCPMGR_LOG_INFO("%s %d pid_count= %d\n", __FUNCTION__, __LINE__, pid_count);
     return EXIT_SUCCESS;
 }
 
