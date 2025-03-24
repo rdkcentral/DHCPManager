@@ -77,12 +77,12 @@ static int read_pid_from_file(const char *filepath, int *pid_count, int *pids) {
  * @param[in] pid The process ID.
  */
 static int get_interface_from_pid(int pid, char *Interface) {
-    DHCPMGR_LOG_INFO("%s %d  Interface=%s \n", __FUNCTION__, __LINE__,Interface);
+    DHCPMGR_LOG_INFO("%s %d  Interface=%s pid=%d \n", __FUNCTION__, __LINE__,Interface,pid);
     char path[MAX_PROC_LEN]={0};
     char cmdline[MAX_CMDLINE_LEN]={0};
     size_t len=0;
     snprintf(path, sizeof(path), CMDLINE_PATH, pid);
-
+    DHCPMGR_LOG_INFO("%s %d  path=%s CMDLINE_PATH=%s\n", __FUNCTION__, __LINE__,path,CMDLINE_PATH);
     FILE *file = fopen(path, "r");
     if (!file) {
         DHCPMGR_LOG_ERROR("%s %d Failed to open cmdline file for PID %d\n", __FUNCTION__, __LINE__, pid);
@@ -95,7 +95,7 @@ static int get_interface_from_pid(int pid, char *Interface) {
         DHCPMGR_LOG_ERROR("%s %d Empty cmdline for PID %d\n", __FUNCTION__, __LINE__, pid);
         return EXIT_FAIL;
     }
-
+    DHCPMGR_LOG_INFO("%s %d cmdline=%s \n",__FUNCTION__, __LINE__,cmdline);
     char *match = strstr(cmdline, Interface);
     DHCPMGR_LOG_INFO("%s %d  match=%s \n", __FUNCTION__, __LINE__,match);
     if (match) {
@@ -158,13 +158,15 @@ static void udhcpc_pid_mon() {
         for (int i = 0; i < pid_count; i++) {
             if(get_interface_from_pid(pids[i], pDhcpc->Cfg.Interface) == EXIT_SUCCESS) {
                 DHCPMGR_LOG_INFO("%s %d: Found interface %s for pid %d\n", __FUNCTION__, __LINE__, pDhcpc->Cfg.Interface, pids[i]);
+                pthread_mutex_lock(&pDhcpc->mutex);
                 pDhcpc->Info.ClientProcessId = pids[i];
                 pDhcpc->Info.Status = COSA_DML_DHCP_STATUS_Enabled;
                 pDhcpc->Cfg.bEnabled = TRUE;
+                pthread_mutex_unlock(&pDhcpc->mutex);
             }
         }
     }
-
+    DHCPMGR_LOG_INFO("%s %d: Info.ClientProcessId=%d Info.Status=%d Cfg.bEnabled=%d Cfg.Interface=%s\n", __FUNCTION__, __LINE__,pDhcpc->Info.ClientProcessId,pDhcpc->Info.Status,pDhcpc->Cfg.bEnabled, pDhcpc->Cfg.Interface);
     //Monitoring the pid for the udhcpc process
     for (int i = 0; i < pid_count; i++) {
         DHCPMGR_LOG_INFO("%s:%d DEBUG------INSIDE Monitoring the pid for the udhcpc process pid_count=%d\n",__FUNCTION__,__LINE__,pid_count);
@@ -524,6 +526,8 @@ void processKilled(pid_t pid)
     ULONG ulIndex;
     ULONG instanceNum;
     ULONG clientCount = CosaDmlDhcpcGetNumberOfEntries(NULL);
+
+    DHCPMGR_LOG_INFO("%s %d: pid=%d clientCount=%d \n",__FUNCTION__, __LINE__,pid,clientCount);
     //iterate all entries and find the ineterface with the ifname
     for ( ulIndex = 0; ulIndex < clientCount; ulIndex++ )
     {
@@ -539,7 +543,7 @@ void processKilled(pid_t pid)
             DHCPMGR_LOG_ERROR("%s : pDhcpc is NULL\n",__FUNCTION__);
             continue;
         }
-
+        DHCPMGR_LOG_INFO("%s %d: Info.ClientProcessId=%d Status=%d Interface=%s\n",__FUNCTION__, __LINE__,pDhcpc->Info.ClientProcessId,pDhcpc->Info.Status,pDhcpc->Cfg.Interface);
         //No mutex lock, since this funtions is called from teh sigchild handler. Keep this function simple and quick
         if(pDhcpc->Info.ClientProcessId == pid)
         {
