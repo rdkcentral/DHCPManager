@@ -19,7 +19,9 @@
 
 #include "cosa_dhcpv6_apis.h"
 #include "dhcpv6_interface.h"
+#include "secure_wrapper.h"
 
+static void configureNetworkInterface(PCOSA_DML_DHCPCV6_FULL pDhcp6c);
 
 /**
  * @brief Compares two DHCPv6 plugin messages to determine if they are identical.
@@ -143,7 +145,7 @@ void DhcpMgr_ProcessV6Lease(PCOSA_DML_DHCPCV6_FULL pDhcp6c)
             DHCPMGR_LOG_INFO("%s %d: NewLease nameserver2 %s  \n", __FUNCTION__, __LINE__, newLease->dns.nameserver1);
             DHCPMGR_LOG_INFO("%s %d: NewLease PreferedLifeTime %d  \n", __FUNCTION__, __LINE__, newLease->ia_pd.PreferedLifeTime);
             DHCPMGR_LOG_INFO("%s %d: NewLease ValidLifeTime %d  \n", __FUNCTION__, __LINE__, newLease->ia_pd.ValidLifeTime);
-            //configureNetworkInterface(pDhcp6c);
+            configureNetworkInterface(pDhcp6c);
             //DhcpMgr_updateDHCPv4DML(pDhcp6c);
 
             //DhcpMgr_PublishDhcpV4Event(pDhcp6c, DHCP_LEASE_UPDATE);
@@ -151,4 +153,63 @@ void DhcpMgr_ProcessV6Lease(PCOSA_DML_DHCPCV6_FULL pDhcp6c)
         }
 
     }
+}
+/**
+ * @brief Configures the network interface with the IPv6 address from the current lease.
+ *
+ * This function assigns the IPv6 address from the current lease to the specified network interface
+ * and sets the associated timeout values.
+ *
+ * @param[in] pDhcp6c Pointer to the DHCP client structure containing lease information.
+ *
+ * @return void
+ */
+static void configureNetworkInterface(PCOSA_DML_DHCPCV6_FULL pDhcp6c)
+{
+    if (pDhcp6c == NULL || pDhcp6c->currentLease == NULL) 
+    {
+        DHCPMGR_LOG_ERROR("%s %d: Invalid DHCP client structure or current lease is NULL.\n", __FUNCTION__, __LINE__);
+        return;
+    }
+
+    const char *interface = pDhcp6c->Cfg.Interface;
+    const char *ipv6Address = pDhcp6c->currentLease->ia_na.address;
+    uint32_t preferedLifeTime = pDhcp6c->currentLease->ia_na.PreferedLifeTime;
+    uint32_t validLifeTime = pDhcp6c->currentLease->ia_na.ValidLifeTime;
+    // Set lifetime strings based on timeout values
+    char preferredLftStr[20] = {0};
+    char validLftStr[20] = {0};
+
+    if (preferedLifeTime == 0 || preferedLifeTime == UINT32_MAX) 
+    {
+        strncpy(preferredLftStr, "forever", sizeof(preferredLftStr) - 1); // Infinite preferred lifetime
+    }
+    else
+    {
+        snprintf(preferredLftStr, sizeof(preferredLftStr), "%u", preferedLifeTime);
+    }
+
+    if (validLifeTime == 0 || validLifeTime == UINT32_MAX) 
+    {
+        strncpy(validLftStr, "forever", sizeof(validLftStr) - 1); // Infinite preferred lifetime
+    }
+    else
+    {
+        snprintf(validLftStr, sizeof(validLftStr), "%u", validLifeTime);
+    }
+
+    // Log the configuration details
+    DHCPMGR_LOG_INFO("%s %d: Configuring interface %s with IPv6 address %s\n", __FUNCTION__, __LINE__, interface, ipv6Address);
+    DHCPMGR_LOG_INFO("%s %d: PreferedLifeTime: %s, ValidLifeTime: %s\n", __FUNCTION__, __LINE__, preferredLftStr, validLftStr);
+
+    // Use system calls or platform-specific APIs to configure the network interface
+    char command[256];
+    snprintf(command, sizeof(command), "ip -6 addr add %s dev %s preferred_lft %s valid_lft %s", ipv6Address, interface, preferredLftStr, validLftStr);
+    int ret = v_secure_system("ip -6 addr add %s dev %s preferred_lft %s valid_lft %s", ipv6Address, interface, preferredLftStr, validLftStr);
+    if (ret != 0) 
+    {
+        DHCPMGR_LOG_ERROR("%s %d: Failed to configure IPv6 address on interface %s. Command: %s\n", __FUNCTION__, __LINE__, interface, command);
+    }
+
+    return;
 }
