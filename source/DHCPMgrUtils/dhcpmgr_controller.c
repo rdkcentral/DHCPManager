@@ -78,7 +78,7 @@ static int read_pid_from_file(const char *filepath, int *pid_count, int *pids) {
  * @param[in] pid The process ID.
  */
 static int get_interface_from_pid(int pid, char *Interface) {
-    DHCPMGR_LOG_INFO("%s %d  Interface=%s \n",Interface);
+    DHCPMGR_LOG_INFO("%s %d  Interface=%s \n", __FUNCTION__, __LINE__,Interface);
     char path[MAX_PROC_LEN]={0};
     char cmdline[MAX_CMDLINE_LEN]={0};
     size_t len=0;
@@ -98,7 +98,7 @@ static int get_interface_from_pid(int pid, char *Interface) {
     }
 
     char *match = strstr(cmdline, Interface);
-    DHCPMGR_LOG_INFO("%s %d  match=%s \n",match);
+    DHCPMGR_LOG_INFO("%s %d  match=%s \n", __FUNCTION__, __LINE__,match);
     if (match) {
       return EXIT_SUCCESS;
     } else {
