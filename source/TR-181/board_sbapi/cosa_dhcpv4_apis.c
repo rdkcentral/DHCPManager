@@ -135,7 +135,7 @@
 #define  LAN_L3_IFNAME      "brlan0"
 #define  WIFI_CLIENTS_MAC_FILE                      "/var/tmp/wifi_clients_mac"
 #define  LAN_NOT_RESTART_FLAG                        "/var/tmp/lan_not_restart"
-#define PSM_DHCPMANAGER_CLIENTINTERFACE              "dmsb.dhcpmanager.Client.1.Interface"
+#define PSM_DHCPMANAGER_CLIENTINTERFACE              "dmsb.dhcpmanager.Client.%d.Interface"
 #define COSA_DHCP4_SYSCFG_NAMESPACE NULL
 
 // defind PSM paramaters
@@ -1916,7 +1916,7 @@ CosaDmlDhcpcGetCfg
 	DHCPMGR_LOG_INFO("%s %d: DEBUG INSIDE\n", __FUNCTION__, __LINE__);
         char ifname[32] = {0};
         errno_t rc = -1;
-    char *param_value= NULL;
+//    char *param_value= NULL;
     int instancenum = pCfg->InstanceNumber;
     char param_name[256]= {0};
     int retPsmGet = CCSP_SUCCESS;
