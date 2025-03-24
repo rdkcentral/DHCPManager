@@ -17,7 +17,7 @@
  * limitations under the License.
 */
 
-#include "dhcp_client_utils.h"
+#include "dhcp_client_common_utils.h"
 #include "udhcpc_client_utils.h"
 
 #ifdef DHCPV4_CLIENT_UDHCPC
