@@ -158,6 +158,7 @@ static void udhcpc_pid_mon() {
                 DHCPMGR_LOG_INFO("%s %d: Found interface %s for pid %d\n", __FUNCTION__, __LINE__, pDhcpc->Cfg.Interface, pids[i]);
                 pDhcpc->Info.ClientProcessId = pids[i];
                 pDhcpc->Info.Status = COSA_DML_DHCP_STATUS_Enabled;
+                pDhcpc->Cfg.bEnabled = TRUE;
             }
         }
     }
