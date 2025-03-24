@@ -1914,7 +1914,7 @@ CosaDmlDhcpcGetCfg
 {
     UNREFERENCED_PARAMETER(hContext);
 	DHCPMGR_LOG_INFO("%s %d: DEBUG INSIDE\n", __FUNCTION__, __LINE__);
-        char ifname[32] = {0};
+  //      char ifname[32] = {0};
 //        errno_t rc = -1;
     char *param_value= NULL;
     int instancenum = pCfg->InstanceNumber;
