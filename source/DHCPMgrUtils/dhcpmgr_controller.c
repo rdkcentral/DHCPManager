@@ -183,7 +183,7 @@ static void udhcpc_pid_mon() {
     // Wait for any process to exit
     DHCPMGR_LOG_INFO("%s:%d DEBUG------pid_count=%d\n",__FUNCTION__,__LINE__,pid_count);
     int rem_pid=pid_count;
-    while (rem_pid == 0) {
+    while (rem_pid > 0) {
         DHCPMGR_LOG_INFO("%s:%d DEBUG------INSIDE while poll\n",__FUNCTION__,__LINE__);
         int ret = poll(poll_fds, pid_count, -1); // Block until an event occurs
         if (ret == -1) {
