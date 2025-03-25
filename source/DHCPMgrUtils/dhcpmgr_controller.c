@@ -527,7 +527,7 @@ void processKilled(pid_t pid)
     ULONG instanceNum;
     ULONG clientCount = CosaDmlDhcpcGetNumberOfEntries(NULL);
 
-    DHCPMGR_LOG_INFO("%s %d: pid=%d clientCount=%d \n",__FUNCTION__, __LINE__,pid,clientCount);
+    DHCPMGR_LOG_INFO("%s %d: pid=%d clientCount=%lu \n",__FUNCTION__, __LINE__,pid,clientCount);
     //iterate all entries and find the ineterface with the ifname
     for ( ulIndex = 0; ulIndex < clientCount; ulIndex++ )
     {
