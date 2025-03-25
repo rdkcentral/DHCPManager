@@ -398,6 +398,7 @@ static void* DhcpMgr_MainController( void *args )
                     stop_dhcpv4_client(pDhcpc->Info.ClientProcessId);
                     pDhcpc->Info.Status = COSA_DML_DHCP_STATUS_Disabled;
                     pDhcpc->Cfg.Renew = FALSE;
+                    DhcpMgr_PublishDhcpV4Event(pDhcpc, DHCP_LEASE_DEL); //Send lease expired event
                     DhcpMgr_clearDHCPv4Lease(pDhcpc);
                     DhcpMgr_PublishDhcpV4Event(pDhcpc, DHCP_CLIENT_STOPPED);
                 }
@@ -496,7 +497,8 @@ static void* DhcpMgr_MainController( void *args )
                     stop_dhcpv6_client(pDhcp6c->Info.ClientProcessId);
                     pDhcp6c->Info.Status = COSA_DML_DHCP_STATUS_Disabled;
                     pDhcp6c->Cfg.Renew = FALSE;
-                    //DhcpMgr_clearDHCPv4Lease(pDhcp6c);
+                    //DhcpMgr_PublishDhcpV4Event(pDhcpc, DHCP_LEASE_DEL); //Send lease expired event
+                    DhcpMgr_clearDHCPv6Lease(pDhcp6c);
                     //DhcpMgr_PublishDhcpV4Event(pDhcp6c, DHCP_CLIENT_STOPPED);
                 }
             }
@@ -546,7 +548,7 @@ void DHCPMgr_AddDhcpv4Lease(char * ifName, DHCPv4_PLUGIN_MSG *newLease)
         pthread_mutex_lock(&pDhcpc->mutex); //MUTEX lock
 
         // Verify if the DHCP clients are running. There may be multiple DHCP client interfaces with the same name that are not active.
-        if(strcmp(ifName, pDhcpc->Cfg.Interface) == 0)
+        if(strcmp(ifName, pDhcpc->Cfg.Interface) == 0 && pDhcpc->Info.Status == COSA_DML_DHCP_STATUS_Enabled)
         {
             DHCPv4_PLUGIN_MSG *temp = pDhcpc->NewLeases;
             //Find the tail of the list
@@ -580,7 +582,7 @@ void DHCPMgr_AddDhcpv4Lease(char * ifName, DHCPv4_PLUGIN_MSG *newLease)
     {
         //if we are here, we didn't find the correct interface the received lease. free the memory
         free(newLease);
-        DHCPMGR_LOG_ERROR("%s %d: Failed to add dhcpv4 lease msg for ineterface %s \n", __FUNCTION__, __LINE__, pDhcpc->Cfg.Interface);
+        DHCPMGR_LOG_ERROR("%s %d: dhcpv4 lease msg not added for ineterface %s. DHCP client may not be running. \n", __FUNCTION__, __LINE__, pDhcpc->Cfg.Interface);
     }
 
     return;
@@ -623,7 +625,7 @@ void DHCPMgr_AddDhcpv6Lease(char * ifName, DHCPv6_PLUGIN_MSG *newLease)
         pthread_mutex_lock(&pDhcp6c->mutex); //MUTEX lock
 
         // Verify if the DHCP clients are running. There may be multiple DHCP client interfaces with the same name that are not active.
-        if(strcmp(ifName, pDhcp6c->Cfg.Interface) == 0)
+        if(strcmp(ifName, pDhcp6c->Cfg.Interface) == 0 && pDhcp6c->Info.Status == COSA_DML_DHCP_STATUS_Enabled)
         {
             DHCPv6_PLUGIN_MSG *temp = pDhcp6c->NewLeases;
             //Find the tail of the list
@@ -656,7 +658,7 @@ void DHCPMgr_AddDhcpv6Lease(char * ifName, DHCPv6_PLUGIN_MSG *newLease)
     {
         //if we are here, we didn't find the correct interface the received lease. free the memory
         free(newLease);
-        DHCPMGR_LOG_ERROR("%s %d: Failed to add dhcpv6 lease msg for ineterface %s \n", __FUNCTION__, __LINE__, pDhcp6c->Cfg.Interface);
+        DHCPMGR_LOG_ERROR("%s %d: dhcpv6 lease msg not added for ineterface %s. DHCP client may not be running. \n", __FUNCTION__, __LINE__, pDhcp6c->Cfg.Interface);
     }
 
     return;

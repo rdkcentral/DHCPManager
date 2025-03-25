@@ -89,4 +89,15 @@ void DHCPMgr_AddDhcpv6Lease(char * ifName, DHCPv6_PLUGIN_MSG *newLease);
  */
 void DhcpMgr_ProcessV6Lease(PCOSA_DML_DHCPCV6_FULL pDhcp6c);
 
+/**
+ * @brief Clears the current DHCPv6 lease information.
+ *
+ * This function frees the memory allocated for the current DHCPv6 lease and resets
+ * the lease-related fields in the DHCP client structure.
+ *
+ * @param[in] pDhcp6c Pointer to the DHCPv6 client structure containing lease information.
+ *
+ * @return void
+ */
+void DhcpMgr_clearDHCPv6Lease(PCOSA_DML_DHCPCV6_FULL pDhcp6c);
 #endif //_DHCP_CONTROLLER_H_

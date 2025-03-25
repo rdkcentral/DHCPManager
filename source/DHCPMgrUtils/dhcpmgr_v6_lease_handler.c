@@ -213,3 +213,44 @@ static void configureNetworkInterface(PCOSA_DML_DHCPCV6_FULL pDhcp6c)
 
     return;
 }
+
+/**
+ * @brief Clears the current DHCPv6 lease information.
+ *
+ * This function frees the memory allocated for the current DHCPv6 lease and resets
+ * the lease-related fields in the DHCP client structure.
+ *
+ * @param[in] pDhcp6c Pointer to the DHCPv6 client structure containing lease information.
+ *
+ * @return void
+ */
+void DhcpMgr_clearDHCPv6Lease(PCOSA_DML_DHCPCV6_FULL pDhcp6c)
+{
+    if (pDhcp6c == NULL) 
+    {
+        DHCPMGR_LOG_ERROR("%s %d: Invalid DHCPv6 client structure.\n", __FUNCTION__, __LINE__);
+        return;
+    }
+
+    if (pDhcp6c->currentLease != NULL) 
+    {
+        DHCPMGR_LOG_INFO("%s %d: Clearing current DHCPv6 lease for interface %s.\n", __FUNCTION__, __LINE__, pDhcp6c->Cfg.Interface);
+
+        // Free the memory allocated for the current lease
+        free(pDhcp6c->currentLease);
+        pDhcp6c->currentLease = NULL;
+    }
+
+    DHCPMGR_LOG_INFO("%s %d: Clearing NewLeases linked list for %s \n", __FUNCTION__, __LINE__, pDhcp6c->Cfg.Interface);
+    // Free all leases in the NewLeases linked list
+    DHCPv6_PLUGIN_MSG *lease = pDhcp6c->NewLeases;
+    while (lease != NULL) 
+    {
+        DHCPv6_PLUGIN_MSG *nextLease = lease->next;
+        free(lease);
+        lease = nextLease;
+    }
+    pDhcp6c->NewLeases = NULL;
+
+    DHCPMGR_LOG_INFO("%s %d: DHCPv6 lease cleared for interface %s.\n", __FUNCTION__, __LINE__, pDhcp6c->Cfg.Interface);
+}
