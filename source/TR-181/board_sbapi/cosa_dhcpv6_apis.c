@@ -89,6 +89,7 @@ extern void* g_pDslhDmlAgent;
 extern ANSC_HANDLE bus_handle;
 extern char g_Subsystem[32];
 extern int executeCmd(char *cmd);
+ULONG          g_Dhcp6ClientNum = 0;
 //extern int g_iSyseventfd;
 //extern token_t g_tSysevent_token;
 
@@ -2228,6 +2229,8 @@ CosaDmlDhcpv6cGetNumberOfEntries
     int retPsmGet        = CCSP_SUCCESS;
     char param_name[512] = {0};
     char* param_value    = NULL;
+    if(g_Dhcp6ClientNum > 0)
+    return g_Dhcp6ClientNum;
 
     retPsmGet = PSM_Get_Record_Value2(bus_handle,g_Subsystem, PSM_DHCPMANAGER_DHCPV6C_CLIENTCOUNT, NULL, &param_value);
     if (retPsmGet != CCSP_SUCCESS) {
@@ -2236,7 +2239,8 @@ CosaDmlDhcpv6cGetNumberOfEntries
     }
     else
     {
-        return atoi(param_value);
+        g_Dhcp6ClientNum = atoi(param_value);
+        return g_Dhcp6ClientNum;
     }
 #else
     return 1;
@@ -2567,6 +2571,7 @@ iface wan0 {
 
 static int _prepare_client_conf(PCOSA_DML_DHCPCV6_CFG       pCfg)
 {
+    
     FILE * fp = fopen(DIBBLER_TMP_CONFIG_FILE, "w+");
     char line[256] = {0};
 
@@ -2739,6 +2744,8 @@ int  CosaDmlStartDHCP6Client()
 #endif
     return 0;
 }
+#ifdef DHCPV6C_COMS
+
 /*
 Description:
     The API re-configures the designated DHCP client entry.
@@ -2851,6 +2858,7 @@ CosaDmlDhcpv6cSetCfg
 
     Utopia_Free(&utctx,1);
 
+    #if 0 //TODO: cleanup dhcp services
     /*update dibbler-client service if necessary*/
     if (need_to_restart_service)
     {
@@ -2873,11 +2881,13 @@ CosaDmlDhcpv6cSetCfg
             dhcpv6_client_service_start();
         }
     }
-
+    #endif
     AnscCopyMemory(&g_dhcpv6_client.Cfg, pCfg, sizeof(COSA_DML_DHCPCV6_CFG));
 
     return ANSC_STATUS_SUCCESS;
 }
+
+#endif
 
 ANSC_STATUS
 CosaDmlDhcpv6cGetCfg
@@ -9675,6 +9685,7 @@ EXIT:
     return NULL;
 }
 
+#if 0 //TODO: cleanup dhcp 
 ANSC_STATUS CosaDmlStartDhcpv6Client(ANSC_HANDLE hInsContext)
 {
     PCOSA_CONTEXT_DHCPCV6_LINK_OBJECT pCxtLink      = (PCOSA_CONTEXT_DHCPCV6_LINK_OBJECT)hInsContext;
@@ -9785,6 +9796,7 @@ ANSC_STATUS CosaDmlStopDhcpv6Client(ANSC_HANDLE hInsContext)
 
     return ANSC_STATUS_SUCCESS;
 }
+#endif
 
 #ifdef RA_MONITOR_SUPPORT
 static void *

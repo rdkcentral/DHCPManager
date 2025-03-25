@@ -33,6 +33,8 @@ CcspDHCPMgr_CPPFLAGS = -I$(top_srcdir)/source/TR-181/include \
                        -I$(top_srcdir)/source/DHCPServerUtils/utils/include \
                        -I$(top_srcdir)/source/DHCPClientUtils/DHCPv4Client/include \
                        -I$(top_srcdir)/source/DHCPClientUtils/DHCPv6Client/include \
+                       -I$(top_srcdir)/source/DHCPClientUtils/DHCPv6Client/ \
+                       -I$(top_srcdir)/source/DHCPClientUtils/DHCPv4Client/ \
                        -I$(top_srcdir)/source/DHCPMgrUtils/include \
                        -I$(top_srcdir)/source/DHCPMgrUtils
                        

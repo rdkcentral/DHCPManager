@@ -152,7 +152,7 @@ _COSA_DML_DHCPCV6_CFG
     UCHAR                           Alias[COSA_DML_ALIAS_NAME_LENGTH];
     LONG                            SuggestedT1;
     LONG                            SuggestedT2;
-    UCHAR                           Interface[COSA_DML_ALIAS_NAME_LENGTH]; /* IP interface name */
+    char                            Interface[COSA_DML_ALIAS_NAME_LENGTH]; /* IP interface name */
     UCHAR                           RequestedOptions[512];
     BOOLEAN                         bEnabled;
     BOOLEAN                         RequestAddresses;
@@ -168,15 +168,20 @@ _COSA_DML_DHCPCV6_INFO
     COSA_DML_DHCP_STATUS            Status;
     UCHAR                           SupportedOptions[512];
     UCHAR                           DUID[131];
+    pid_t                           ClientProcessId;
 }
 COSA_DML_DHCPCV6_INFO,  *PCOSA_DML_DHCPCV6_INFO;
 
-
+// Forward declaration of the DHCPv6_PLUGIN_MSG structure
+typedef struct _DHCPv6_PLUGIN_MSG DHCPv6_PLUGIN_MSG;
 typedef  struct
 _COSA_DML_DHCPCV6_FULL
 {
     COSA_DML_DHCPCV6_CFG              Cfg;
     COSA_DML_DHCPCV6_INFO             Info;
+    pthread_mutex_t                   mutex; // Mutex declaration
+    DHCPv6_PLUGIN_MSG                 *currentLease;
+    DHCPv6_PLUGIN_MSG                 *NewLeases;
 }
 COSA_DML_DHCPCV6_FULL, *PCOSA_DML_DHCPCV6_FULL;
 

@@ -284,7 +284,6 @@ void DhcpMgr_ProcessV4Lease(PCOSA_DML_DHCPC_FULL pDhcpc)
         {
             if(newLease->isExpired == TRUE)
             {
-                //TODO: Handle lease delete
                 DhcpMgr_PublishDhcpV4Event(pDhcpc, DHCP_LEASE_DEL);
                 continue;
             }
@@ -342,4 +341,23 @@ void DhcpMgr_clearDHCPv4Lease(PCOSA_DML_DHCPC_FULL pDhcpc)
         AnscWriteUlong(&pDhcpc->Info.IPRouters[i].Value, 0);
     }
     pDhcpc->Info.NumIPRouters = 0;
+
+    DHCPMGR_LOG_INFO("%s %d: Clearing current lease for %s \n", __FUNCTION__, __LINE__, pDhcpc->Cfg.Interface);
+    // Free the current lease
+    if (pDhcpc->currentLease) 
+    {
+        free(pDhcpc->currentLease);
+        pDhcpc->currentLease = NULL;
+    }
+
+    DHCPMGR_LOG_INFO("%s %d: Clearing NewLeases linked list for %s \n", __FUNCTION__, __LINE__, pDhcpc->Cfg.Interface);
+    // Free all leases in the NewLeases linked list
+    DHCPv4_PLUGIN_MSG *lease = pDhcpc->NewLeases;
+    while (lease != NULL) 
+    {
+        DHCPv4_PLUGIN_MSG *nextLease = lease->next;
+        free(lease);
+        lease = nextLease;
+    }
+    pDhcpc->NewLeases = NULL;
 }

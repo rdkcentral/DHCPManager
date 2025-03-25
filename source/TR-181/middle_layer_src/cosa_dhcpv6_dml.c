@@ -541,6 +541,13 @@ Client3_AddEntry
     pCxtLink->InstanceNumber   = pDhcpc->Cfg.InstanceNumber;
     *pInsNumber                = pDhcpc->Cfg.InstanceNumber;
 
+    DHCPMGR_LOG_INFO("%s %d Initialising DHCPv6 client mutex  \n", __FUNCTION__, __LINE__);
+    pthread_mutexattr_t attr;
+    pthread_mutexattr_init(&attr);
+    pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
+    pthread_mutex_init(&pDhcpc->mutex, &attr); //Initialize the Mutex
+    pthread_mutexattr_destroy(&attr); // Clean up the attribute object
+
     rc = sprintf_s( (char*)pDhcpc->Cfg.Alias,sizeof(pDhcpc->Cfg.Alias),"Client%lu", pDhcpc->Cfg.InstanceNumber);
     if(rc < EOK)
     {
@@ -609,7 +616,8 @@ Client3_DelEntry
     /* Normally, two sublinks are empty because our framework will firstly
             call delEntry for them before coming here. We needn't care them.
          */
-
+    DHCPMGR_LOG_INFO("%s %d Destroy DHCPv4 client mutex  \n", __FUNCTION__, __LINE__);
+    pthread_mutex_destroy(&pDhcpc->mutex);
     if ( !pCxtLink->bNew )
     {
         returnStatus = CosaDmlDhcpv6cDelEntry(NULL, pDhcpc->Cfg.InstanceNumber);
@@ -993,7 +1001,6 @@ Client3_SetParamBoolValue
         BOOL                        bValue
     )
 {
-    ANSC_STATUS                       returnStatus      = ANSC_STATUS_SUCCESS;
     PCOSA_CONTEXT_DHCPCV6_LINK_OBJECT pCxtLink          = (PCOSA_CONTEXT_DHCPCV6_LINK_OBJECT)hInsContext;
     PCOSA_DML_DHCPCV6_FULL            pDhcpc            = (PCOSA_DML_DHCPCV6_FULL)pCxtLink->hContext;
 
@@ -1001,7 +1008,10 @@ Client3_SetParamBoolValue
     if (strcmp(ParamName, "Enable") == 0)
     {
         /* save update to backup */
+        DHCPMGR_LOG_INFO("%s %d DHCPv6 Client %s is %s \n", __FUNCTION__, __LINE__, pDhcpc->Cfg.Interface, bValue?"Enabled":"Disabled" );
+        pthread_mutex_lock(&pDhcpc->mutex); //MUTEX lock
         pDhcpc->Cfg.bEnabled = bValue;
+        pthread_mutex_unlock(&pDhcpc->mutex); //MUTEX unlock
 
 #if 0//def DHCPV6_CLIENT_SUPPORT
         if (bValue == TRUE)
@@ -1053,7 +1063,19 @@ Client3_SetParamBoolValue
 
     if (strcmp(ParamName, "Renew") == 0)
     {
-        /* save update to backup */
+        if (pDhcpc->Cfg.bEnabled)
+        {
+            DHCPMGR_LOG_INFO("%s %d Renew triggered for DHCPv6 Client %s \n", __FUNCTION__, __LINE__, pDhcpc->Cfg.Interface );
+            pthread_mutex_lock(&pDhcpc->mutex); //MUTEX lock
+            pDhcpc->Cfg.Renew = TRUE;
+            pthread_mutex_unlock(&pDhcpc->mutex); //MUTEX unlock
+            return  TRUE;
+        }
+        else
+        {
+            return FALSE;
+        }
+        /* TODO : clean up
         if ( bValue )
         {
             returnStatus = CosaDmlDhcpv6cRenew(NULL, pDhcpc->Cfg.InstanceNumber);
@@ -1061,14 +1083,14 @@ Client3_SetParamBoolValue
             {
                 return  FALSE;
             }
-        }
+        } */
 
-        return  TRUE;
+        
     }
 
     /* DHCPMGR_LOG_WARNING("Unsupported parameter '%s'\n", ParamName); */
    
-#ifdef DHCPV6_CLIENT_SUPPORT 
+#if 0 // TODO : clean up //def DHCPV6_CLIENT_SUPPORT 
 #ifdef DHCPV6C_COMS
     dhcpv6_client_service_disable();
     dhcpv6_client_enabled = 0;

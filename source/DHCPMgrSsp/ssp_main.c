@@ -490,14 +490,14 @@ DHCPMGR_LOG_WARNING("\nAfter Cdm_Init\n");
         exit(1);
     }
 
-#ifdef DHCPV4_CLIENT_SUPPORT
+#if 0 //def DHCPV4_CLIENT_SUPPORT
     //Init dhcpv4 client
     DHCPMGR_LOG_INFO("serv_dhcp_init (dhcpv4 client) Started\n");
     serv_dhcp_init();
     DHCPMGR_LOG_INFO("serv_dhcp_init (dhcpv4 client) Ended\n");
 #endif
 
-#ifdef DHCPV6_CLIENT_SUPPORT
+#if 0//def DHCPV6_CLIENT_SUPPORT
     //Init dhcpv6 cleint
     DHCPMGR_LOG_INFO("init_dhcpv6_client (dhcpv6 cleint) Started\n");
     init_dhcpv6_client ();

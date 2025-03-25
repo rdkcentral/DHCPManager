@@ -35,6 +35,7 @@
 #include "util.h"
 #include "cosa_dhcpv4_apis.h"
 #include "dhcpv4_interface.h"
+#include "dhcpv6_interface.h"
 #include "dhcpmgr_controller.h"
 #include "dhcp_lease_monitor_thrd.h"
 
@@ -116,7 +117,11 @@ static void* DhcpMgr_LeaseMonitor_Thrd(void *arg)
                     DHCPMgr_AddDhcpv4Lease(plugin_msg.ifname, newLease);
                     break;
                 case DHCP_VERSION_6:
-                    //TO-DO:Update the lease details of v6
+                    DHCPv6_PLUGIN_MSG *newLeasev6 = (DHCPv6_PLUGIN_MSG *) malloc(sizeof(DHCPv6_PLUGIN_MSG));
+                    memcpy(newLeasev6,&plugin_msg.data.dhcpv6, sizeof(DHCPv6_PLUGIN_MSG));
+                    newLeasev6->next = NULL;
+                    DHCPMGR_LOG_INFO("[%s-%d] Processing DHCPv6  lease for interface: %s\n",__FUNCTION__, __LINE__, plugin_msg.ifname);
+                    DHCPMgr_AddDhcpv6Lease(plugin_msg.ifname, newLeasev6);
                     break;
                 default:
                     DHCPMGR_LOG_ERROR("[%s-%d] Invalid Message version sent to DhcpManager\n", __FUNCTION__, __LINE__);

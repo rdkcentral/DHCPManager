@@ -52,6 +52,7 @@ int is_iface_present(const char *ifname);
 int serv_can_start(int sefd, token_t tok, const char *servname);
 int serv_can_stop(int sefd, token_t tok, const char *servname);
 int pid_of(const char *name, const char *keyword);
+int sysctl_iface_set(const char *path, const char *ifname, const char *content);
 
 #define DHCPMGR_LOG_INFO(format, ...)     \
                               CcspTraceInfo   (("%s - "format"\n", (char *)__FUNCTION__, ##__VA_ARGS__))
