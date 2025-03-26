@@ -725,7 +725,7 @@ void processKilled(pid_t pid)
         if ( pSListEntry )
         {
             pDhcp6cxtLink          = ACCESS_COSA_CONTEXT_DHCPCV6_LINK_OBJECT(pSListEntry);
-            pDhcp6c            = (PCOSA_DML_DHCPC_FULL)pDhcp6cxtLink->hContext;
+            pDhcp6c            = (PCOSA_DML_DHCPCV6_FULL)pDhcp6cxtLink->hContext;
         }
 
         if (!pDhcp6c)
