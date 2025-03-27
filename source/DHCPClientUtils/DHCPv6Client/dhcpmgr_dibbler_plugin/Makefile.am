@@ -28,5 +28,4 @@ dhcpmgr_dibbler_plugin_CPPFLAGS = -I$(top_srcdir)/source/DHCPMgrUtils \
                                   -I$(top_srcdir)/source/DHCPServerUtils/utils/include/ \
                                   -I$(top_srcdir)/source/DHCPClientUtils/DHCPv6Client
 
-dhcpmgr_dibbler_plugin_SOURCES = dhcpmgr_dibbler.c
-
+dhcpmgr_dibbler_plugin_SOURCES = dhcpmgr_dibbler_plugin.c
