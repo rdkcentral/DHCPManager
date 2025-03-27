@@ -267,23 +267,31 @@ void DhcpMgr_ProcessV4Lease(PCOSA_DML_DHCPC_FULL pDhcpc)
         // Free the current lease
         if(pDhcpc->currentLease)
         {
+            DHCPMGR_LOG_INFO("%s %d: <<DEBUG>> Freeing current lease \n",__FUNCTION__, __LINE__);
             free(pDhcpc->currentLease);
             pDhcpc->currentLease = NULL;
+            DHCPMGR_LOG_INFO("%s %d: <<DEBUG>> Freeing current lease done \n",__FUNCTION__, __LINE__);
         }
         
+        DHCPMGR_LOG_INFO("%s %d: <<DEBUG>> Updating current lease \n",__FUNCTION__, __LINE__);
         // Update currentLease to point to NewLeases
         pDhcpc->currentLease = newLease;
 
+        DHCPMGR_LOG_INFO("%s %d: <<DEBUG>> Updating NewLeases \n",__FUNCTION__, __LINE__);
         // Update NewLeases to point to the next lease
         pDhcpc->NewLeases = newLease->next;
 
+        DHCPMGR_LOG_INFO("%s %d: <<DEBUG>> Updating current lease->Next \n",__FUNCTION__, __LINE__);
         // Clear the next pointer of the new current lease
         pDhcpc->currentLease->next = NULL;
         
+        DHCPMGR_LOG_INFO("%s %d: <<DEBUG>> Updating newLease ->isExpired \n",__FUNCTION__, __LINE__);
         if(leaseChanged)
         {
+            DHCPMGR_LOG_INFO("%s %d: <<DEBUG>> Inside leaseChanged \n",__FUNCTION__, __LINE__);
             if(newLease->isExpired == TRUE)
             {
+                DHCPMGR_LOG_INFO("%s %d: <<DEBUG>> lease expired \n",__FUNCTION__, __LINE__);
                 //TODO: Handle lease delete
                 DhcpMgr_PublishDhcpV4Event(pDhcpc, DHCP_LEASE_DEL);
                 continue;
@@ -304,7 +312,7 @@ void DhcpMgr_ProcessV4Lease(PCOSA_DML_DHCPC_FULL pDhcpc)
 }
 
 
-/**
+/** 
  * @brief Clears all parameters in the TR-181 DML structure.
  *
  * This function resets all the fields in the TR-181 Data Model Layer (DML) structure to their default values.

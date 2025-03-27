@@ -37,7 +37,7 @@
 #include "dhcp_lease_monitor_thrd.h"
 #include "dhcpmgr_rbus_apis.h"
 #include "dhcp_client_common_utils.h"
-
+#include "dhcpmgr_recovery_handler.h"
 
 #define EXIT_FAIL -1
 #define EXIT_SUCCESS 0
@@ -51,165 +51,13 @@
 static void* DhcpMgr_MainController( void *arg );
 void processKilled(pid_t pid);
 
-static int read_pid_from_file(const char *filepath, int *pid_count, int *pids);
-static void udhcpc_pid_mon();
+//<<DEBUG>> Need to remove this code while commiting the code
+pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
+int thread_count = 0;
+ThreadInfo thread_info[10];
+//<<DEBUG>> Need to remove this code while commiting the code 
 
-static int read_pid_from_file(const char *filepath, int *pid_count, int *pids) {
-    FILE *file = fopen(filepath, "r");
-    if (!file) {
-        return EXIT_FAIL;
-    }
-    int pid;
-    if (fscanf(file, "%d", &pid) == 1) {
-        if (*pid_count < MAX_PIDS) {
-            pids[(*pid_count)++] = pid;
-        }
-    }
-    fclose(file);
-    return EXIT_SUCCESS;
-}
-
-/**
- * @brief Gets the interface name from the command line of a process.
- *
- * This function reads the command line of a process to find the interface name.
- *
- * @param[in] pid The process ID.
- */
-static int get_interface_from_pid(int pid, char *Interface) {
-    DHCPMGR_LOG_INFO("%s %d  Interface=%s pid=%d \n", __FUNCTION__, __LINE__,Interface,pid);
-    char path[MAX_PROC_LEN]={0};
-    char cmdline[MAX_CMDLINE_LEN]={0};
-    size_t len=0;
-    snprintf(path, sizeof(path), CMDLINE_PATH, pid);
-    DHCPMGR_LOG_INFO("%s %d  path=%s CMDLINE_PATH=%s\n", __FUNCTION__, __LINE__,path,CMDLINE_PATH);
-    FILE *file = fopen(path, "r");
-    if (!file) {
-        DHCPMGR_LOG_ERROR("%s %d Failed to open cmdline file for PID %d\n", __FUNCTION__, __LINE__, pid);
-        return EXIT_FAIL;
-    }
-
-    len = fread(cmdline, 1, MAX_CMDLINE_LEN - 1, file);
-    fclose(file);
-    if (len == 0) {
-        DHCPMGR_LOG_ERROR("%s %d Empty cmdline for PID %d\n", __FUNCTION__, __LINE__, pid);
-        return EXIT_FAIL;
-    }
-    DHCPMGR_LOG_INFO("%s %d cmdline=%s \n",__FUNCTION__, __LINE__,cmdline);
-    char *match = strstr(cmdline, Interface);
-    DHCPMGR_LOG_INFO("%s %d  match=%s \n", __FUNCTION__, __LINE__,match);
-    if (match) {
-      return EXIT_SUCCESS;
-    } else {
-      return EXIT_FAIL;
-    }
-}
-
-/**
- * @brief Monitors the udhcpc pid files.
- *
- * This function reads the PID from the udhcpc pid files and logs the PID for each interface.
- */
-static void udhcpc_pid_mon() {
-    pthread_detach(pthread_self());
- 
-    DHCPMGR_LOG_INFO("%s:%d Inside-----",__FUNCTION__,__LINE__);
-    PCOSA_DML_DHCPC_FULL            pDhcpc        = NULL;
-    PCOSA_CONTEXT_DHCPC_LINK_OBJECT pDhcpCxtLink  = NULL;
-    PSINGLE_LINK_ENTRY              pSListEntry   = NULL;
-    ULONG                           ulIndex;
-    ULONG                           instanceNum;
-    ULONG                           clientCount = CosaDmlDhcpcGetNumberOfEntries(NULL);
-    int pidfds[MAX_PIDS];
-
-    int pid_count = 0;
-    int pids[MAX_PIDS];
-    glob_t results;
-    struct pollfd poll_fds[MAX_PIDS]; // Poll file descriptors
-
-    // Read the PID from the udhcpc pid files
-    DHCPMGR_LOG_INFO("%s:%d DEBUG------PID_PATTERN=%s\n",__FUNCTION__,__LINE__,PID_PATTERN);
-    if (glob(PID_PATTERN, 0, NULL, &results) == 0) {
-        for (size_t i = 0; i < results.gl_pathc ; i++) {
-            DHCPMGR_LOG_INFO("%s:%d DEBUG------filepath=%s\n",__FUNCTION__,__LINE__,results.gl_pathv[i]);
-            if (read_pid_from_file(results.gl_pathv[i], &pid_count, pids) != EXIT_SUCCESS) {
-                DHCPMGR_LOG_ERROR("%s %d Error reading pid from file %s\n", __FUNCTION__, __LINE__, results.gl_pathv[i]);
-                continue;
-            }
-            DHCPMGR_LOG_INFO("%s %d PID found for interface %s : %d\n", __FUNCTION__, __LINE__, results.gl_pathv[i], pids[pid_count - 1]);
-        }
-    }
-
-    //Fill the pid and status in the global structure if the udhcpc is already running for the interface
-
-    for (ulIndex = 0; ulIndex < clientCount; ulIndex++) {
-        DHCPMGR_LOG_INFO("%s:%d DEBUG------INSIDE for  pid_count=%d\n",__FUNCTION__,__LINE__,pid_count);
-        pSListEntry = (PSINGLE_LINK_ENTRY)Client_GetEntry(NULL, ulIndex, &instanceNum);
-        if (pSListEntry) {
-            pDhcpCxtLink = ACCESS_COSA_CONTEXT_DHCPC_LINK_OBJECT(pSListEntry);
-            pDhcpc = (PCOSA_DML_DHCPC_FULL)pDhcpCxtLink->hContext;
-        }
-
-        if (!pDhcpc) {
-            DHCPMGR_LOG_ERROR("%s : pDhcpc is NULL\n", __FUNCTION__);
-            continue;
-        }
-
-        for (int i = 0; i < pid_count; i++) {
-            if(get_interface_from_pid(pids[i], pDhcpc->Cfg.Interface) == EXIT_SUCCESS) {
-                DHCPMGR_LOG_INFO("%s %d: Found interface %s for pid %d\n", __FUNCTION__, __LINE__, pDhcpc->Cfg.Interface, pids[i]);
-                pthread_mutex_lock(&pDhcpc->mutex);
-                pDhcpc->Info.ClientProcessId = pids[i];
-                pDhcpc->Info.Status = COSA_DML_DHCP_STATUS_Enabled;
-                pDhcpc->Cfg.bEnabled = TRUE;
-                pthread_mutex_unlock(&pDhcpc->mutex);
-            }
-        }
-    }
-    DHCPMGR_LOG_INFO("%s %d: Info.ClientProcessId=%d Info.Status=%d Cfg.bEnabled=%d Cfg.Interface=%s\n", __FUNCTION__, __LINE__,pDhcpc->Info.ClientProcessId,pDhcpc->Info.Status,pDhcpc->Cfg.bEnabled, pDhcpc->Cfg.Interface);
-    //Monitoring the pid for the udhcpc process
-    for (int i = 0; i < pid_count; i++) {
-        DHCPMGR_LOG_INFO("%s:%d DEBUG------INSIDE Monitoring the pid for the udhcpc process pid_count=%d\n",__FUNCTION__,__LINE__,pid_count);
-        pidfds[i] = syscall(SYS_pidfd_open, pids[i], 0);
-        if (pidfds[i] == -1) {
-            DHCPMGR_LOG_ERROR("%s : %d pidfd_open syscall failed\n", __FUNCTION__, __LINE__);
-            continue;
-        }
-
-        poll_fds[i].fd = pidfds[i];
-        poll_fds[i].events = POLLIN; // Watch for process exit event
-
-        DHCPMGR_LOG_INFO("%s:%d Monitoring process %d...\n",__FUNCTION__,__LINE__,pids[i]);
-    }
-
-    // Wait for any process to exit
-    DHCPMGR_LOG_INFO("%s:%d DEBUG------pid_count=%d\n",__FUNCTION__,__LINE__,pid_count);
-    int rem_pid=pid_count;
-    while (rem_pid > 0) {
-        DHCPMGR_LOG_INFO("%s:%d DEBUG------INSIDE while poll\n",__FUNCTION__,__LINE__);
-        int ret = poll(poll_fds, pid_count, -1); // Block until an event occurs
-        if (ret == -1) {
-            DHCPMGR_LOG_ERROR("%s : %d Poll failed \n", __FUNCTION__, __LINE__);
-            return;
-        }
-
-        // Check which process exited
-        for (int i = 0; i < pid_count; i++) {
-            DHCPMGR_LOG_INFO("%s:%d DEBUG------INSIDE after  while poll to check process exited\n",__FUNCTION__,__LINE__);
-            if ( poll_fds[i].fd != -1 && poll_fds[i].revents & POLLIN) {
-                DHCPMGR_LOG_INFO("%s:%d Process %s : %d exited!\n",__FUNCTION__, __LINE__,results.gl_pathv[i],pids[i]);
-                processKilled(pids[i]);      // notify the processKilled that udhcpc pid exited
-                poll_fds[i].fd = -1;             // Mark this as handled
-                rem_pid--;                         //Reduce count of active processes
-                if (close(pidfds[i]) == -1) {
-                    DHCPMGR_LOG_ERROR("%s : %d Error closing pidfd\n", __FUNCTION__, __LINE__);
-                }
-            }
-        }
-    }
-    globfree(&results);
-    DHCPMGR_LOG_INFO("%s:%d DEBUG------END\n",__FUNCTION__,__LINE__);
-}
+//int DHCPMgr_storeDhcpLease(char* ifname, PCOSA_DML_DHCPC_FULL  newLease, DHCP_SOURCE dhcpVersion,ULONG instanceNum);
 
 /**
  * @brief Starts the main controller thread.
@@ -315,6 +163,14 @@ static void* DhcpMgr_MainController( void *args )
 {
     (void) args;
     //detach thread from caller stack
+    /*DEBUG*/
+    pthread_mutex_lock(&mutex);
+    thread_info[thread_count].tid = pthread_self();
+    strncpy(thread_info[thread_count].name, "DhcpMgr_MainController", sizeof(thread_info[thread_count].name));
+    thread_count++;
+    pthread_mutex_unlock(&mutex);
+    /*DEBUG*/
+
     pthread_detach(pthread_self());
 
     DHCPMGR_LOG_INFO("%s %d DhcpMgr_MainController started \n", __FUNCTION__, __LINE__);
@@ -358,7 +214,7 @@ static void* DhcpMgr_MainController( void *args )
                 pDhcpCxtLink          = ACCESS_COSA_CONTEXT_DHCPC_LINK_OBJECT(pSListEntry);
                 pDhcpc            = (PCOSA_DML_DHCPC_FULL)pDhcpCxtLink->hContext;
             }
-
+            
             if (!pDhcpc)
             {
                 DHCPMGR_LOG_ERROR("%s : pDhcpc is NULL\n",__FUNCTION__);
@@ -441,6 +297,7 @@ static void* DhcpMgr_MainController( void *args )
  */
 void DHCPMgr_AddDhcpv4Lease(char * ifName, DHCPv4_PLUGIN_MSG *newLease)
 {
+    DHCPMGR_LOG_INFO("%s %d: <<DEBUG>> Entered with ifName=%s \n",__FUNCTION__, __LINE__,ifName);
     PCOSA_DML_DHCPC_FULL            pDhcpc        = NULL;
     PCOSA_CONTEXT_DHCPC_LINK_OBJECT pDhcpCxtLink  = NULL;
     PSINGLE_LINK_ENTRY              pSListEntry   = NULL;
@@ -452,47 +309,62 @@ void DHCPMgr_AddDhcpv4Lease(char * ifName, DHCPv4_PLUGIN_MSG *newLease)
     for ( ulIndex = 0; ulIndex < clientCount; ulIndex++ )
     {
         pSListEntry = (PSINGLE_LINK_ENTRY)Client_GetEntry(NULL,ulIndex,&instanceNum);
+        DHCPMGR_LOG_INFO("%s : %d <<DEBUG>> instanceNum=%lu \n",__FUNCTION__, __LINE__,instanceNum);
         if ( pSListEntry )
         {
             pDhcpCxtLink          = ACCESS_COSA_CONTEXT_DHCPC_LINK_OBJECT(pSListEntry);
             pDhcpc            = (PCOSA_DML_DHCPC_FULL)pDhcpCxtLink->hContext;
         }
-
+        DHCPMGR_LOG_INFO("%s : %d <<DEBUG>> 1 \n",__FUNCTION__, __LINE__);
         if (!pDhcpc)
         {
             DHCPMGR_LOG_ERROR("%s : pDhcpc is NULL\n",__FUNCTION__);
             continue;
         }
-
+        DHCPMGR_LOG_INFO("%s : %d <<DEBUG>> 2 pDhcpc->Cfg.Interface=%s\n",__FUNCTION__, __LINE__, pDhcpc->Cfg.Interface);
         pthread_mutex_lock(&pDhcpc->mutex); //MUTEX lock
-
+        DHCPMGR_LOG_INFO("%s : %d <<DEBUG>> 3 \n",__FUNCTION__, __LINE__);
         // Verify if the DHCP clients are running. There may be multiple DHCP client interfaces with the same name that are not active.
         if(strcmp(ifName, pDhcpc->Cfg.Interface) == 0)
         {
+            DHCPMGR_LOG_INFO("%s : %d <<DEBUG>> 4 \n",__FUNCTION__, __LINE__);
             DHCPv4_PLUGIN_MSG *temp = pDhcpc->NewLeases;
+            DHCPMGR_LOG_INFO("%s : %d <<DEBUG>> 5 \n",__FUNCTION__, __LINE__);
             //Find the tail of the list
             if (temp == NULL) 
             {
+                DHCPMGR_LOG_INFO("%s : %d <<DEBUG>> 6 \n",__FUNCTION__, __LINE__);
                 // If the list is empty, add the new lease as the first element
                 pDhcpc->NewLeases = newLease;
+                DHCPMGR_LOG_INFO("%s : %d <<DEBUG>> 7 \n",__FUNCTION__, __LINE__);
             } else 
             {
+                DHCPMGR_LOG_INFO("%s : %d <<DEBUG>> 8 \n",__FUNCTION__, __LINE__);
                 while (temp->next != NULL) 
                 {
+                    DHCPMGR_LOG_INFO("%s : %d <<DEBUG>> 9 \n",__FUNCTION__, __LINE__);
                     temp = temp->next;
                 }
+                DHCPMGR_LOG_INFO("%s : %d <<DEBUG>> 10 \n",__FUNCTION__, __LINE__);
                 // Add the new lease details to the tail of the list
                 temp->next = newLease;
             }
 
+            DHCPMGR_LOG_INFO("%s : %d <<DEBUG>> 11 \n",__FUNCTION__, __LINE__);
             //Just the add the new lease details in the list. the controlled thread will hanlde it. 
             newLease->next = NULL;
             interfaceFound = TRUE;
             DHCPMGR_LOG_INFO("%s %d: New dhcpv4 lease msg added for %s \n", __FUNCTION__, __LINE__, pDhcpc->Cfg.Interface);
             pthread_mutex_unlock(&pDhcpc->mutex); //MUTEX release before break
+            
+            //store the lease in the tmp file
+            if (DHCPMgr_storeDhcpLease(newLease->ifname, pDhcpc,(int) DHCP_VERSION_4,instanceNum) != 0)
+           {
+                DHCPMGR_LOG_ERROR("[%s-%d] Failed to store DHCPv4 lease\n", __FUNCTION__, __LINE__);
+            }
             break;
         }
-
+        DHCPMGR_LOG_INFO("%s : %d <<DEBUG>>END \n",__FUNCTION__, __LINE__);
         pthread_mutex_unlock(&pDhcpc->mutex); //MUTEX unlock
 
     }
@@ -555,7 +427,6 @@ void processKilled(pid_t pid)
             break;
         }
     }
-
     //TODO: add v6 handle
     return;
 }

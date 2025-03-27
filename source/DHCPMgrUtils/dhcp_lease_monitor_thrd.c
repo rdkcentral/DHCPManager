@@ -37,6 +37,7 @@
 #include "dhcpv4_interface.h"
 #include "dhcpmgr_controller.h"
 #include "dhcp_lease_monitor_thrd.h"
+#include "dhcpmgr_recovery_handler.h"
 
 static int ipcListenFd = 0;
 
@@ -89,6 +90,15 @@ int DhcpMgr_LeaseMonitor_Start()
 static void* DhcpMgr_LeaseMonitor_Thrd(void *arg)
 {
     (void)arg;  // Mark argument as intentionally unused
+    
+    //<<DEBUG>> Need to remove this code while commiting the code
+    pthread_mutex_lock(&mutex);
+    thread_info[thread_count].tid = pthread_self();
+    strncpy(thread_info[thread_count].name, "DhcpMgr_LeaseMonitor_Thrd", sizeof(thread_info[thread_count].name));
+    thread_count++;
+    pthread_mutex_unlock(&mutex);
+    /*DEBUG*/
+    
     pthread_detach(pthread_self());
 
     BOOL bRunning = TRUE;
@@ -113,6 +123,7 @@ static void* DhcpMgr_LeaseMonitor_Thrd(void *arg)
                     memcpy(newLease,&plugin_msg.data.dhcpv4, sizeof(DHCPv4_PLUGIN_MSG));
                     newLease->next = NULL;
                     DHCPMGR_LOG_INFO("[%s-%d] Processing DHCPv4 lease for interface: %s\n",__FUNCTION__, __LINE__, plugin_msg.ifname);
+
                     DHCPMgr_AddDhcpv4Lease(plugin_msg.ifname, newLease);
                     break;
                 case DHCP_VERSION_6:

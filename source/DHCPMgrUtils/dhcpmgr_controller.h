@@ -63,4 +63,14 @@ void DhcpMgr_ProcessV4Lease(PCOSA_DML_DHCPC_FULL pDhcpc);
  */
 void DhcpMgr_clearDHCPv4Lease(PCOSA_DML_DHCPC_FULL pDhcpc) ;
 
+//<<DEBUG>> Need to remove this later
+typedef struct {
+    pthread_t tid;
+    char name[30];
+} ThreadInfo;
+extern ThreadInfo thread_info[10];
+extern int thread_count;
+extern pthread_mutex_t mutex;
+//<<DEBUG>> Need to remove this later
+
 #endif //_DHCP_CONTROLLER_H_
