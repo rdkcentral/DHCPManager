@@ -22,6 +22,7 @@
 #include <rbus/rbus.h>
 #include "cosa_apis.h"
 #include "cosa_dhcpv4_apis.h"
+#include "cosa_dhcpv6_apis.h"
 #include "ipc_msg.h"
 
 /* DHCPv4 rbus entries */

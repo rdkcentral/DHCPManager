@@ -25,6 +25,7 @@
 
 #include "util.h"
 #include "dhcpv4_interface.h"
+#include "dhcpv6_interface.h"
 
 
 #define  ARRAY_SZ(x) (sizeof(x) / sizeof((x)[0]))
@@ -178,6 +179,36 @@ static void DhcpMgr_createLeaseInfoMsg(DHCPv4_PLUGIN_MSG *src, DHCP_MGR_IPV4_MSG
 }
 
 /**
+ * @brief Copies DHCPv6_PLUGIN_MSG to DHCP_MGR_IPV6_MSG struct for the rbus event publish.
+ *
+ * This function copies the contents of a DHCPv6_PLUGIN_MSG structure to a DHCP_MGR_IPV6_MSG structure.
+ * It is used for preparing the data to be published as an rbus event.
+ *
+ * @param src Pointer to the source DHCPv6_PLUGIN_MSG structure.
+ * @param dest Pointer to the destination DHCP_MGR_IPV6_MSG structure.
+ */
+static void DhcpMgr_createDhcpv6LeaseInfoMsg(DHCPv6_PLUGIN_MSG *src, DHCP_MGR_IPV6_MSG *dest)
+{
+    strncpy(dest->ifname, src->ifname, sizeof(dest->ifname) - 1);
+    strncpy(dest->address, src->ia_na.address, sizeof(dest->address) - 1);
+    strncpy(dest->nameserver, src->dns.nameserver, sizeof(dest->nameserver) - 1);
+    strncpy(dest->nameserver1, src->dns.nameserver1, sizeof(dest->nameserver1) - 1);
+    strncpy(dest->domainName, src->domainName, sizeof(dest->domainName) - 1);
+    snprintf(dest->sitePrefix, sizeof(dest->sitePrefix), "%s/%d", src->ia_pd.Prefix, src->ia_pd.PrefixLength);
+
+    dest->prefixPltime = src->ia_pd.PreferedLifeTime;
+    dest->prefixVltime = src->ia_pd.ValidLifeTime;
+
+    dest->addrAssigned = src->ia_na.assigned;
+    dest->prefixAssigned = src->ia_pd.assigned;
+    dest->domainNameAssigned = (strlen(src->domainName) > 0);
+
+    //TODO: MAPT implementation
+    //dest->mapInfo.Assigned = src->mapt.Assigned;
+    //memcpy(dest->mapInfo.Container, src->mapt.Container, sizeof(dest->mapInfo.Container));
+}
+
+/**
  * @brief Publishes DHCPv4 rbus events.
  *
  * This function publishes DHCPv4 rbus events based on the specified message type.
@@ -225,6 +256,7 @@ int DhcpMgr_PublishDhcpV4Event(PCOSA_DML_DHCPC_FULL pDhcpc, DHCP_MESSAGE_TYPE ms
     if(msgType == DHCP_LEASE_UPDATE)
     { 
         DHCP_MGR_IPV4_MSG leaseInfo;
+        memset(&leaseInfo, 0, sizeof(leaseInfo));
         DhcpMgr_createLeaseInfoMsg(pDhcpc->currentLease,&leaseInfo);
         rbusValue_Init(&leaseInfoVal);
         rbusValue_SetBytes(leaseInfoVal, &leaseInfo, sizeof(leaseInfo));
@@ -312,7 +344,8 @@ int DhcpMgr_PublishDhcpV6Event(PCOSA_DML_DHCPCV6_FULL pDhcpv6c, DHCP_MESSAGE_TYP
     if(msgType == DHCP_LEASE_UPDATE)
     { 
         DHCP_MGR_IPV6_MSG leaseInfo;
-        //DhcpMgr_createLeaseInfoMsg(pDhcpv6c->currentLease,&leaseInfo);
+        memset(&leaseInfo, 0, sizeof(leaseInfo));
+        DhcpMgr_createDhcpv6LeaseInfoMsg(pDhcpv6c->currentLease,&leaseInfo);
         rbusValue_Init(&leaseInfoVal);
         rbusValue_SetBytes(leaseInfoVal, &leaseInfo, sizeof(leaseInfo));
         rbusObject_SetValue(rdata, "LeaseInfo", leaseInfoVal);

@@ -444,7 +444,7 @@ static void* DhcpMgr_MainController( void *args )
                     if(DhcpMgr_checkInterfaceStatus(pDhcp6c->Cfg.Interface)== FALSE)
                     {
                         pDhcp6c->Cfg.bEnabled = FALSE;
-                        //DhcpMgr_PublishDhcpV4Event(pDhcp6c, DHCP_CLIENT_FAILED);
+                        DhcpMgr_PublishDhcpV6Event(pDhcp6c, DHCP_CLIENT_FAILED);
                     }
                     else if(DhcpMgr_checkLinkLocalAddress(pDhcp6c->Cfg.Interface)== FALSE)
                     {
@@ -468,12 +468,12 @@ static void* DhcpMgr_MainController( void *args )
                         {
                             pDhcp6c->Info.Status = COSA_DML_DHCP_STATUS_Enabled;
                             DHCPMGR_LOG_INFO("%s %d: dhcpv6 client for %s started PID : %d \n", __FUNCTION__, __LINE__, pDhcp6c->Cfg.Interface, pDhcp6c->Info.ClientProcessId);
-                            //DhcpMgr_PublishDhcpV4Event(pDhcp6c, DHCP_CLIENT_STARTED);
+                            DhcpMgr_PublishDhcpV6Event(pDhcp6c, DHCP_CLIENT_STARTED);
                         }
                         else
                         {
                             DHCPMGR_LOG_INFO("%s %d: dhcpv6 client for %s failed to start \n", __FUNCTION__, __LINE__, pDhcp6c->Cfg.Interface);
-                            //DhcpMgr_PublishDhcpV4Event(pDhcp6c, DHCP_CLIENT_FAILED);
+                            DhcpMgr_PublishDhcpV6Event(pDhcp6c, DHCP_CLIENT_FAILED);
                         }
                     }
 
@@ -497,9 +497,9 @@ static void* DhcpMgr_MainController( void *args )
                     stop_dhcpv6_client(pDhcp6c->Info.ClientProcessId);
                     pDhcp6c->Info.Status = COSA_DML_DHCP_STATUS_Disabled;
                     pDhcp6c->Cfg.Renew = FALSE;
-                    //DhcpMgr_PublishDhcpV4Event(pDhcpc, DHCP_LEASE_DEL); //Send lease expired event
+                    DhcpMgr_PublishDhcpV6Event(pDhcpc, DHCP_LEASE_DEL); //Send lease expired event
                     DhcpMgr_clearDHCPv6Lease(pDhcp6c);
-                    //DhcpMgr_PublishDhcpV4Event(pDhcp6c, DHCP_CLIENT_STOPPED);
+                    DhcpMgr_PublishDhcpV6Event(pDhcp6c, DHCP_CLIENT_STOPPED);
                 }
             }
 
