@@ -257,7 +257,8 @@ AC_CONFIG_FILES(
         source/DHCPClientUtils/DHCPv4Client/service_udhcpc/Makefile
         source/DHCPClientUtils/DHCPv4Client/dhcpmgr_udhcpc_plugin/Makefile
         source/DHCPClientUtils/DHCPv6Client/Makefile
-        source/DHCPMgrUtils/Makefile
+        source/DHCPClientUtils/DHCPv6Client/dhcpmgr_dibbler_plugin/Makefile
+	source/DHCPMgrUtils/Makefile
         source/IPv6rtmon/Makefile
         source/TR-181/board_sbapi/Makefile
         source/TR-181/middle_layer_src/Makefile
