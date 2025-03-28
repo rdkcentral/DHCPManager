@@ -148,7 +148,44 @@ static int DhcpMgr_build_dhcpv6_opt_list (PCOSA_CONTEXT_DHCPCV6_LINK_OBJECT hIns
     PCOSA_DML_DHCPCV6_FULL pDhcp6c                   = (PCOSA_DML_DHCPCV6_FULL)hInsContext->hContext;
 
     DHCPMGR_LOG_INFO("%s %d: Entered \n",__FUNCTION__, __LINE__);
-   
+    //Build T1 T2 buffer
+    char t1T2Buffer[BUFLEN_128] = {0};
+    if (pDhcp6c->Cfg.SuggestedT1 != -1 || pDhcp6c->Cfg.SuggestedT2 != -1)
+    {
+        char t1Buffer[16] = {0};
+        char t2Buffer[16] = {0};
+
+        if (pDhcp6c->Cfg.SuggestedT1 != -1) {
+            snprintf(t1Buffer, sizeof(t1Buffer), "t1 %ld", pDhcp6c->Cfg.SuggestedT1);
+        }
+
+        if (pDhcp6c->Cfg.SuggestedT2 != -1) {
+            snprintf(t2Buffer, sizeof(t2Buffer), "t2 %ld", pDhcp6c->Cfg.SuggestedT2);
+        }
+
+        snprintf(t1T2Buffer, sizeof(t1T2Buffer), "{\n\t%s\n\t%s\n\t}", t1Buffer, t2Buffer);
+        DHCPMGR_LOG_INFO("%s %d: T1 and T2 values found : %s\n", __FUNCTION__, __LINE__, t1T2Buffer);
+    }
+
+    if(pDhcp6c->Cfg.RequestAddresses == TRUE)
+    {
+        //Identity Association for Non-temporary Addresses.  OPTION_IA_NA(3) 
+        DHCPMGR_LOG_INFO("%s %d: Adding DHCPv6 option - Number: %d, Value: %s\n", __FUNCTION__, __LINE__, DHCPV6_OPT_3, t1T2Buffer);
+        add_dhcp_opt_to_list(send_opt_list, DHCPV6_OPT_3, t1T2Buffer);
+    }
+
+    if(pDhcp6c->Cfg.RequestPrefixes == TRUE)
+    {
+        DHCPMGR_LOG_INFO("%s %d: Adding DHCPv6 option - Number: %d, Value: %s\n", __FUNCTION__, __LINE__, DHCPV6_OPT_25, t1T2Buffer);
+        // Identity Association (IA) for Prefix Delegation option OPTION_IA_PD(25) 
+        add_dhcp_opt_to_list(send_opt_list, DHCPV6_OPT_25, t1T2Buffer);
+    }
+
+    if(pDhcp6c->Cfg.RapidCommit == TRUE)
+    {
+        add_dhcp_opt_to_list(send_opt_list, DHCPV6_OPT_14, NULL);
+    }
+
     noOfSentOpt = CosaDmlDhcpv6cGetNumberOfSentOption(NULL, pDhcp6c->Cfg.InstanceNumber);
     for (ULONG sentOptIdx = 0; sentOptIdx < noOfSentOpt; sentOptIdx++)
     {
@@ -444,7 +481,7 @@ static void* DhcpMgr_MainController( void *args )
                     if(DhcpMgr_checkInterfaceStatus(pDhcp6c->Cfg.Interface)== FALSE)
                     {
                         pDhcp6c->Cfg.bEnabled = FALSE;
-                        //DhcpMgr_PublishDhcpV4Event(pDhcp6c, DHCP_CLIENT_FAILED);
+                        DhcpMgr_PublishDhcpV6Event(pDhcp6c, DHCP_CLIENT_FAILED);
                     }
                     else if(DhcpMgr_checkLinkLocalAddress(pDhcp6c->Cfg.Interface)== FALSE)
                     {
@@ -468,12 +505,12 @@ static void* DhcpMgr_MainController( void *args )
                         {
                             pDhcp6c->Info.Status = COSA_DML_DHCP_STATUS_Enabled;
                             DHCPMGR_LOG_INFO("%s %d: dhcpv6 client for %s started PID : %d \n", __FUNCTION__, __LINE__, pDhcp6c->Cfg.Interface, pDhcp6c->Info.ClientProcessId);
-                            //DhcpMgr_PublishDhcpV4Event(pDhcp6c, DHCP_CLIENT_STARTED);
+                            DhcpMgr_PublishDhcpV6Event(pDhcp6c, DHCP_CLIENT_STARTED);
                         }
                         else
                         {
                             DHCPMGR_LOG_INFO("%s %d: dhcpv6 client for %s failed to start \n", __FUNCTION__, __LINE__, pDhcp6c->Cfg.Interface);
-                            //DhcpMgr_PublishDhcpV4Event(pDhcp6c, DHCP_CLIENT_FAILED);
+                            DhcpMgr_PublishDhcpV6Event(pDhcp6c, DHCP_CLIENT_FAILED);
                         }
                     }
 
@@ -497,9 +534,9 @@ static void* DhcpMgr_MainController( void *args )
                     stop_dhcpv6_client(pDhcp6c->Info.ClientProcessId);
                     pDhcp6c->Info.Status = COSA_DML_DHCP_STATUS_Disabled;
                     pDhcp6c->Cfg.Renew = FALSE;
-                    //DhcpMgr_PublishDhcpV4Event(pDhcpc, DHCP_LEASE_DEL); //Send lease expired event
+                    DhcpMgr_PublishDhcpV6Event(pDhcpc, DHCP_LEASE_DEL); //Send lease expired event
                     DhcpMgr_clearDHCPv6Lease(pDhcp6c);
-                    //DhcpMgr_PublishDhcpV4Event(pDhcp6c, DHCP_CLIENT_STOPPED);
+                    DhcpMgr_PublishDhcpV6Event(pDhcp6c, DHCP_CLIENT_STOPPED);
                 }
             }
 
@@ -725,7 +762,7 @@ void processKilled(pid_t pid)
         if ( pSListEntry )
         {
             pDhcp6cxtLink          = ACCESS_COSA_CONTEXT_DHCPCV6_LINK_OBJECT(pSListEntry);
-            pDhcp6c            = (PCOSA_DML_DHCPC_FULL)pDhcp6cxtLink->hContext;
+            pDhcp6c            = (PCOSA_DML_DHCPCV6_FULL)pDhcp6cxtLink->hContext;
         }
 
         if (!pDhcp6c)

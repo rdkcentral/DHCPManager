@@ -20,6 +20,7 @@
 #include "cosa_dhcpv6_apis.h"
 #include "dhcpv6_interface.h"
 #include "secure_wrapper.h"
+#include "dhcpmgr_rbus_apis.h"
 
 static void configureNetworkInterface(PCOSA_DML_DHCPCV6_FULL pDhcp6c);
 
@@ -80,12 +81,12 @@ void DhcpMgr_ProcessV6Lease(PCOSA_DML_DHCPCV6_FULL pDhcp6c)
         }
         else if(current->isExpired == TRUE && newLease->isExpired == FALSE)
         {
-            //DhcpMgr_PublishDhcpV4Event(pDhcp6c, DHCP_LEASE_DEL);
+            DhcpMgr_PublishDhcpV6Event(pDhcp6c, DHCP_LEASE_DEL);
             DHCPMGR_LOG_INFO("%s %d: lease expired  for %s \n",__FUNCTION__, __LINE__, pDhcp6c->Cfg.Interface);
         }
         else if (newLease->isExpired == FALSE && (newLease->ia_na.assigned == TRUE ||newLease->ia_pd.assigned == TRUE))
         {
-            //DhcpMgr_PublishDhcpV4Event(pDhcp6c, DHCP_LEASE_RENEW);
+            DhcpMgr_PublishDhcpV6Event(pDhcp6c, DHCP_LEASE_RENEW);
             DHCPMGR_LOG_INFO("%s %d: lease renewed for %s \n",__FUNCTION__, __LINE__, pDhcp6c->Cfg.Interface);
         }
         else 
@@ -146,9 +147,8 @@ void DhcpMgr_ProcessV6Lease(PCOSA_DML_DHCPCV6_FULL pDhcp6c)
             DHCPMGR_LOG_INFO("%s %d: NewLease PreferedLifeTime %d  \n", __FUNCTION__, __LINE__, newLease->ia_pd.PreferedLifeTime);
             DHCPMGR_LOG_INFO("%s %d: NewLease ValidLifeTime %d  \n", __FUNCTION__, __LINE__, newLease->ia_pd.ValidLifeTime);
             configureNetworkInterface(pDhcp6c);
-            //DhcpMgr_updateDHCPv4DML(pDhcp6c);
-
-            //DhcpMgr_PublishDhcpV4Event(pDhcp6c, DHCP_LEASE_UPDATE);
+            
+            DhcpMgr_PublishDhcpV6Event(pDhcp6c, DHCP_LEASE_UPDATE);
             
         }
 
