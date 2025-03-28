@@ -16,6 +16,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
 */
+#ifndef DHCP_LEASE_MONITOR_THRD_H
+#define DHCP_LEASE_MONITOR_THRD_H
 
 #include <stdbool.h>
 #include <nanomsg/nn.h>
@@ -49,4 +51,4 @@ typedef struct {
  */
 int  DhcpMgr_LeaseMonitor_Start();
 
-
+#endif

@@ -138,7 +138,7 @@ ANSC_STATUS syscfg_set_string(const char* name, const char* value);
  * @param Pointer to ipc_dhcpv6_data_t holds the IPv6 configurations
  * @return 0 on success else returned -1
  */
-static int send_dhcp_data_to_wanmanager (ipc_dhcpv6_data_t *dhcpv6_data); /* Send data to wanmanager using nanomsg. */
+//static int send_dhcp_data_to_wanmanager (ipc_dhcpv6_data_t *dhcpv6_data); /* Send data to wanmanager using nanomsg. */
 #ifdef WAN_FAILOVER_SUPPORTED
 pthread_t Ipv6Handle_tid;
 void *Ipv6ModeHandler_thrd(void *data);
@@ -1143,7 +1143,7 @@ static desiredRtAdvInfo *rtAdvInfo;
 
 #define IPv6_RT_MON_NOTIFY_CMD "kill -10 `pidof ipv6rtmon`"
 #endif // RA_MONITOR_SUPPORT
-static void * dhcpv6c_dbg_thrd(void * in);
+//static void * dhcpv6c_dbg_thrd(void * in);
 
 #ifdef DHCPV6_SERVER_SUPPORT
 extern void * dhcpv6s_dbg_thrd(void * in);
@@ -1944,14 +1944,14 @@ CosaDmlDhcpv6SMsgHandler
         DHCPVS_DEBUG_PRINT
         g_dhcpv6_server_prefix_ready = TRUE;
     }
-
+#if 0
     /*we start a thread to hear dhcpv6 client message about prefix/address */
         if ( !mkfifo(CCSP_COMMON_FIFO, 0666) || errno == EEXIST )
     {
         if (pthread_create(&g_be_ctx.dbgthrdc, NULL, dhcpv6c_dbg_thrd, NULL)  || pthread_detach(g_be_ctx.dbgthrdc))
             DHCPMGR_LOG_WARNING("%s error in creating dhcpv6c_dbg_thrd\n", __FUNCTION__);
     }
-
+#endif
     /*we start a thread to hear dhcpv6 server messages */
     if ( !mkfifo(DHCPS6V_SERVER_RESTART_FIFO, 0666) || errno == EEXIST )
     {
@@ -7613,7 +7613,7 @@ int Get_Device_Mode()
     return deviceMode;
 
 }
-
+#if 0
 static int format_time(char *time)
 {
     if (time == NULL)
@@ -7623,14 +7623,14 @@ static int format_time(char *time)
     }
     return 0;
 }
-
+#endif
 /* This thread is added to handle the LnF interface IPv6 rule, because LnF is coming up late in XB6 devices.
 This thread can be generic to handle the operations depending on the interfaces. Other interface and their events can be register here later based on requirement */
 #if defined(CISCO_CONFIG_DHCPV6_PREFIX_DELEGATION) && defined(_CBR_PRODUCT_REQ_)
 #else
-static pthread_t InfEvtHandle_tid;
-static int sysevent_fd_1;
-static token_t sysevent_token_1;
+//static pthread_t InfEvtHandle_tid;
+//static int sysevent_fd_1;
+//static token_t sysevent_token_1;
 
 
 #ifdef RDKB_EXTENDER_ENABLED
@@ -7918,7 +7918,7 @@ int handle_MocaIpv6(char *status)
     return 0;
 
 }
-
+#if 0
 static void *InterfaceEventHandler_thrd(void *data)
 {
     UNREFERENCED_PARAMETER(data);
@@ -8133,6 +8133,7 @@ static void *InterfaceEventHandler_thrd(void *data)
     return NULL;
 }
 #endif
+#endif 
 
 #if defined (RDKB_EXTENDER_ENABLED) || defined (WAN_FAILOVER_SUPPORTED)
 
@@ -8361,6 +8362,7 @@ void configureLTEIpv6(char* v6addr)
 }
 #endif
 
+#if 0
 /*******************************************************
 * Function Name : isDropbearRunningWithIpv6 (char *pIpv6Addr)
 *      It will verify, dropbear process is running with provided IPv6 address or not
@@ -9684,6 +9686,7 @@ EXIT:
 #endif
     return NULL;
 }
+#endif
 
 #if 0 //TODO: cleanup dhcp 
 ANSC_STATUS CosaDmlStartDhcpv6Client(ANSC_HANDLE hInsContext)
@@ -9994,6 +9997,7 @@ EXIT:
 #endif // RA_MONITOR_SUPPORT
 
 #if defined(FEATURE_RDKB_WAN_MANAGER)
+#if 0
 static int send_dhcp_data_to_wanmanager (ipc_dhcpv6_data_t *dhcpv6_data)
 {
     int ret = ANSC_STATUS_SUCCESS;
@@ -10055,6 +10059,7 @@ static int send_dhcp_data_to_wanmanager (ipc_dhcpv6_data_t *dhcpv6_data)
     nn_close (sock);
     return ret;
 }
+#endif
 
 #if defined (WAN_FAILOVER_SUPPORTED) && !defined (RDKB_EXTENDER_ENABLED)
 void SwitchToGlobalIpv6()
