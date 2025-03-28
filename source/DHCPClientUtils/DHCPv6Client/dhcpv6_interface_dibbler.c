@@ -122,7 +122,8 @@ static int dibbler_get_req_options(FILE * fout,  dhcp_opt_list * req_opt_list)
         switch (opt_list->dhcp_opt)
         {
             case DHCPV6_OPT_5:
-                snprintf(args, sizeof(args), "\n\t%s \n", (opt_list->dhcp_opt_val == NULL) ? "ia" : opt_list->dhcp_opt_val);
+            case DHCPV6_OPT_3:
+                snprintf(args, sizeof(args), "\n\tia %s \n", (opt_list->dhcp_opt_val == NULL) ? "" : opt_list->dhcp_opt_val);
                 fputs(args, fout);
                 break;
 
@@ -132,7 +133,7 @@ static int dibbler_get_req_options(FILE * fout,  dhcp_opt_list * req_opt_list)
                 break;
 
             case DHCPV6_OPT_25:
-                snprintf(args, sizeof(args), "\n\t%s \n", (opt_list->dhcp_opt_val == NULL) ? "pd" : opt_list->dhcp_opt_val);
+                snprintf(args, sizeof(args), "\n\tpd %s \n", (opt_list->dhcp_opt_val == NULL) ? "" : opt_list->dhcp_opt_val);
                 fputs(args, fout);
                 break;
 
@@ -197,12 +198,13 @@ static int dibbler_get_send_options(FILE * fout,  dhcp_opt_list * send_opt_list)
         switch (opt_list->dhcp_opt)
         {
             case DHCPV6_OPT_5:
-                snprintf(args, sizeof(args), "\n\t%s \n", (opt_list->dhcp_opt_val == NULL) ? "ia" : opt_list->dhcp_opt_val);
+            case DHCPV6_OPT_3:
+                snprintf(args, sizeof(args), "\n\tia %s \n", (opt_list->dhcp_opt_val == NULL) ? "" : opt_list->dhcp_opt_val);
                 fputs(args, fout);
                 break;
         
             case DHCPV6_OPT_25:
-                snprintf(args, sizeof(args), "\n\t%s \n", (opt_list->dhcp_opt_val == NULL) ? "pd" : opt_list->dhcp_opt_val);
+                snprintf(args, sizeof(args), "\n\tpd %s \n", (opt_list->dhcp_opt_val == NULL) ? "" : opt_list->dhcp_opt_val);
                 fputs(args, fout);
                 break;
         
@@ -227,7 +229,10 @@ static int dibbler_get_send_options(FILE * fout,  dhcp_opt_list * send_opt_list)
                 fputs(args, fout);
                 break;
             }
-        
+            case DHCPV6_OPT_14:
+                fputs("\n\t rapid-commit yes\n", fout);
+                break;
+
             case DHCPV6_OPT_20:
                 // Do nothing, will be checked later.
                 break;

@@ -148,7 +148,44 @@ static int DhcpMgr_build_dhcpv6_opt_list (PCOSA_CONTEXT_DHCPCV6_LINK_OBJECT hIns
     PCOSA_DML_DHCPCV6_FULL pDhcp6c                   = (PCOSA_DML_DHCPCV6_FULL)hInsContext->hContext;
 
     DHCPMGR_LOG_INFO("%s %d: Entered \n",__FUNCTION__, __LINE__);
-   
+    //Build T1 T2 buffer
+    char t1T2Buffer[BUFLEN_128] = {0};
+    if (pDhcp6c->Cfg.SuggestedT1 != -1 || pDhcp6c->Cfg.SuggestedT2 != -1)
+    {
+        char t1Buffer[16] = {0};
+        char t2Buffer[16] = {0};
+
+        if (pDhcp6c->Cfg.SuggestedT1 != -1) {
+            snprintf(t1Buffer, sizeof(t1Buffer), "t1 %ld", pDhcp6c->Cfg.SuggestedT1);
+        }
+
+        if (pDhcp6c->Cfg.SuggestedT2 != -1) {
+            snprintf(t2Buffer, sizeof(t2Buffer), "t2 %ld", pDhcp6c->Cfg.SuggestedT2);
+        }
+
+        snprintf(t1T2Buffer, sizeof(t1T2Buffer), "{\n\t%s\n\t%s\n\t}", t1Buffer, t2Buffer);
+        DHCPMGR_LOG_INFO("%s %d: T1 and T2 values found : %s\n", __FUNCTION__, __LINE__, t1T2Buffer);
+    }
+
+    if(pDhcp6c->Cfg.RequestAddresses == TRUE)
+    {
+        //Identity Association for Non-temporary Addresses.  OPTION_IA_NA(3) 
+        DHCPMGR_LOG_INFO("%s %d: Adding DHCPv6 option - Number: %d, Value: %s\n", __FUNCTION__, __LINE__, DHCPV6_OPT_3, t1T2Buffer);
+        add_dhcp_opt_to_list(send_opt_list, DHCPV6_OPT_3, t1T2Buffer);
+    }
+
+    if(pDhcp6c->Cfg.RequestPrefixes == TRUE)
+    {
+        DHCPMGR_LOG_INFO("%s %d: Adding DHCPv6 option - Number: %d, Value: %s\n", __FUNCTION__, __LINE__, DHCPV6_OPT_25, t1T2Buffer);
+        // Identity Association (IA) for Prefix Delegation option OPTION_IA_PD(25) 
+        add_dhcp_opt_to_list(send_opt_list, DHCPV6_OPT_25, t1T2Buffer);
+    }
+
+    if(pDhcp6c->Cfg.RapidCommit == TRUE)
+    {
+        add_dhcp_opt_to_list(send_opt_list, DHCPV6_OPT_14, NULL);
+    }
+
     noOfSentOpt = CosaDmlDhcpv6cGetNumberOfSentOption(NULL, pDhcp6c->Cfg.InstanceNumber);
     for (ULONG sentOptIdx = 0; sentOptIdx < noOfSentOpt; sentOptIdx++)
     {
