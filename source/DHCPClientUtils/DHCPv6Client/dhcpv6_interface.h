@@ -76,6 +76,13 @@ typedef struct _DHCPv6_PLUGIN_MSG
     }mape;
     #endif
 
+    //Vendor Specific Options
+    struct {
+        bool Assigned;  /**< Have we received vendor-specific options? */
+        unsigned char Data[BUFLEN_256]; /* Buffer to store vendor-specific options */
+        uint32_t Length; /* Length of vendor-specific options */
+    }vendor;
+
     char domainName[BUFLEN_64];  /**< New domain Name,   */
     char ntpserver[BUFLEN_128];  /**< New ntp server(s), dhcp server may provide this */
     char aftr[AFTR_NAME_LENGTH];      /**< dhcp server may provide this */
