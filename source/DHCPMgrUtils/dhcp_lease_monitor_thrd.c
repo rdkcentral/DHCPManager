@@ -90,15 +90,7 @@ int DhcpMgr_LeaseMonitor_Start()
 static void* DhcpMgr_LeaseMonitor_Thrd(void *arg)
 {
     (void)arg;  // Mark argument as intentionally unused
-    
-    //<<DEBUG>> Need to remove this code while commiting the code
-    pthread_mutex_lock(&mutex);
-    thread_info[thread_count].tid = pthread_self();
-    strncpy(thread_info[thread_count].name, "DhcpMgr_LeaseMonitor_Thrd", sizeof(thread_info[thread_count].name));
-    thread_count++;
-    pthread_mutex_unlock(&mutex);
-    /*DEBUG*/
-    
+
     pthread_detach(pthread_self());
 
     BOOL bRunning = TRUE;
