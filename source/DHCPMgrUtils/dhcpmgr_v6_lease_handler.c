@@ -84,11 +84,6 @@ void DhcpMgr_ProcessV6Lease(PCOSA_DML_DHCPCV6_FULL pDhcp6c)
             DhcpMgr_PublishDhcpV6Event(pDhcp6c, DHCP_LEASE_DEL);
             DHCPMGR_LOG_INFO("%s %d: lease expired  for %s \n",__FUNCTION__, __LINE__, pDhcp6c->Cfg.Interface);
         }
-        else if (newLease->isExpired == FALSE && (newLease->ia_na.assigned == TRUE ||newLease->ia_pd.assigned == TRUE))
-        {
-            DhcpMgr_PublishDhcpV6Event(pDhcp6c, DHCP_LEASE_RENEW);
-            DHCPMGR_LOG_INFO("%s %d: lease renewed for %s \n",__FUNCTION__, __LINE__, pDhcp6c->Cfg.Interface);
-        }
         else 
         {
             /* In an IPv6 lease, both IANA and IAPD details are sent together in a struct. 
@@ -115,7 +110,11 @@ void DhcpMgr_ProcessV6Lease(PCOSA_DML_DHCPCV6_FULL pDhcp6c)
                 DHCPMGR_LOG_INFO("%s %d: lease changed  for %s \n",__FUNCTION__, __LINE__, pDhcp6c->Cfg.Interface);
                 leaseChanged = TRUE;
             }
-            
+            else if (newLease->isExpired == FALSE && (newLease->ia_na.assigned == TRUE ||newLease->ia_pd.assigned == TRUE))
+            {
+                DhcpMgr_PublishDhcpV6Event(pDhcp6c, DHCP_LEASE_RENEW);
+                DHCPMGR_LOG_INFO("%s %d: lease renewed for %s \n",__FUNCTION__, __LINE__, pDhcp6c->Cfg.Interface);
+            }
         }
 
 
