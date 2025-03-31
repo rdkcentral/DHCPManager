@@ -51,14 +51,6 @@
 static void* DhcpMgr_MainController( void *arg );
 void processKilled(pid_t pid);
 
-//<<DEBUG>> Need to remove this code while commiting the code
-pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
-int thread_count = 0;
-ThreadInfo thread_info[10];
-//<<DEBUG>> Need to remove this code while commiting the code 
-
-//int DHCPMgr_storeDhcpLease(char* ifname, PCOSA_DML_DHCPC_FULL  newLease, DHCP_SOURCE dhcpVersion,ULONG instanceNum);
-
 /**
  * @brief Starts the main controller thread.
  *
@@ -163,14 +155,6 @@ static void* DhcpMgr_MainController( void *args )
 {
     (void) args;
     //detach thread from caller stack
-    /*DEBUG*/
-    pthread_mutex_lock(&mutex);
-    thread_info[thread_count].tid = pthread_self();
-    strncpy(thread_info[thread_count].name, "DhcpMgr_MainController", sizeof(thread_info[thread_count].name));
-    thread_count++;
-    pthread_mutex_unlock(&mutex);
-    /*DEBUG*/
-
     pthread_detach(pthread_self());
 
     DHCPMGR_LOG_INFO("%s %d DhcpMgr_MainController started \n", __FUNCTION__, __LINE__);
@@ -309,48 +293,36 @@ void DHCPMgr_AddDhcpv4Lease(char * ifName, DHCPv4_PLUGIN_MSG *newLease)
     for ( ulIndex = 0; ulIndex < clientCount; ulIndex++ )
     {
         pSListEntry = (PSINGLE_LINK_ENTRY)Client_GetEntry(NULL,ulIndex,&instanceNum);
-        DHCPMGR_LOG_INFO("%s : %d <<DEBUG>> instanceNum=%lu \n",__FUNCTION__, __LINE__,instanceNum);
         if ( pSListEntry )
         {
             pDhcpCxtLink          = ACCESS_COSA_CONTEXT_DHCPC_LINK_OBJECT(pSListEntry);
             pDhcpc            = (PCOSA_DML_DHCPC_FULL)pDhcpCxtLink->hContext;
         }
-        DHCPMGR_LOG_INFO("%s : %d <<DEBUG>> 1 \n",__FUNCTION__, __LINE__);
         if (!pDhcpc)
         {
             DHCPMGR_LOG_ERROR("%s : pDhcpc is NULL\n",__FUNCTION__);
             continue;
         }
-        DHCPMGR_LOG_INFO("%s : %d <<DEBUG>> 2 pDhcpc->Cfg.Interface=%s\n",__FUNCTION__, __LINE__, pDhcpc->Cfg.Interface);
         pthread_mutex_lock(&pDhcpc->mutex); //MUTEX lock
-        DHCPMGR_LOG_INFO("%s : %d <<DEBUG>> 3 \n",__FUNCTION__, __LINE__);
         // Verify if the DHCP clients are running. There may be multiple DHCP client interfaces with the same name that are not active.
         if(strcmp(ifName, pDhcpc->Cfg.Interface) == 0)
         {
-            DHCPMGR_LOG_INFO("%s : %d <<DEBUG>> 4 \n",__FUNCTION__, __LINE__);
             DHCPv4_PLUGIN_MSG *temp = pDhcpc->NewLeases;
-            DHCPMGR_LOG_INFO("%s : %d <<DEBUG>> 5 \n",__FUNCTION__, __LINE__);
             //Find the tail of the list
             if (temp == NULL) 
             {
-                DHCPMGR_LOG_INFO("%s : %d <<DEBUG>> 6 \n",__FUNCTION__, __LINE__);
                 // If the list is empty, add the new lease as the first element
                 pDhcpc->NewLeases = newLease;
-                DHCPMGR_LOG_INFO("%s : %d <<DEBUG>> 7 \n",__FUNCTION__, __LINE__);
             } else 
             {
-                DHCPMGR_LOG_INFO("%s : %d <<DEBUG>> 8 \n",__FUNCTION__, __LINE__);
                 while (temp->next != NULL) 
                 {
-                    DHCPMGR_LOG_INFO("%s : %d <<DEBUG>> 9 \n",__FUNCTION__, __LINE__);
                     temp = temp->next;
                 }
-                DHCPMGR_LOG_INFO("%s : %d <<DEBUG>> 10 \n",__FUNCTION__, __LINE__);
                 // Add the new lease details to the tail of the list
                 temp->next = newLease;
             }
 
-            DHCPMGR_LOG_INFO("%s : %d <<DEBUG>> 11 \n",__FUNCTION__, __LINE__);
             //Just the add the new lease details in the list. the controlled thread will hanlde it. 
             newLease->next = NULL;
             interfaceFound = TRUE;
@@ -364,7 +336,6 @@ void DHCPMgr_AddDhcpv4Lease(char * ifName, DHCPv4_PLUGIN_MSG *newLease)
             }
             break;
         }
-        DHCPMGR_LOG_INFO("%s : %d <<DEBUG>>END \n",__FUNCTION__, __LINE__);
         pthread_mutex_unlock(&pDhcpc->mutex); //MUTEX unlock
 
     }
@@ -399,7 +370,6 @@ void processKilled(pid_t pid)
     ULONG instanceNum;
     ULONG clientCount = CosaDmlDhcpcGetNumberOfEntries(NULL);
 
-    DHCPMGR_LOG_INFO("%s %d: pid=%d clientCount=%lu \n",__FUNCTION__, __LINE__,pid,clientCount);
     //iterate all entries and find the ineterface with the ifname
     for ( ulIndex = 0; ulIndex < clientCount; ulIndex++ )
     {
@@ -415,8 +385,7 @@ void processKilled(pid_t pid)
             DHCPMGR_LOG_ERROR("%s : pDhcpc is NULL\n",__FUNCTION__);
             continue;
         }
-        DHCPMGR_LOG_INFO("%s %d: Info.ClientProcessId=%d Status=%d Interface=%s\n",__FUNCTION__, __LINE__,pDhcpc->Info.ClientProcessId,pDhcpc->Info.Status,pDhcpc->Cfg.Interface);
-        //No mutex lock, since this funtions is called from teh sigchild handler. Keep this function simple and quick
+         //No mutex lock, since this funtions is called from teh sigchild handler. Keep this function simple and quick
         if(pDhcpc->Info.ClientProcessId == pid)
         {
             DHCPMGR_LOG_INFO("%s %d: DHCpv4 client for %s pid %d is terminated.\n", __FUNCTION__, __LINE__, pDhcpc->Cfg.Interface, pid);
