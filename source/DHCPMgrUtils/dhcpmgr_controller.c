@@ -534,7 +534,7 @@ static void* DhcpMgr_MainController( void *args )
                     stop_dhcpv6_client(pDhcp6c->Info.ClientProcessId);
                     pDhcp6c->Info.Status = COSA_DML_DHCP_STATUS_Disabled;
                     pDhcp6c->Cfg.Renew = FALSE;
-                    DhcpMgr_PublishDhcpV6Event(pDhcpc, DHCP_LEASE_DEL); //Send lease expired event
+                    DhcpMgr_PublishDhcpV6Event(pDhcp6c, DHCP_LEASE_DEL); //Send lease expired event
                     DhcpMgr_clearDHCPv6Lease(pDhcp6c);
                     DhcpMgr_PublishDhcpV6Event(pDhcp6c, DHCP_CLIENT_STOPPED);
                 }

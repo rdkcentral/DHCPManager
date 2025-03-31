@@ -90,11 +90,11 @@ static int get_and_fill_env_data_dhcp6(DHCPv6_PLUGIN_MSG *dhcpv6_data, char *inp
     }
 
     /** DHCP Lease state */
-    if (strcmp(input_option, "add") == 0)
+    if (strcmp(input_option, "add") == 0 || strcmp(input_option, "update") == 0)
     {
         dhcpv6_data->isExpired = false;
     }
-    else if (strcmp(input_option, "del") == 0)
+    else if (strcmp(input_option, "del") == 0 || strcmp(input_option, "delete") == 0)
     {
         dhcpv6_data->isExpired = true;
     }
@@ -341,7 +341,7 @@ int main(int argc, char *argv[])
     }
 
     DHCPMGR_LOG_INFO("Dibbler Plugin: Received event %s\n", argv[1]);
-    if (!strcmp(argv[1], "add") || !strcmp(argv[1], "del"))
+    if (!strcmp(argv[1], "add") || !strcmp(argv[1], "del") || !strcmp(argv[1], "update") || !strcmp(argv[1], "delete"))
     {
         if (handle_dibbler_event(argv[1]) != 0)
         {
