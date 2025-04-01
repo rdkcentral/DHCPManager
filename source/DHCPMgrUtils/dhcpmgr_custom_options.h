@@ -21,6 +21,24 @@
 #define DHCP_CUSTOM_OPTIONS_H
 
 /**
+ * @brief Creates a custom DHCPv4 Option 43 (Vendor Specific Information) at runtime.
+ *
+ * @param[in] ifName The name of the network interface.
+ * @param[out] OptionValue The buffer to store the hex-binary encoded option data.
+ * @return int 0 on success, non-zero on failure.
+ */
+int Get_DhcpV4_CustomOption43(const char *ifName, char *OptionValue);
+
+/**
+ * @brief Sets the custom DHCPv4 Option 43 (Vendor Specific Information) value.
+ *
+ * @param[in] ifName The name of the network interface.
+ * @param[in] OptionValue The buffer with option data.
+ * @return int 0 on success, non-zero on failure.
+ */
+int Set_DhcpV4_CustomOption43(const char *ifName, const char *OptionValue);
+
+/**
  * @brief Creates a custom DHCPv4 Option 60 (Vendor Class Identifier) at runtime.
  *
  * @param[in] ifName The name of the network interface.
@@ -56,5 +74,22 @@ int Get_DhcpV6_CustomOption15(const char *ifName, char *OptionValue);
  */
 int Get_DhcpV6_CustomOption16(const char *ifName, char *OptionValue);
 
+/**
+ * @brief Creates a custom DHCPv6 Option 17 (Vendor Specific Information Option) at runtime.
+ *
+ * @param[in] ifName The name of the network interface.
+ * @param[out] OptionValue The buffer to store the hex-binary encoded option data.
+ * @return int 0 on success, non-zero on failure.
+ */
+int Get_DhcpV6_CustomOption17(const char *ifName, char *OptionValue);
+
+/**
+ * @brief Sets the custom DHCPv6 Option 17 (Vendor Specific Information Option) value.
+ *
+ * @param[in] ifName The name of the network interface.
+ * @param[in] OptionValue The buffer with  option data.
+ * @return int 0 on success, non-zero on failure.
+ */
+int Set_DhcpV6_CustomOption17(const char *ifName, const char *OptionValue);
 
 #endif // DHCP_CUSTOM_OPTIONS_H

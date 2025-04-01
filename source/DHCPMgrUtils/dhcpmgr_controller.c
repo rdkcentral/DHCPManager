@@ -143,6 +143,17 @@ static int DhcpMgr_build_dhcpv4_opt_list (PCOSA_CONTEXT_DHCPC_LINK_OBJECT hInsCo
                     add_dhcp_opt_to_list(send_opt_list, (int)pDhcpSentOpt->Tag, optionValue);
                 }
             }
+            else if(pDhcpSentOpt->Tag == DHCPV4_OPT_43 && strlen((char *)pDhcpSentOpt->Value) <= 0)
+            {
+                DHCPMGR_LOG_INFO("%s %d: DHCPv4 option 43 (Vendor-Specific Information) entry found without value. \n", __FUNCTION__, __LINE__);
+                char optionValue[BUFLEN_256] = {0};
+                int ret = Get_DhcpV4_CustomOption43(pDhcpc->Cfg.Interface, optionValue);
+                if (ret == 0)
+                {
+                    DHCPMGR_LOG_INFO("%s %d: Adding DHCPv4 option 43 (Vendor-Specific Information) custom value: %s \n", __FUNCTION__, __LINE__, optionValue);
+                    add_dhcp_opt_to_list(send_opt_list, (int)pDhcpSentOpt->Tag, optionValue);
+                }
+            }
             else
             {
                 add_dhcp_opt_to_list(send_opt_list, (int)pDhcpSentOpt->Tag, (char *)pDhcpSentOpt->Value);
@@ -240,6 +251,17 @@ static int DhcpMgr_build_dhcpv6_opt_list (PCOSA_CONTEXT_DHCPCV6_LINK_OBJECT hIns
                     if (ret == 0)
                     {
                         DHCPMGR_LOG_INFO("%s %d: Adding DHCPv6 option 16 (Vendor Class Option) custom value: %s \n", __FUNCTION__, __LINE__, optionValue);
+                        add_dhcp_opt_to_list(send_opt_list, (int)pSentOption->Tag, optionValue);
+                    }
+                }
+                else if(pSentOption->Tag == DHCPV6_OPT_17 && strlen((char *)pSentOption->Value) <= 0)
+                {
+                    DHCPMGR_LOG_INFO("%s %d: DHCPv6 option 17 (Vendor-Specific Information) entry found without value. \n", __FUNCTION__, __LINE__);
+                    char optionValue[BUFLEN_256] = {0};
+                    int ret = Get_DhcpV6_CustomOption17(pDhcp6c->Cfg.Interface, optionValue);
+                    if (ret == 0)
+                    {
+                        DHCPMGR_LOG_INFO("%s %d: Adding DHCPv6 option 17 (Vendor-Specific Information) custom value: %s \n", __FUNCTION__, __LINE__, optionValue);
                         add_dhcp_opt_to_list(send_opt_list, (int)pSentOption->Tag, optionValue);
                     }
                 }
