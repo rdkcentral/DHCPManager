@@ -40,7 +40,7 @@
 #include "dhcpmgr_rbus_apis.h"
 #include "dhcp_client_common_utils.h"
 #include "cosa_apis.h"
-
+#include "dhcpmgr_recovery_handler.h"
 
 
 /* ---- Global Constants -------------------------- */
@@ -333,8 +333,28 @@ static void* DhcpMgr_MainController( void *args )
     BOOL bRunning = TRUE;
     struct timeval tv;
     int n = 0;
+    const char *filename = "/tmp/dhcpmanager_restarted";
+    int retStatus = 0;
 
-    int retStatus = DhcpMgr_LeaseMonitor_Start();
+    if(access(filename, F_OK) != -1)
+    {
+        retStatus = DhcpMgr_Dhcp_Recovery_Start();
+        if(retStatus != 0)
+        {
+            DHCPMGR_LOG_ERROR("%s %d - Failed to start dhcp recovery thread\n", __FUNCTION__, __LINE__);
+            return NULL;
+        }
+        else
+        {
+            DHCPMGR_LOG_INFO("%s %d - dhcp crash recovery thread started successfully\n", __FUNCTION__, __LINE__);
+            if (remove(filename) != 0)
+            {
+                DHCPMGR_LOG_ERROR("%s %d Error deleting %s file\n", __FUNCTION__, __LINE__, filename);
+            }
+        }
+    }
+
+    retStatus = DhcpMgr_LeaseMonitor_Start();
     if(retStatus < 0)
     {
         DHCPMGR_LOG_INFO("%s %d - Lease Monitor Thread failed to start!\n", __FUNCTION__, __LINE__ );
@@ -608,6 +628,10 @@ void DHCPMgr_AddDhcpv4Lease(char * ifName, DHCPv4_PLUGIN_MSG *newLease)
             interfaceFound = TRUE;
             DHCPMGR_LOG_INFO("%s %d: New dhcpv4 lease msg added for %s \n", __FUNCTION__, __LINE__, pDhcpc->Cfg.Interface);
             pthread_mutex_unlock(&pDhcpc->mutex); //MUTEX release before break
+            if (DHCPMgr_storeDhcpLease(newLease->ifname,(void*) pDhcpc,(int) DHCP_VERSION_4,instanceNum) != 0)
+            {
+                 DHCPMGR_LOG_ERROR("[%s-%d] Failed to store DHCPv4 lease\n", __FUNCTION__, __LINE__);
+             }
             break;
         }
 
