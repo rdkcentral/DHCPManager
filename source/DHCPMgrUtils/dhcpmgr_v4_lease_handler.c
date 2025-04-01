@@ -304,7 +304,7 @@ void DhcpMgr_ProcessV4Lease(PCOSA_DML_DHCPC_FULL pDhcpc)
 }
 
 
-/**
+/** 
  * @brief Clears all parameters in the TR-181 DML structure.
  *
  * This function resets all the fields in the TR-181 Data Model Layer (DML) structure to their default values.

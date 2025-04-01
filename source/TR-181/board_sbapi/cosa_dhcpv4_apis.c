@@ -135,7 +135,6 @@
 #define  LAN_L3_IFNAME      "brlan0"
 #define  WIFI_CLIENTS_MAC_FILE                      "/var/tmp/wifi_clients_mac"
 #define  LAN_NOT_RESTART_FLAG                        "/var/tmp/lan_not_restart"
-
 #define COSA_DHCP4_SYSCFG_NAMESPACE NULL
 
 // defind PSM paramaters
@@ -1913,8 +1912,8 @@ CosaDmlDhcpcGetCfg
     )
 {
     UNREFERENCED_PARAMETER(hContext);
-        char ifname[32] = {0};
-        errno_t rc = -1;
+    char ifname[32] = {0};
+    errno_t rc = -1;
     char *param_value= NULL;
     int instancenum = pCfg->InstanceNumber;
     char param_name[256]= {0};
@@ -1927,6 +1926,7 @@ CosaDmlDhcpcGetCfg
    
         pCfg->bEnabled = FALSE;
         commonSyseventGet("current_wan_ifname", ifname, sizeof(ifname));
+	
         if (strlen(ifname) > 0)
                pCfg->Interface[0] = 0;
         else
@@ -1934,7 +1934,12 @@ CosaDmlDhcpcGetCfg
                 rc = strcpy_s(pCfg->Interface, sizeof(pCfg->Interface), ifname);
                 ERR_CHK(rc);
         }
-        
+
+        if (retPsmGet == CCSP_SUCCESS)
+        {
+             STRCPY_S_NOCLOBBER(pCfg->Interface, sizeof(pCfg->Interface), param_value);
+        }
+	param_value=NULL;
         _PSM_READ_PARAM(PSM_DHCPMANAGER_CLIENTALIAS);
         if (retPsmGet == CCSP_SUCCESS)
         {

@@ -21,6 +21,8 @@
 #include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/syscall.h>
+#include <unistd.h>
 #include "util.h"
 #include "ansc_platform.h"
 #include "cosa_apis.h"
@@ -33,12 +35,17 @@
 #include "dhcp_lease_monitor_thrd.h"
 #include "dhcpmgr_rbus_apis.h"
 #include "dhcp_client_common_utils.h"
+#include "dhcpmgr_recovery_handler.h"
 
-
-
+#define PID_PATTERN "/tmp/udhcpc.*.pid"
+#define CMDLINE_PATH "/proc/%d/cmdline"
+#define MAX_PIDS 5
+#define MAX_PROC_LEN 24
+#define MAX_CMDLINE_LEN 512
 /* ---- Global Constants -------------------------- */
 
 static void* DhcpMgr_MainController( void *arg );
+void processKilled(pid_t pid);
 
 /**
  * @brief Starts the main controller thread.
@@ -49,7 +56,8 @@ static void* DhcpMgr_MainController( void *arg );
  */
 int DhcpMgr_StartMainController()
 {
-    pthread_t threadId;
+    const char *filename = "/tmp/dhcpmanager_restarted";
+    pthread_t threadId, udhcpc_pid_mon_thread;
     int ret = -1;
 
     ret = pthread_create( &threadId, NULL, &DhcpMgr_MainController, NULL );
@@ -62,6 +70,22 @@ int DhcpMgr_StartMainController()
     {
         DHCPMGR_LOG_INFO("%s %d - Main Controller Thread Started Successfully\n", __FUNCTION__, __LINE__);
         ret = 0;
+    }
+   
+    if (access(filename, F_OK) == 0) {
+        ret = pthread_create( &udhcpc_pid_mon_thread, NULL, &udhcpc_pid_mon, NULL );
+        if( 0 != ret )
+        {
+            DHCPMGR_LOG_ERROR("%s %d - Failed to start udhcpc_pid_mon Thread Error:%d\n", __FUNCTION__, __LINE__, ret);
+        }
+        else
+        {
+            DHCPMGR_LOG_INFO("%s %d - udhcpc_pid_mon Thread Started Successfully\n", __FUNCTION__, __LINE__);
+            ret = 0;
+        }
+        if (remove(filename) != 0) {
+            DHCPMGR_LOG_ERROR("%s %d Error deleting %s file\n", __FUNCTION__, __LINE__, filename);
+        }
     }
 
     return ret;
@@ -170,7 +194,7 @@ static void* DhcpMgr_MainController( void *args )
                 pDhcpCxtLink          = ACCESS_COSA_CONTEXT_DHCPC_LINK_OBJECT(pSListEntry);
                 pDhcpc            = (PCOSA_DML_DHCPC_FULL)pDhcpCxtLink->hContext;
             }
-
+            
             if (!pDhcpc)
             {
                 DHCPMGR_LOG_ERROR("%s : pDhcpc is NULL\n",__FUNCTION__);
@@ -253,6 +277,7 @@ static void* DhcpMgr_MainController( void *args )
  */
 void DHCPMgr_AddDhcpv4Lease(char * ifName, DHCPv4_PLUGIN_MSG *newLease)
 {
+    DHCPMGR_LOG_INFO("%s %d: <<DEBUG>> Entered with ifName=%s \n",__FUNCTION__, __LINE__,ifName);
     PCOSA_DML_DHCPC_FULL            pDhcpc        = NULL;
     PCOSA_CONTEXT_DHCPC_LINK_OBJECT pDhcpCxtLink  = NULL;
     PSINGLE_LINK_ENTRY              pSListEntry   = NULL;
@@ -269,15 +294,12 @@ void DHCPMgr_AddDhcpv4Lease(char * ifName, DHCPv4_PLUGIN_MSG *newLease)
             pDhcpCxtLink          = ACCESS_COSA_CONTEXT_DHCPC_LINK_OBJECT(pSListEntry);
             pDhcpc            = (PCOSA_DML_DHCPC_FULL)pDhcpCxtLink->hContext;
         }
-
         if (!pDhcpc)
         {
             DHCPMGR_LOG_ERROR("%s : pDhcpc is NULL\n",__FUNCTION__);
             continue;
         }
-
         pthread_mutex_lock(&pDhcpc->mutex); //MUTEX lock
-
         // Verify if the DHCP clients are running. There may be multiple DHCP client interfaces with the same name that are not active.
         if(strcmp(ifName, pDhcpc->Cfg.Interface) == 0)
         {
@@ -302,9 +324,14 @@ void DHCPMgr_AddDhcpv4Lease(char * ifName, DHCPv4_PLUGIN_MSG *newLease)
             interfaceFound = TRUE;
             DHCPMGR_LOG_INFO("%s %d: New dhcpv4 lease msg added for %s \n", __FUNCTION__, __LINE__, pDhcpc->Cfg.Interface);
             pthread_mutex_unlock(&pDhcpc->mutex); //MUTEX release before break
+            
+            //store the lease in the tmp file
+            if (DHCPMgr_storeDhcpLease(newLease->ifname, pDhcpc,(int) DHCP_VERSION_4,instanceNum) != 0)
+           {
+                DHCPMGR_LOG_ERROR("[%s-%d] Failed to store DHCPv4 lease\n", __FUNCTION__, __LINE__);
+            }
             break;
         }
-
         pthread_mutex_unlock(&pDhcpc->mutex); //MUTEX unlock
 
     }
@@ -338,6 +365,7 @@ void processKilled(pid_t pid)
     ULONG ulIndex;
     ULONG instanceNum;
     ULONG clientCount = CosaDmlDhcpcGetNumberOfEntries(NULL);
+
     //iterate all entries and find the ineterface with the ifname
     for ( ulIndex = 0; ulIndex < clientCount; ulIndex++ )
     {
@@ -353,8 +381,7 @@ void processKilled(pid_t pid)
             DHCPMGR_LOG_ERROR("%s : pDhcpc is NULL\n",__FUNCTION__);
             continue;
         }
-
-        //No mutex lock, since this funtions is called from teh sigchild handler. Keep this function simple and quick
+         //No mutex lock, since this funtions is called from teh sigchild handler. Keep this function simple and quick
         if(pDhcpc->Info.ClientProcessId == pid)
         {
             DHCPMGR_LOG_INFO("%s %d: DHCpv4 client for %s pid %d is terminated.\n", __FUNCTION__, __LINE__, pDhcpc->Cfg.Interface, pid);
@@ -365,7 +392,6 @@ void processKilled(pid_t pid)
             break;
         }
     }
-
     //TODO: add v6 handle
     return;
 }
