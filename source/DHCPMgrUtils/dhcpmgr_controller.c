@@ -23,8 +23,6 @@
 #include <stdlib.h>
 #include <sys/syscall.h>
 #include <unistd.h>
-#include <sys/poll.h>
-#include <glob.h>
 #include "util.h"
 #include "ansc_platform.h"
 #include "cosa_apis.h"
@@ -39,8 +37,6 @@
 #include "dhcp_client_common_utils.h"
 #include "dhcpmgr_recovery_handler.h"
 
-#define EXIT_FAIL -1
-#define EXIT_SUCCESS 0
 #define PID_PATTERN "/tmp/udhcpc.*.pid"
 #define CMDLINE_PATH "/proc/%d/cmdline"
 #define MAX_PIDS 5
