@@ -37,7 +37,6 @@
 #include "dhcpv4_interface.h"
 #include "dhcpmgr_controller.h"
 #include "dhcp_lease_monitor_thrd.h"
-#include "dhcpmgr_recovery_handler.h"
 
 static int ipcListenFd = 0;
 
