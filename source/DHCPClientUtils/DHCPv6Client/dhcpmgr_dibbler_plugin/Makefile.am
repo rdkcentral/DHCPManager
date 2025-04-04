@@ -19,15 +19,13 @@
 
 AM_LDFLAGS = -lz -lnanomsg
 
-bin_PROGRAMS = dhcpmgr_udhcpc_plugin
+bin_PROGRAMS = dhcpmgr_dibbler_plugin
 
-dhcpmgr_udhcpc_plugin_CPPFLAGS = -I$(top_srcdir)/source/DHCPClientUtils/DHCPv4Client/include \
-                                    -I$(top_srcdir)/source/DHCPServerUtils/utils/include/ \
-                                    -I$(top_srcdir)/source/DHCPClientUtils/DHCPv6Client/ \
-                                    -I$(top_srcdir)/source/DHCPMgrUtils \
-                                   -I$(top_srcdir)/source/DHCPClientUtils/DHCPv4Client
+dhcpmgr_dibbler_plugin_CPPFLAGS = -I$(top_srcdir)/source/DHCPMgrUtils \
+                                  -I$(top_srcdir)/source/DHCPClientUtils/DHCPv4Client/ \
+                                  -I$(top_srcdir)/source/DHCPClientUtils/DHCPv4Client/include \
+                                  -I$(top_srcdir)/source/DHCPClientUtils/DHCPv6Client/include \
+                                  -I$(top_srcdir)/source/DHCPServerUtils/utils/include/ \
+                                  -I$(top_srcdir)/source/DHCPClientUtils/DHCPv6Client
 
-dhcpmgr_udhcpc_plugin_SOURCES = dhcpmgr_udhcpc.c
-
-#dhcpmgr_udhcpc_plugin_LDADD = 
-
+dhcpmgr_dibbler_plugin_SOURCES = dhcpmgr_dibbler_plugin.c

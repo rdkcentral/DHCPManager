@@ -235,8 +235,15 @@ COSA_DATAMODEL_DHCPV6,  *PCOSA_DATAMODEL_DHCPV6;
 
 #define DHCPV6_CLIENT_SET_DEFAULTVALUE(pDhcpc)                                         \
     (pDhcpc)->Cfg.bEnabled                    = FALSE;                                 \
+    (pDhcpc)->Cfg.Renew                       = FALSE;                                 \
+    (pDhcpc)->Cfg.SuggestedT1                 = -1;                                    \
+    (pDhcpc)->Cfg.SuggestedT2                 = -1;                                    \
     AnscZeroMemory((pDhcpc)->Cfg.Interface, sizeof((pDhcpc)->Cfg.Interface));          \
     (pDhcpc)->Info.Status                     = COSA_DML_DHCP_STATUS_Disabled;         \
+    (pDhcpc)->Info.ClientProcessId            = -1;                                    \
+    (pDhcpc)->currentLease                    = NULL;                                  \
+    (pDhcpc)->NewLeases                       = NULL;                                  \
+
 
 #define DHCPV6_SENTOPTION_SET_DEFAULTVALUE(pSentOption)                                \
     (pSentOption)->bEnabled                   = FALSE;                                 \

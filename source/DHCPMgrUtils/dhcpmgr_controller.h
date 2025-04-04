@@ -21,6 +21,10 @@
 #define _DHCP_CONTROLLER_H_
 
 #include "cosa_dhcpv4_apis.h"
+#include "dhcpv4_interface.h"
+#include "cosa_dhcpv6_apis.h"
+#include "dhcpv6_interface.h"
+
 /**
  * @brief Starts the main controller thread.
  *
@@ -63,4 +67,37 @@ void DhcpMgr_ProcessV4Lease(PCOSA_DML_DHCPC_FULL pDhcpc);
  */
 void DhcpMgr_clearDHCPv4Lease(PCOSA_DML_DHCPC_FULL pDhcpc) ;
 
+/**
+ * @brief Adds a new DHCPv6 lease.
+ *
+ * This function locates the DHCPv6 client interface using the provided interface name (`ifName`) and updates the `pDhcp6c->NewLeases` linked list with the new lease information.
+ *  If the operation fails, it frees the memory allocated for the new lease.
+ *
+ * @param[in] ifName The name of the interface.
+ * @param[in] newLease A pointer to the new DHCPv6 lease information.
+ */
+void DHCPMgr_AddDhcpv6Lease(char * ifName, DHCPv6_PLUGIN_MSG *newLease);
+
+/**
+ * @brief Processes new DHCPv6 leases.
+ *
+ * This function checks for the availability of new leases in the list and processes them if found.
+ *
+ * @param[in] pDhcpc Pointer to the DHCP client structure containing lease information.
+ *
+ * @return void
+ */
+void DhcpMgr_ProcessV6Lease(PCOSA_DML_DHCPCV6_FULL pDhcp6c);
+
+/**
+ * @brief Clears the current DHCPv6 lease information.
+ *
+ * This function frees the memory allocated for the current DHCPv6 lease and resets
+ * the lease-related fields in the DHCP client structure.
+ *
+ * @param[in] pDhcp6c Pointer to the DHCPv6 client structure containing lease information.
+ *
+ * @return void
+ */
+void DhcpMgr_clearDHCPv6Lease(PCOSA_DML_DHCPCV6_FULL pDhcp6c);
 #endif //_DHCP_CONTROLLER_H_

@@ -21,8 +21,11 @@
 #include <stdlib.h>
 #include "dhcpmgr_rbus_apis.h"
 #include "cosa_dhcpv4_apis.h"
+#include "cosa_dhcpv6_apis.h"
+
 #include "util.h"
 #include "dhcpv4_interface.h"
+#include "dhcpv6_interface.h"
 
 
 #define  ARRAY_SZ(x) (sizeof(x) / sizeof((x)[0]))
@@ -41,9 +44,21 @@ rbusError_t DhcpMgr_Rbus_SubscribeHandler(rbusHandle_t handle, rbusEventSubActio
 rbusDataElement_t DhcpMgrRbusDataElements[] = {
     {DHCP_MGR_DHCPv4_IFACE, RBUS_ELEMENT_TYPE_TABLE, {NULL, NULL, NULL, NULL, NULL, NULL}},
     {DHCP_MGR_DHCPv4_STATUS,  RBUS_ELEMENT_TYPE_PROPERTY, {NULL, NULL, NULL, NULL, DhcpMgr_Rbus_SubscribeHandler, NULL}},
+    {DHCP_MGR_DHCPv6_IFACE, RBUS_ELEMENT_TYPE_TABLE, {NULL, NULL, NULL, NULL, NULL, NULL}},
+    {DHCP_MGR_DHCPv6_STATUS,  RBUS_ELEMENT_TYPE_PROPERTY, {NULL, NULL, NULL, NULL, DhcpMgr_Rbus_SubscribeHandler, NULL}},
 };
 
 
+/**
+ * @brief Initializes the DHCP Manager by opening an rbus handle and registering rbus DML, DML tables, and rbus events.
+ *
+ * This function is responsible for setting up the necessary rbus components for the DHCP Manager to operate.
+ * It opens an rbus handle and registers the required rbus DML, DML tables, and rbus events.
+ *
+ * @return ANSC_STATUS
+ * @retval ANSC_STATUS_SUCCESS if the initialization is successful.
+ * @retval ANSC_STATUS_FAILURE if the initialization fails.
+ */
 ANSC_STATUS DhcpMgr_Rbus_Init()
 {
     DHCPMGR_LOG_INFO("%s %d: rbus init called\n",__FUNCTION__, __LINE__);
@@ -83,10 +98,47 @@ ANSC_STATUS DhcpMgr_Rbus_Init()
         }
 
         memset(AliasName,0,64);
-     }
+    }
+
+    //Register DHCPv6 table
+    clientCount = CosaDmlDhcpv6cGetNumberOfEntries(NULL);
+    for (ULONG i = 0; i < clientCount; i++)
+    {
+        rc = rbusTable_registerRow(rbusHandle, DHCP_MGR_DHCPv6_TABLE, (i+1), NULL);
+        if(rc != RBUS_ERROR_SUCCESS)
+        {
+            DHCPMGR_LOG_ERROR("%s %d - Iterface(%lu) Table (%s) Registartion failed, Error=%d \n", __FUNCTION__, __LINE__, i, DHCP_MGR_DHCPv6_TABLE, rc);
+            return rc;
+        }
+        else
+        {
+            DHCPMGR_LOG_INFO("%s %d - Iterface(%lu) Table (%s) Registartion Successfully, AliasName(%s)\n", __FUNCTION__, __LINE__, i, DHCP_MGR_DHCPv6_TABLE, AliasName);
+        }
+
+        memset(AliasName,0,64);
+    }
+     
 
     return ANSC_STATUS_SUCCESS;
 }
+
+/**
+ * @brief Rbus subscribe handler.
+ *
+ * This function is called when other components subscribe to the events registered with this callback.
+ * It handles the subscription actions for the specified rbus events.
+ *
+ * @param handle The rbus handle.
+ * @param action The subscription action to be performed.
+ * @param eventName The name of the event being subscribed to.
+ * @param filter The filter applied to the event.
+ * @param interval The interval for event notifications.
+ * @param autoPublish A flag indicating whether the event should be auto-published.
+ *
+ * @return rbusError_t
+ * @retval RBUS_ERROR_SUCCESS if the subscription is handled successfully.
+ * @retval RBUS_ERROR_FAILURE if there is an error handling the subscription.
+ */
 
 rbusError_t DhcpMgr_Rbus_SubscribeHandler(rbusHandle_t handle, rbusEventSubAction_t action, const char *eventName, rbusFilter_t filter, int32_t interval, bool *autoPublish)
 {
@@ -101,7 +153,16 @@ rbusError_t DhcpMgr_Rbus_SubscribeHandler(rbusHandle_t handle, rbusEventSubActio
     return RBUS_ERROR_SUCCESS;
 }
 
-void DhcpMgr_createLeaseInfoMsg(DHCPv4_PLUGIN_MSG *src, DHCP_MGR_IPV4_MSG *dest) 
+/**
+ * @brief Copies DHCPv4_PLUGIN_MSG to DHCP_MGR_IPV4_MSG struct for the rbus event publish.
+ *
+ * This function copies the contents of a DHCPv4_PLUGIN_MSG structure to a DHCP_MGR_IPV4_MSG structure.
+ * It is used for preparing the data to be published as an rbus event.
+ *
+ * @param src Pointer to the source DHCPv4_PLUGIN_MSG structure.
+ * @param dest Pointer to the destination DHCP_MGR_IPV4_MSG structure.
+ */
+static void DhcpMgr_createLeaseInfoMsg(DHCPv4_PLUGIN_MSG *src, DHCP_MGR_IPV4_MSG *dest) 
 {
     strncpy(dest->ifname, src->ifname, sizeof(dest->ifname) - 1);
     strncpy(dest->address, src->address, sizeof(dest->address) - 1);
@@ -117,6 +178,56 @@ void DhcpMgr_createLeaseInfoMsg(DHCPv4_PLUGIN_MSG *src, DHCP_MGR_IPV4_MSG *dest)
     dest->downstreamCurrRate = src->downstreamCurrRate;
 }
 
+/**
+ * @brief Copies DHCPv6_PLUGIN_MSG to DHCP_MGR_IPV6_MSG struct for the rbus event publish.
+ *
+ * This function copies the contents of a DHCPv6_PLUGIN_MSG structure to a DHCP_MGR_IPV6_MSG structure.
+ * It is used for preparing the data to be published as an rbus event.
+ *
+ * @param src Pointer to the source DHCPv6_PLUGIN_MSG structure.
+ * @param dest Pointer to the destination DHCP_MGR_IPV6_MSG structure.
+ */
+static void DhcpMgr_createDhcpv6LeaseInfoMsg(DHCPv6_PLUGIN_MSG *src, DHCP_MGR_IPV6_MSG *dest)
+{
+    strncpy(dest->ifname, src->ifname, sizeof(dest->ifname) - 1);
+    strncpy(dest->address, src->ia_na.address, sizeof(dest->address) - 1);
+    strncpy(dest->nameserver, src->dns.nameserver, sizeof(dest->nameserver) - 1);
+    strncpy(dest->nameserver1, src->dns.nameserver1, sizeof(dest->nameserver1) - 1);
+    strncpy(dest->domainName, src->domainName, sizeof(dest->domainName) - 1);
+    snprintf(dest->sitePrefix, sizeof(dest->sitePrefix), "%s/%d", src->ia_pd.Prefix, src->ia_pd.PrefixLength);
+
+    dest->prefixPltime = src->ia_pd.PreferedLifeTime;
+    dest->prefixVltime = src->ia_pd.ValidLifeTime;
+
+    dest->addrAssigned = src->ia_na.assigned;
+    dest->prefixAssigned = src->ia_pd.assigned;
+    dest->domainNameAssigned = (strlen(src->domainName) > 0);
+
+    //TODO: MAPT implementation
+    //dest->mapInfo.Assigned = src->mapt.Assigned;
+    //memcpy(dest->mapInfo.Container, src->mapt.Container, sizeof(dest->mapInfo.Container));
+}
+
+/**
+ * @brief Publishes DHCPv4 rbus events.
+ *
+ * This function publishes DHCPv4 rbus events based on the specified message type.
+ * The rbus event will include the tags "IfName" and "MsgType". For the `DHCP_LEASE_UPDATE` message type,
+ * it additionally sends "LeaseInfo".
+ *
+ * @param pDhcpc Pointer to the DHCP client structure.
+ * @param msgType The type of DHCP message to be published. The possible values are:
+ * - DHCP_CLIENT_STARTED: Indicates the DHCP client has started.
+ * - DHCP_CLIENT_STOPPED: Indicates the DHCP client has stopped.
+ * - DHCP_CLIENT_FAILED: Indicates the DHCP client has failed.
+ * - DHCP_LEASE_UPDATE: Indicates a new lease or a change in the lease value.
+ * - DHCP_LEASE_DEL: Indicates the lease has expired or been released.
+ * - DHCP_LEASE_RENEW: Indicates the lease has been renewed.
+ *
+ * @return int
+ * @retval 0 if the event is published successfully.
+ * @retval -1 if there is an error in publishing the event.
+ */
 int DhcpMgr_PublishDhcpV4Event(PCOSA_DML_DHCPC_FULL pDhcpc, DHCP_MESSAGE_TYPE msgType)
 {
     if(pDhcpc == NULL)
@@ -145,6 +256,7 @@ int DhcpMgr_PublishDhcpV4Event(PCOSA_DML_DHCPC_FULL pDhcpc, DHCP_MESSAGE_TYPE ms
     if(msgType == DHCP_LEASE_UPDATE)
     { 
         DHCP_MGR_IPV4_MSG leaseInfo;
+        memset(&leaseInfo, 0, sizeof(leaseInfo));
         DhcpMgr_createLeaseInfoMsg(pDhcpc->currentLease,&leaseInfo);
         rbusValue_Init(&leaseInfoVal);
         rbusValue_SetBytes(leaseInfoVal, &leaseInfo, sizeof(leaseInfo));
@@ -181,4 +293,87 @@ int DhcpMgr_PublishDhcpV4Event(PCOSA_DML_DHCPC_FULL pDhcpc, DHCP_MESSAGE_TYPE ms
 
     return rc;
 
+}
+
+
+/**
+ * @brief Publishes DHCPv6 rbus events.
+ *
+ * This function publishes DHCPv6 rbus events based on the specified message type.
+ * The rbus event will include the tags "IfName" and "MsgType". For the `DHCP_LEASE_UPDATE` message type,
+ * it additionally sends "LeaseInfo".
+ *
+ * @param pDhcpv6c Pointer to the DHCPv6 client structure.
+ * @param msgType The type of DHCP message to be published. The possible values are:
+ * - DHCP_CLIENT_STARTED: Indicates the DHCP client has started.
+ * - DHCP_CLIENT_STOPPED: Indicates the DHCP client has stopped.
+ * - DHCP_CLIENT_FAILED: Indicates the DHCP client has failed.
+ * - DHCP_LEASE_UPDATE: Indicates a new lease or a change in the lease value.
+ * - DHCP_LEASE_DEL: Indicates the lease has expired or been released.
+ * - DHCP_LEASE_RENEW: Indicates the lease has been renewed.
+ *
+ * @return int
+ * @retval 0 if the event is published successfully.
+ * @retval -1 if there is an error in publishing the event.
+ */
+int DhcpMgr_PublishDhcpV6Event(PCOSA_DML_DHCPCV6_FULL pDhcpv6c, DHCP_MESSAGE_TYPE msgType)
+{
+    if(pDhcpv6c == NULL)
+    {
+        DHCPMGR_LOG_ERROR("%s : pDhcpv6c is NULL\n",__FUNCTION__);
+        return -1;
+    }
+
+    int rc = -1;
+    rbusEvent_t event;
+    rbusObject_t rdata;
+    rbusValue_t ifNameVal , typeVal, leaseInfoVal;
+
+    /*Set Interface Name */
+    rbusObject_Init(&rdata, NULL);
+    rbusValue_Init(&ifNameVal);
+    rbusValue_SetString(ifNameVal, (char*)pDhcpv6c->Cfg.Interface);
+    rbusObject_SetValue(rdata, "IfName", ifNameVal);
+
+    /*Set Msg type Name */
+    rbusValue_Init(&typeVal);
+    rbusValue_SetUInt32(typeVal, msgType);
+    rbusObject_SetValue(rdata, "MsgType", typeVal);
+
+    /*Set the lease details */
+    if(msgType == DHCP_LEASE_UPDATE)
+    { 
+        DHCP_MGR_IPV6_MSG leaseInfo;
+        memset(&leaseInfo, 0, sizeof(leaseInfo));
+        DhcpMgr_createDhcpv6LeaseInfoMsg(pDhcpv6c->currentLease,&leaseInfo);
+        rbusValue_Init(&leaseInfoVal);
+        rbusValue_SetBytes(leaseInfoVal, &leaseInfo, sizeof(leaseInfo));
+        rbusObject_SetValue(rdata, "LeaseInfo", leaseInfoVal);
+    }
+
+    int index = pDhcpv6c->Cfg.InstanceNumber;
+    char eventStr[64] = {0};
+    snprintf(eventStr,sizeof(eventStr), DHCPv6_EVENT_FORMAT, index);
+
+    event.name = eventStr;
+    event.data = rdata;
+    event.type = RBUS_EVENT_GENERAL;
+
+    rbusError_t rt = rbusEvent_Publish(rbusHandle, &event); 
+    
+    if( rt != RBUS_ERROR_SUCCESS && rt != RBUS_ERROR_NOSUBSCRIBERS)
+    {
+        DHCPMGR_LOG_WARNING("%s %d - Event %s Publish Failed \n", __FUNCTION__, __LINE__,eventStr );
+    }
+    else
+    {
+        DHCPMGR_LOG_INFO("%s %d - Event %s Published \n", __FUNCTION__, __LINE__,eventStr );
+        rc = 0;
+    }
+
+    rbusValue_Release(ifNameVal);
+    rbusValue_Release(typeVal);
+    rbusObject_Release(rdata);
+
+    return rc;
 }
