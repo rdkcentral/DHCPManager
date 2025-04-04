@@ -79,7 +79,7 @@ typedef struct _DHCPv6_PLUGIN_MSG
     //Vendor Specific Options
     struct {
         bool Assigned;  /**< Have we received vendor-specific options? */
-        unsigned char Data[BUFLEN_256]; /* Buffer to store vendor-specific options */
+        char Data[BUFLEN_256]; /* Buffer to store vendor-specific options */
         uint32_t Length; /* Length of vendor-specific options */
     }vendor;
 
