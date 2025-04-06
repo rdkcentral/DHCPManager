@@ -100,4 +100,5 @@ void DhcpMgr_ProcessV6Lease(PCOSA_DML_DHCPCV6_FULL pDhcp6c);
  * @return void
  */
 void DhcpMgr_clearDHCPv6Lease(PCOSA_DML_DHCPCV6_FULL pDhcp6c);
+
 #endif //_DHCP_CONTROLLER_H_
