@@ -138,6 +138,7 @@ void DhcpMgr_ProcessV6Lease(PCOSA_DML_DHCPCV6_FULL pDhcp6c)
         
         if(leaseChanged)
         {
+            //TODO : check any sysvent required for lease update
             DHCPMGR_LOG_INFO("%s %d: NewLease address %s  \n", __FUNCTION__, __LINE__, newLease->ia_na.address);
             DHCPMGR_LOG_INFO("%s %d: NewLease prefix %s  \n", __FUNCTION__, __LINE__, newLease->ia_pd.Prefix);
             DHCPMGR_LOG_INFO("%s %d: NewLease PrefixLength %d  \n", __FUNCTION__, __LINE__, newLease->ia_pd.PrefixLength);

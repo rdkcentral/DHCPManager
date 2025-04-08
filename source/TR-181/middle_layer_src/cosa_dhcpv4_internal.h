@@ -233,6 +233,7 @@ COSA_DATAMODEL_DHCPV4,  *PCOSA_DATAMODEL_DHCPV4;
 #define DHCPV4_CLIENT_SET_DEFAULTVALUE(pDhcpc)                                         \
     (pDhcpc)->Cfg.bEnabled                    = FALSE;                                 \
     (pDhcpc)->Cfg.Renew                       = FALSE;                                 \
+    (pDhcpc)->Cfg.Restart                     = FALSE;                                 \
     AnscZeroMemory((pDhcpc)->Cfg.Interface, sizeof((pDhcpc)->Cfg.Interface));          \
     (pDhcpc)->Info.Status                     = COSA_DML_DHCP_STATUS_Disabled;         \
     (pDhcpc)->Info.DHCPStatus                 = COSA_DML_DHCPC_STATUS_Init;            \
