@@ -56,7 +56,6 @@
  */
 ANSC_STATUS DhcpMgr_updateDHCPv4DML(PCOSA_DML_DHCPC_FULL pDhcpc)
 {
-
     DHCPv4_PLUGIN_MSG *current = pDhcpc->currentLease;
     if (current == NULL) 
     {
