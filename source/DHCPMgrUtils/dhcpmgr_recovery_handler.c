@@ -38,6 +38,8 @@
 #define MAX_CMDLINE_LEN 512
 #define TMP_DIR_PATH "/tmp/Dhcp_manager"
 
+extern ANSC_STATUS DhcpMgr_updateDHCPv4DML(PCOSA_DML_DHCPC_FULL pDhcpc);
+
 typedef enum {
     DHCP_VERSION_4,
     DHCP_VERSION_6,
@@ -48,38 +50,6 @@ int pids[MAX_PIDS];
 
 static int DHCPMgr_loadDhcpLeases();
 static void *dhcp_pid_mon( void *args );
-
-ULONG GetInstanceNumberByInterface(char *interfaceName) {
-
-    PSINGLE_LINK_ENTRY pSListEntry = NULL;
-    PCOSA_CONTEXT_DHCPC_LINK_OBJECT pDhcpCxtLink = NULL;
-    PCOSA_DML_DHCPC_FULL pDhcpc = NULL;
-    ULONG ulIndex;
-    ULONG instanceNum;
-    ULONG clientCount = CosaDmlDhcpcGetNumberOfEntries(NULL);
-
-    if (clientCount == 0) {
-        DHCPMGR_LOG_ERROR("%s:%d No DHCP client entries found\n", __FUNCTION__, __LINE__);
-        return 0;
-    }
-
-    for (ulIndex = 0; ulIndex < clientCount; ulIndex++) {
-        pSListEntry = (PSINGLE_LINK_ENTRY)Client_GetEntry(NULL, ulIndex, &instanceNum);
-        if (pSListEntry) {
-            pDhcpCxtLink = ACCESS_COSA_CONTEXT_DHCPC_LINK_OBJECT(pSListEntry);
-            pDhcpc = (PCOSA_DML_DHCPC_FULL)pDhcpCxtLink->hContext;
-
-            if (pDhcpc && strcmp(pDhcpc->Cfg.Interface, interfaceName) == 0) {
-                DHCPMGR_LOG_INFO("%s:%d Found matching interface: %s, Instance Number: %lu\n",
-                                 __FUNCTION__, __LINE__, interfaceName, instanceNum);
-                return instanceNum;
-            }
-        }
-    }
-
-    DHCPMGR_LOG_ERROR("%s:%d No matching interface found for %s\n", __FUNCTION__, __LINE__, interfaceName);
-    return 0;
-}
 
 int DhcpMgr_Dhcp_Recovery_Start()
 {
@@ -226,7 +196,8 @@ int DHCPMgr_storeDhcpLease(char* ifname, void* newLease, int dhcpVersion)
             return EXIT_FAIL;
         }
 
-        if (fwrite(data, sizeof(COSA_DML_DHCPC_FULL) - sizeof(DHCPv4_PLUGIN_MSG *), 1, file) != 1) 
+        //storing the current lease as separate segment inorder to fetch it easily
+        if (fwrite(data, sizeof(COSA_DML_DHCPC_FULL), 1, file) != 1) 
         {
             DHCPMGR_LOG_ERROR("%s:%d Failed to write data to file %s\n", __FUNCTION__, __LINE__, filePath);
             fclose(file);
@@ -268,7 +239,12 @@ static int load_v4dhcp_leases()
 
         for (ulIndex = 0; ulIndex < clientCount; ulIndex++) 
         {
-            COSA_DML_DHCPC_FULL storedLease;
+            PCOSA_DML_DHCPC_FULL storedLease = (PCOSA_DML_DHCPC_FULL)malloc(sizeof(COSA_DML_DHCPC_FULL));
+            if (!storedLease) 
+            {
+                DHCPMGR_LOG_ERROR("%s:%d Failed to allocate memory for storedLease\n", __FUNCTION__, __LINE__);
+                continue;
+            }
             pSListEntry = (PSINGLE_LINK_ENTRY)Client_GetEntry(NULL, ulIndex, &instanceNum);
             if (pSListEntry) 
             {
@@ -294,71 +270,68 @@ static int load_v4dhcp_leases()
                     continue;
                 }
 
-                memset(&storedLease, 0, sizeof(COSA_DML_DHCPC_FULL));
+                memset(storedLease, 0, sizeof(COSA_DML_DHCPC_FULL));
 
-                if (fread(&storedLease, sizeof(COSA_DML_DHCPC_FULL) - sizeof(DHCPv4_PLUGIN_MSG *), 1, file) != 1) 
+                if (fread(storedLease, sizeof(COSA_DML_DHCPC_FULL), 1, file) != 1) 
                 {
                     DHCPMGR_LOG_ERROR("%s:%d Failed to read data from file %s\n", __FUNCTION__, __LINE__, FilePattern);
                     fclose(file);
                     continue;
                 }
 
-                char procPath[64] = {0};
-                snprintf(procPath, sizeof(procPath), "/proc/%d", storedLease.Info.ClientProcessId);
-
                 pthread_mutex_lock(&pDhcpc->mutex);
+                pDhcpc->currentLease = (DHCPv4_PLUGIN_MSG *)malloc(sizeof(DHCPv4_PLUGIN_MSG));
+                memset(pDhcpc->currentLease, 0, sizeof(DHCPv4_PLUGIN_MSG));
+                if (!pDhcpc->currentLease) 
+                {
+                    DHCPMGR_LOG_ERROR("%s:%d Failed to allocate memory for currentLease\n",__FUNCTION__, __LINE__);
+                    fclose(file);
+                    pthread_mutex_unlock(&pDhcpc->mutex);
+                    continue;
+                }
+
+                if (fread(pDhcpc->currentLease, sizeof(DHCPv4_PLUGIN_MSG), 1, file) != 1) 
+                {
+                    DHCPMGR_LOG_ERROR("%s:%d Failed to read current lease from file %s\n", 
+                                      __FUNCTION__, __LINE__, FilePattern);
+                    free(pDhcpc->currentLease);
+                    pDhcpc->currentLease = NULL;
+                    fclose(file);
+                    pthread_mutex_unlock(&pDhcpc->mutex);
+                    continue;
+                }
+                pDhcpc->currentLease->next = NULL;
+
+                char procPath[64] = {0};
+                snprintf(procPath, sizeof(procPath), "/proc/%d", storedLease->Info.ClientProcessId);
 
                 /*If the ClientPid is running before and after DHCPMgr restart, we have to populate data for the Client*/
                 /*If not we need to tell the Controller that the stored pid is not running we have to restart the dhcp client*/
                 if (access(procPath, F_OK) == -1) 
                 {
-                    DHCPMGR_LOG_INFO("%s:%d PID %d is not running, calling processKilled\n", __FUNCTION__, __LINE__, storedLease.Info.ClientProcessId);
-                    pDhcpc->Cfg.bEnabled = storedLease.Cfg.bEnabled;
-                    pDhcpc->Info.Status = storedLease.Info.Status;
-                    pDhcpc->Info.ClientProcessId = storedLease.Info.ClientProcessId;
-                    snprintf(pDhcpc->Cfg.Interface, sizeof(pDhcpc->Cfg.Interface), "%s", storedLease.Cfg.Interface);
-                    processKilled(pDhcpc->Info.ClientProcessId);
-                    pthread_mutex_unlock(&pDhcpc->mutex);
-                    continue;
-                    //need to handle one more case that if udhcpc is running with different pid, we need to send renew and update the pid as well as pDhcpc config
+                    DHCPMGR_LOG_INFO("%s:%d PID %d is not running, calling processKilled\n", __FUNCTION__, __LINE__, storedLease->Info.ClientProcessId);
+                    pDhcpc->Info.Status = COSA_DML_DHCP_STATUS_Disabled;
                 } 
                 else 
                 {
-                    DHCPMGR_LOG_INFO("%s:%d PID %d is still running\n", __FUNCTION__, __LINE__, storedLease.Info.ClientProcessId);
-                    memcpy(&pDhcpc->Info, &storedLease.Info, sizeof(COSA_DML_DHCPC_INFO));
-                    memcpy(&pDhcpc->Cfg, &storedLease.Cfg, sizeof(COSA_DML_DHCPC_CFG));
-                    pids[pid_count++] = pDhcpc->Info.ClientProcessId;
-                    pDhcpc->currentLease = (DHCPv4_PLUGIN_MSG *)malloc(sizeof(DHCPv4_PLUGIN_MSG));
-                    if (!pDhcpc->currentLease) 
-                    {
-                        DHCPMGR_LOG_ERROR("%s:%d Failed to allocate memory for currentLease\n",__FUNCTION__, __LINE__);
-                        fclose(file);
-                        pthread_mutex_unlock(&pDhcpc->mutex);
-                        continue;
-                    }
-
-                    memset(pDhcpc->currentLease, 0, sizeof(DHCPv4_PLUGIN_MSG));
-
-                    if (fread(pDhcpc->currentLease, sizeof(DHCPv4_PLUGIN_MSG), 1, file) != 1) 
-                    {
-                        DHCPMGR_LOG_ERROR("%s:%d Failed to read current lease from file %s\n", 
-                                          __FUNCTION__, __LINE__, FilePattern);
-                        free(pDhcpc->currentLease);
-                        pDhcpc->currentLease = NULL;
-                        fclose(file);
-                        pthread_mutex_unlock(&pDhcpc->mutex);
-                        continue;
-                    }
-                    pDhcpc->currentLease->next = NULL;
+                    DHCPMGR_LOG_INFO("%s:%d PID %d is still running\n", __FUNCTION__, __LINE__, storedLease->Info.ClientProcessId);
+                    pDhcpc->Info.Status = COSA_DML_DHCP_STATUS_Enabled;
                 }
+
+                // Copy the stored Cfg data to the pDHCPC
+                pids[pid_count++] = pDhcpc->Info.ClientProcessId = storedLease->Info.ClientProcessId;
+                memcpy(&pDhcpc->Cfg, &storedLease->Cfg, sizeof(COSA_DML_DHCPC_CFG));
+
+                // copy the Info structure to pdhcpc ,ensure DhcpMgr_updateDHCPv4DML is not having any mutex lock
+                DhcpMgr_updateDHCPv4DML(pDhcpc);
+
                 pthread_mutex_unlock(&pDhcpc->mutex);
 
                 DHCPMGR_LOG_INFO("%s:%d pDhcpc->Info.ClientProcessId=%d Status=%d bEnabled=%d Interface=%s \n", __FUNCTION__, __LINE__, pDhcpc->Info.ClientProcessId, pDhcpc->Info.Status, pDhcpc->Cfg.bEnabled, pDhcpc->Cfg.Interface);
                 DHCPMGR_LOG_INFO("%s:%d pDhcpc->currentLease->ipAddr=%s \n",__FUNCTION__, __LINE__, pDhcpc->currentLease->address);
                 DHCPMGR_LOG_INFO("%s:%d pDhcpc->currentLease->netmask=%s \n",__FUNCTION__, __LINE__, pDhcpc->currentLease->netmask);
-
                 fclose(file);
-            } 
+            }
             else 
             {
                 DHCPMGR_LOG_ERROR("%s:%d File %s does not exist, No file was stored for DHCPv4.Client.%lu\n", __FUNCTION__, __LINE__, FilePattern, instanceNum);
