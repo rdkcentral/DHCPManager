@@ -82,7 +82,7 @@
 #include "service_dhcpv6_client.h"
 #include "util.h"
 #include "ifl.h"
-#include <libnet.h>
+//#include <libnet.h>
 #include "dibbler_client_utils.h"
 
 extern void* g_pDslhDmlAgent;
@@ -139,7 +139,7 @@ ANSC_STATUS syscfg_set_string(const char* name, const char* value);
  * @return 0 on success else returned -1
  */
 //static int send_dhcp_data_to_wanmanager (ipc_dhcpv6_data_t *dhcpv6_data); /* Send data to wanmanager using nanomsg. */
-#ifdef WAN_FAILOVER_SUPPORTED
+#if 0 //def WAN_FAILOVER_SUPPORTED
 pthread_t Ipv6Handle_tid;
 void *Ipv6ModeHandler_thrd(void *data);
 #endif
@@ -1126,11 +1126,13 @@ BOOL tagPermitted(int tag)
 #endif
 #endif
 
+#if defined(RA_MONITOR_SUPPORT) || defined(DHCPV6_SERVER_SUPPORT)
 static struct {
     pthread_t          dbgthrdc;
     pthread_t          dbgthrds;
     pthread_t          dbgthrd_rtadv;
 }g_be_ctx;
+#endif
 
 #ifdef RA_MONITOR_SUPPORT
 typedef struct
@@ -2205,7 +2207,7 @@ CosaDmlDhcpv6Init
     EvtDispterRgstCallbackForEvent("lan-status", CosaDmlDhcpv6sRestartOnLanStarted, NULL);
 #endif
 
-#if defined(FEATURE_RDKB_WAN_MANAGER)
+#if 0//defined(FEATURE_RDKB_WAN_MANAGER)
 #if defined (WAN_FAILOVER_SUPPORTED) && !defined (RDKB_EXTENDER_ENABLED)
     pthread_create(&Ipv6Handle_tid, NULL, Ipv6ModeHandler_thrd, NULL);
 #endif
@@ -7331,7 +7333,7 @@ CosaDmlDhcpv6Remove(ANSC_HANDLE hContext)
     return;
 }
 
-
+#if 0 // TODO : clean up 
 int dhcpv6_assign_global_ip(char * prefix, char * intfName, char * ipAddr)
 {
     unsigned int    length           = 0;
@@ -8362,7 +8364,7 @@ void configureLTEIpv6(char* v6addr)
 }
 #endif
 
-#if 0
+
 /*******************************************************
 * Function Name : isDropbearRunningWithIpv6 (char *pIpv6Addr)
 *      It will verify, dropbear process is running with provided IPv6 address or not
@@ -9996,6 +9998,7 @@ EXIT:
 }
 #endif // RA_MONITOR_SUPPORT
 
+#if 0 //TODO: cleanup dhcp 
 #if defined(FEATURE_RDKB_WAN_MANAGER)
 #if 0
 static int send_dhcp_data_to_wanmanager (ipc_dhcpv6_data_t *dhcpv6_data)
@@ -10200,4 +10203,5 @@ void *Ipv6ModeHandler_thrd(void *data)
 }
 #endif
 #endif //FEATURE_RDKB_WAN_MANAGER
+#endif
 #endif
