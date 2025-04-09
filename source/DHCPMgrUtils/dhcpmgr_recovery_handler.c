@@ -20,9 +20,9 @@
 #include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <sys/syscall.h>
+#include <sys/ptrace.h>
+#include <sys/wait.h>
 #include <unistd.h>
-#include <sys/poll.h>
 #include "util.h"
 #include "cosa_dhcpv4_dml.h"
 #include "cosa_dhcpv4_internal.h"
@@ -34,9 +34,11 @@
 #define EXIT_FAIL -1
 #define EXIT_SUCCESS 0
 #define MAX_PIDS 20
-#define MAX_PROC_LEN 24
-#define MAX_CMDLINE_LEN 512
 #define TMP_DIR_PATH "/tmp/Dhcp_manager"
+#define EVENT_SIZE (sizeof(struct inotify_event))
+#define EVENT_BUF_LEN (1024 * (EVENT_SIZE + 16))
+
+extern ANSC_STATUS DhcpMgr_updateDHCPv4DML(PCOSA_DML_DHCPC_FULL pDhcpc);
 
 typedef enum {
     DHCP_VERSION_4,
@@ -48,38 +50,6 @@ int pids[MAX_PIDS];
 
 static int DHCPMgr_loadDhcpLeases();
 static void *dhcp_pid_mon( void *args );
-
-ULONG GetInstanceNumberByInterface(char *interfaceName) {
-
-    PSINGLE_LINK_ENTRY pSListEntry = NULL;
-    PCOSA_CONTEXT_DHCPC_LINK_OBJECT pDhcpCxtLink = NULL;
-    PCOSA_DML_DHCPC_FULL pDhcpc = NULL;
-    ULONG ulIndex;
-    ULONG instanceNum;
-    ULONG clientCount = CosaDmlDhcpcGetNumberOfEntries(NULL);
-
-    if (clientCount == 0) {
-        DHCPMGR_LOG_ERROR("%s:%d No DHCP client entries found\n", __FUNCTION__, __LINE__);
-        return 0;
-    }
-
-    for (ulIndex = 0; ulIndex < clientCount; ulIndex++) {
-        pSListEntry = (PSINGLE_LINK_ENTRY)Client_GetEntry(NULL, ulIndex, &instanceNum);
-        if (pSListEntry) {
-            pDhcpCxtLink = ACCESS_COSA_CONTEXT_DHCPC_LINK_OBJECT(pSListEntry);
-            pDhcpc = (PCOSA_DML_DHCPC_FULL)pDhcpCxtLink->hContext;
-
-            if (pDhcpc && strcmp(pDhcpc->Cfg.Interface, interfaceName) == 0) {
-                DHCPMGR_LOG_INFO("%s:%d Found matching interface: %s, Instance Number: %lu\n",
-                                 __FUNCTION__, __LINE__, interfaceName, instanceNum);
-                return instanceNum;
-            }
-        }
-    }
-
-    DHCPMGR_LOG_ERROR("%s:%d No matching interface found for %s\n", __FUNCTION__, __LINE__, interfaceName);
-    return 0;
-}
 
 int DhcpMgr_Dhcp_Recovery_Start()
 {
@@ -121,68 +91,68 @@ int DhcpMgr_Dhcp_Recovery_Start()
  * This function reads the PID from the udhcpc pid files and logs the PID for each interface.
  */
 
-
-static void *dhcp_pid_mon( void *args ) 
+//the following function is using ptrace which is supported in linux kernel 4.xx
+static void *dhcp_pid_mon(void *args)
 {
-//    DHCPMGR_LOG_INFO("%s:%d ------IN\n",__FUNCTION__,__LINE__);
     (void) args;
     pthread_detach(pthread_self());
 
-    int pidfds[MAX_PIDS];
-    struct pollfd poll_fds[MAX_PIDS]; // Poll file descriptors
+    int active_pids = pid_count;
+    
+    for (int i = 0; i < pid_count; i++) {
+        //check the pid is currently running or not
+        char procPath[64] = {0};
+        snprintf(procPath, sizeof(procPath), "/proc/%d", pids[i]);
+        if (access(procPath, F_OK) == -1) {
+            DHCPMGR_LOG_ERROR("%s:%d PID %d is not running\n", __FUNCTION__, __LINE__, pids[i]);
+            continue;
+        }
+        // Check if the process is already being monitored
+        // Attach each process
+        if (ptrace(PTRACE_SEIZE, pids[i], NULL, NULL) == -1) {
+            DHCPMGR_LOG_ERROR("%s:%d PTRACE_SEIZE failed for process %d\n", __FUNCTION__, __LINE__, pids[i]);
+            continue;
+        }
+        DHCPMGR_LOG_INFO("%s:%d Monitoring process %d via ptrace...\n", __FUNCTION__, __LINE__, pids[i]);
+    }
 
-        //Monitoring the pid for the udhcpc process
-    for (int i = 0; i < pid_count; i++) 
+    while (active_pids > 0) 
     {
-        pidfds[i] = syscall(SYS_pidfd_open, pids[i], 0);
-        if (pidfds[i] == -1) {
-            DHCPMGR_LOG_ERROR("%s : %d pidfd_open syscall failed\n", __FUNCTION__, __LINE__);
+        int status;
+        pid_t pid = waitpid(-1, &status, __WALL); // Wait for any traced process
+
+        if (pid == -1) {
+            DHCPMGR_LOG_ERROR("%s:%d waitpid failed\n", __FUNCTION__, __LINE__);
             continue;
         }
 
-        poll_fds[i].fd = pidfds[i];
-        poll_fds[i].events = POLLIN; // Watch for process exit event
-
-        DHCPMGR_LOG_INFO("%s:%d Monitoring process %d...\n",__FUNCTION__,__LINE__,pids[i]);
-    }
-
-    // Wait for any process to exit
-    int rem_pid=pid_count;
-//    DHCPMGR_LOG_INFO("%s:%d pid_count=%d\n",__FUNCTION__,__LINE__,pid_count);
-    while (rem_pid > 0) 
-    {
-        int ret = poll(poll_fds, pid_count, -1); // Block until an event occurs
-        if (ret == -1) 
+        if (WIFEXITED(status) || WIFSIGNALED(status)) 
         {
-            DHCPMGR_LOG_ERROR("%s : %d Poll failed Exiting dhcp_pid_mon Thread\n", __FUNCTION__, __LINE__);
+            //add a condition to check if the exited pid is in the list of pids,if there then call processKilled else continue
             for (int i = 0; i < pid_count; i++) 
             {
-                if (poll_fds[i].fd != -1) 
+                if (pids[i] == pid) 
                 {
-                    close(poll_fds[i].fd);
+                    DHCPMGR_LOG_INFO("%s:%d Process %d exited!\n", __FUNCTION__, __LINE__, pid);
+                    processKilled(pid);
+                    active_pids--;
+                    continue;
                 }
             }
-            pthread_exit(NULL);
-        }
-
-        // Check which process exited
-        for (int i = 0; i < pid_count; i++) 
+        } 
+        else
         {
-            if ( poll_fds[i].fd != -1 && poll_fds[i].revents & POLLIN) {
-                DHCPMGR_LOG_INFO("%s:%d Process %d exited!\n",__FUNCTION__, __LINE__,pids[i]);
-                processKilled(pids[i]);      // notify the processKilled that udhcpc pid exited
-                poll_fds[i].fd = -1;             // Mark this as handled
-                rem_pid--;                         //Reduce count of active processes
-                if (close(pidfds[i]) == -1) {
-                    DHCPMGR_LOG_ERROR("%s : %d Error closing pidfd\n", __FUNCTION__, __LINE__);
-                }
-            }
+            // Continue the process if it was stopped due to a signal
+            ptrace(PTRACE_CONT, pid, NULL, NULL);
+            continue;
         }
     }
-//    DHCPMGR_LOG_INFO("%s:%d <<DEBUG>> ------OUT\n",__FUNCTION__,__LINE__);
-    pthread_exit(NULL);
 
+    DHCPMGR_LOG_INFO("%s:%d Thread Exited \n", __FUNCTION__, __LINE__);
+    pthread_exit(NULL);
 }
+
+
 
 static int Create_Dir_ifnEx(const char *path)
 {
@@ -198,7 +168,6 @@ static int Create_Dir_ifnEx(const char *path)
 
 int DHCPMgr_storeDhcpLease(char* ifname, void* newLease, int dhcpVersion)
 {
-    DHCPMGR_LOG_INFO("%s : %d ifname=%s dhcpVersion=%d\n", __FUNCTION__, __LINE__, ifname, dhcpVersion);
     char filePath[256] = {0};
 
     if (!ifname || !newLease) 
@@ -226,13 +195,16 @@ int DHCPMgr_storeDhcpLease(char* ifname, void* newLease, int dhcpVersion)
             return EXIT_FAIL;
         }
 
-        if (fwrite(data, sizeof(COSA_DML_DHCPC_FULL) - sizeof(DHCPv4_PLUGIN_MSG *), 1, file) != 1) 
+        //storing the current lease as separate segment inorder to fetch it easily
+        if (fwrite(data, sizeof(COSA_DML_DHCPC_FULL), 1, file) != 1) 
         {
             DHCPMGR_LOG_ERROR("%s:%d Failed to write data to file %s\n", __FUNCTION__, __LINE__, filePath);
             fclose(file);
             return EXIT_FAIL;
         }
 
+        DHCPMGR_LOG_INFO("%s:%d Writing DHCP.Client.%lu to file %s\n", __FUNCTION__, __LINE__,data->Cfg.InstanceNumber, filePath);
+    
         if(data->currentLease != NULL)
         {
             fwrite(data->currentLease, sizeof(DHCPv4_PLUGIN_MSG), 1, file);
@@ -269,6 +241,7 @@ static int load_v4dhcp_leases()
         for (ulIndex = 0; ulIndex < clientCount; ulIndex++) 
         {
             COSA_DML_DHCPC_FULL storedLease;
+
             pSListEntry = (PSINGLE_LINK_ENTRY)Client_GetEntry(NULL, ulIndex, &instanceNum);
             if (pSListEntry) 
             {
@@ -296,69 +269,68 @@ static int load_v4dhcp_leases()
 
                 memset(&storedLease, 0, sizeof(COSA_DML_DHCPC_FULL));
 
-                if (fread(&storedLease, sizeof(COSA_DML_DHCPC_FULL) - sizeof(DHCPv4_PLUGIN_MSG *), 1, file) != 1) 
+                if (fread(&storedLease, sizeof(COSA_DML_DHCPC_FULL), 1, file) != 1) 
                 {
                     DHCPMGR_LOG_ERROR("%s:%d Failed to read data from file %s\n", __FUNCTION__, __LINE__, FilePattern);
                     fclose(file);
                     continue;
                 }
 
+                pthread_mutex_lock(&pDhcpc->mutex);
+                pDhcpc->currentLease = (DHCPv4_PLUGIN_MSG *)malloc(sizeof(DHCPv4_PLUGIN_MSG));
+                memset(pDhcpc->currentLease, 0, sizeof(DHCPv4_PLUGIN_MSG));
+                if (!pDhcpc->currentLease) 
+                {
+                    DHCPMGR_LOG_ERROR("%s:%d Failed to allocate memory for currentLease\n",__FUNCTION__, __LINE__);
+                    fclose(file);
+                    pthread_mutex_unlock(&pDhcpc->mutex);
+                    continue;
+                }
+
+                if (fread(pDhcpc->currentLease, sizeof(DHCPv4_PLUGIN_MSG), 1, file) != 1) 
+                {
+                    DHCPMGR_LOG_ERROR("%s:%d Failed to read current lease from file %s\n", 
+                                      __FUNCTION__, __LINE__, FilePattern);
+                    free(pDhcpc->currentLease);
+                    pDhcpc->currentLease = NULL;
+                    fclose(file);
+                    pthread_mutex_unlock(&pDhcpc->mutex);
+                    continue;
+                }
+                pDhcpc->currentLease->next = NULL;
+
                 char procPath[64] = {0};
                 snprintf(procPath, sizeof(procPath), "/proc/%d", storedLease.Info.ClientProcessId);
-
-                pthread_mutex_lock(&pDhcpc->mutex);
 
                 /*If the ClientPid is running before and after DHCPMgr restart, we have to populate data for the Client*/
                 /*If not we need to tell the Controller that the stored pid is not running we have to restart the dhcp client*/
                 if (access(procPath, F_OK) == -1) 
                 {
                     DHCPMGR_LOG_INFO("%s:%d PID %d is not running, calling processKilled\n", __FUNCTION__, __LINE__, storedLease.Info.ClientProcessId);
-                    pDhcpc->Cfg.bEnabled = storedLease.Cfg.bEnabled;
-                    pDhcpc->Info.Status = storedLease.Info.Status;
-                    pDhcpc->Info.ClientProcessId = storedLease.Info.ClientProcessId;
-                    snprintf(pDhcpc->Cfg.Interface, sizeof(pDhcpc->Cfg.Interface), "%s", storedLease.Cfg.Interface);
-                    processKilled(pDhcpc->Info.ClientProcessId);
-                    pthread_mutex_unlock(&pDhcpc->mutex);
-                    continue;
-                    //need to handle one more case that if udhcpc is running with different pid, we need to send renew and update the pid as well as pDhcpc config
+                    pDhcpc->Info.Status = COSA_DML_DHCP_STATUS_Disabled;
                 } 
                 else 
                 {
                     DHCPMGR_LOG_INFO("%s:%d PID %d is still running\n", __FUNCTION__, __LINE__, storedLease.Info.ClientProcessId);
-                    memcpy(&pDhcpc->Info, &storedLease.Info, sizeof(COSA_DML_DHCPC_INFO));
-                    memcpy(&pDhcpc->Cfg, &storedLease.Cfg, sizeof(COSA_DML_DHCPC_CFG));
-                    pids[pid_count++] = pDhcpc->Info.ClientProcessId;
-                    pDhcpc->currentLease = (DHCPv4_PLUGIN_MSG *)malloc(sizeof(DHCPv4_PLUGIN_MSG));
-                    if (!pDhcpc->currentLease) 
-                    {
-                        DHCPMGR_LOG_ERROR("%s:%d Failed to allocate memory for currentLease\n",__FUNCTION__, __LINE__);
-                        fclose(file);
-                        pthread_mutex_unlock(&pDhcpc->mutex);
-                        continue;
-                    }
-
-                    memset(pDhcpc->currentLease, 0, sizeof(DHCPv4_PLUGIN_MSG));
-
-                    if (fread(pDhcpc->currentLease, sizeof(DHCPv4_PLUGIN_MSG), 1, file) != 1) 
-                    {
-                        DHCPMGR_LOG_ERROR("%s:%d Failed to read current lease from file %s\n", 
-                                          __FUNCTION__, __LINE__, FilePattern);
-                        free(pDhcpc->currentLease);
-                        pDhcpc->currentLease = NULL;
-                        fclose(file);
-                        pthread_mutex_unlock(&pDhcpc->mutex);
-                        continue;
-                    }
-                    pDhcpc->currentLease->next = NULL;
+                    pDhcpc->Info.Status = COSA_DML_DHCP_STATUS_Enabled;
+                    pids[pid_count++] = storedLease.Info.ClientProcessId;
+                    pDhcpc->Info.ClientProcessId = storedLease.Info.ClientProcessId;
                 }
+
+                // Copy the stored Cfg data to the pDHCPC
+//                pDhcpc->Info.ClientProcessId = storedLease.Info.ClientProcessId;
+                memcpy(&pDhcpc->Cfg, &storedLease.Cfg, sizeof(COSA_DML_DHCPC_CFG));
+
+                // copy the Info structure to pdhcpc ,ensure DhcpMgr_updateDHCPv4DML is not having any mutex lock
+                DhcpMgr_updateDHCPv4DML(pDhcpc);
+
                 pthread_mutex_unlock(&pDhcpc->mutex);
 
                 DHCPMGR_LOG_INFO("%s:%d pDhcpc->Info.ClientProcessId=%d Status=%d bEnabled=%d Interface=%s \n", __FUNCTION__, __LINE__, pDhcpc->Info.ClientProcessId, pDhcpc->Info.Status, pDhcpc->Cfg.bEnabled, pDhcpc->Cfg.Interface);
                 DHCPMGR_LOG_INFO("%s:%d pDhcpc->currentLease->ipAddr=%s \n",__FUNCTION__, __LINE__, pDhcpc->currentLease->address);
                 DHCPMGR_LOG_INFO("%s:%d pDhcpc->currentLease->netmask=%s \n",__FUNCTION__, __LINE__, pDhcpc->currentLease->netmask);
-
                 fclose(file);
-            } 
+            }
             else 
             {
                 DHCPMGR_LOG_ERROR("%s:%d File %s does not exist, No file was stored for DHCPv4.Client.%lu\n", __FUNCTION__, __LINE__, FilePattern, instanceNum);
