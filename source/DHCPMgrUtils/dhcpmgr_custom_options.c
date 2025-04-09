@@ -269,11 +269,13 @@ static int DhcpMgr_Option17Set_Common(const char *ifName, const char *OptionValu
                 char *parsed_value = parse_dhcp_17_suboption(suboption_data, "v6"); //parsed_value should be freed
                 if (parsed_value) 
                 {
-                    char *val_token = strtok(parsed_value, " ");
+                    char *saveptr1 = NULL;
+                    char *val_token = strtok_r(parsed_value, " ", &saveptr1);
                     while (val_token != NULL) 
                     {
-                        char *subopt = strtok(val_token, "=");
-                        char *subopt_data = strtok(NULL, "=");
+                        char *saveptr2 = NULL;
+                        char *subopt = strtok_r(val_token, "=", &saveptr2);
+                        char *subopt_data = strtok_r(NULL, "=", &saveptr2);
                         if (subopt && subopt_data) {
                             if (strcmp(subopt, "0001") == 0) 
                             {
@@ -299,7 +301,7 @@ static int DhcpMgr_Option17Set_Common(const char *ifName, const char *OptionValu
                                 }
                             }
                         }
-                        val_token = strtok(NULL, " ");
+                        val_token = strtok_r(NULL, " ", &saveptr1);
                     }
                     free(parsed_value);
                 }
