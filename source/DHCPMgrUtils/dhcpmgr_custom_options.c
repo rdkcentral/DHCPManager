@@ -214,7 +214,6 @@ static int DhcpMgr_Option17Set_Common(const char *ifName, const char *OptionValu
         DHCPMGR_LOG_ERROR("%s %d: Invalid args..\n", __FUNCTION__, __LINE__);
         return -1;
     }
-
     char *token, *suboption, *suboption_data;
     char *srv_option17 = strdup(OptionValue); // Duplicate OptionValue to tokenize
     int mta_dhcp_option_received = 0;
@@ -224,11 +223,13 @@ static int DhcpMgr_Option17Set_Common(const char *ifName, const char *OptionValu
         return -1;
     }
 
-    token = strtok(srv_option17, " ");
+    char *saveptr_option17 = NULL;
+    token = strtok_r(srv_option17, " ", &saveptr_option17);
     while (token != NULL) 
     {
-        suboption = strtok(token, "=");
-        suboption_data = strtok(NULL, "=");
+        char *saveptr_opt17_subOption = NULL;
+        suboption = strtok_r(token, "=", &saveptr_opt17_subOption);
+        suboption_data = strtok_r(NULL, "=", &saveptr_opt17_subOption);
 
         if (suboption && suboption_data) 
         {
@@ -269,13 +270,13 @@ static int DhcpMgr_Option17Set_Common(const char *ifName, const char *OptionValu
                 char *parsed_value = parse_dhcp_17_suboption(suboption_data, "v6"); //parsed_value should be freed
                 if (parsed_value) 
                 {
-                    char *saveptr1 = NULL;
-                    char *val_token = strtok_r(parsed_value, " ", &saveptr1);
+                    char *saveptr_mta_subOption = NULL;
+                    char *val_token = strtok_r(parsed_value, " ", &saveptr_mta_subOption);
                     while (val_token != NULL) 
                     {
-                        char *saveptr2 = NULL;
-                        char *subopt = strtok_r(val_token, "=", &saveptr2);
-                        char *subopt_data = strtok_r(NULL, "=", &saveptr2);
+                        char *saveptr_mta_data = NULL;
+                        char *subopt = strtok_r(val_token, "=", &saveptr_mta_data);
+                        char *subopt_data = strtok_r(NULL, "=", &saveptr_mta_data);
                         if (subopt && subopt_data) {
                             if (strcmp(subopt, "0001") == 0) 
                             {
@@ -301,13 +302,13 @@ static int DhcpMgr_Option17Set_Common(const char *ifName, const char *OptionValu
                                 }
                             }
                         }
-                        val_token = strtok_r(NULL, " ", &saveptr1);
+                        val_token = strtok_r(NULL, " ", &saveptr_mta_subOption);
                     }
                     free(parsed_value);
                 }
             }
         }
-        token = strtok(NULL, " ");
+        token = strtok_r(NULL, " ", &saveptr_option17);
     }
 
     if (mta_dhcp_option_received) 
