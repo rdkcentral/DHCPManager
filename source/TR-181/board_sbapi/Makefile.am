@@ -38,4 +38,4 @@ libCcspDhcpMgr_board_sbapi_la_SOURCES = cosa_dhcpv6_apis.c cosa_dhcpv4_apis.c ..
 if FEATURE_SUPPORT_MAPT_NAT46
 libCcspDhcpMgr_board_sbapi_la_SOURCES += cosa_mapt_apis.c
 endif
-libCcspDhcpMgr_board_sbapi_la_LDFLAGS = -lccsp_common -lhal_moca -lulog -lsyscfg -lsysevent -ltime_conversion -llmapi -lwebconfig_framework -lmsgpackc -lcm_mgnt -lnet  -lnanomsg
+libCcspDhcpMgr_board_sbapi_la_LDFLAGS = -lccsp_common -lhal_moca -lulog -lsyscfg -lsysevent -ltime_conversion -llmapi -lwebconfig_framework -lmsgpackc -lcm_mgnt  -lnanomsg

@@ -7999,11 +7999,12 @@ Option4_SetParamUlongValue
     if (strcmp(ParamName, "Tag") == 0)
     {
         /* save update to backup */
+#if DHCPV6_SERVER_SUPPORT
         if ( !tagPermitted( uValue ) )
         {
             return FALSE;
         }
-
+#endif
         pDhcpOption->Tag =  uValue;
 
         return TRUE;

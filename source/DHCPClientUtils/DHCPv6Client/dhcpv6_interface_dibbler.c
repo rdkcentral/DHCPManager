@@ -207,28 +207,7 @@ static int dibbler_get_send_options(FILE * fout,  dhcp_opt_list * send_opt_list)
                 snprintf(args, sizeof(args), "\n\tpd %s \n", (opt_list->dhcp_opt_val == NULL) ? "" : opt_list->dhcp_opt_val);
                 fputs(args, fout);
                 break;
-        
-            case DHCPV6_OPT_15:
-            {
-                char str[BUFLEN_64] = {0};
-                char option15[100] = {0};
-                char temp[16] = {0};
-        
-                strncpy(str, opt_list->dhcp_opt_val, sizeof(str) - 1);
-        
-                snprintf(temp, sizeof(temp), "0x%04X", (int)strlen(str) + 1);
-                strncat(option15, temp, sizeof(option15) - strlen(option15) - 1);
-        
-                for (int i = 0; i < (int)strlen(str) + 1; i++)
-                {
-                    snprintf(temp, sizeof(temp), "%02X", str[i]);
-                    strncat(option15, temp, sizeof(option15) - strlen(option15) - 1);
-                }
-        
-                snprintf(args, sizeof(args), "\n\toption 00%d hex %s\n", opt_list->dhcp_opt, option15);
-                fputs(args, fout);
-                break;
-            }
+                  
             case DHCPV6_OPT_14:
                 fputs("\n\t rapid-commit yes\n", fout);
                 break;

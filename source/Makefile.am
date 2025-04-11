@@ -17,12 +17,15 @@
 # limitations under the License.
 ##########################################################################
 
-SUBDIRS = DHCPMgrInterface DHCPMgrUtils IPv6rtmon TR-181
+SUBDIRS = DHCPMgrInterface  IPv6rtmon TR-181
 
 
 if DHCP_SERVER_SUPPORT
 SUBDIRS += DHCPServerUtils
 endif
+
+SUBDIRS += DHCPServerUtils/utils
+
 
 if DHCP_CLIENT_SUPPORT
 SUBDIRS += DHCPClientUtils
@@ -32,4 +35,4 @@ if RA_MONITOR_SUPPORT
 SUBDIRS += IPv6rtmon
 endif
 
-SUBDIRS += DHCPMgrSsp
+SUBDIRS += DHCPMgrUtils DHCPMgrSsp

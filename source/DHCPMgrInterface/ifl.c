@@ -24,6 +24,9 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/sysinfo.h>
+#include <sys/syscall.h>
+
+#define gettid() syscall(SYS_gettid)
 
 #include "errno.h"
 #include "sysevent/sysevent.h"
