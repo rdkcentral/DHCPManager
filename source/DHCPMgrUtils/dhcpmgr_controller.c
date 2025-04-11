@@ -125,7 +125,7 @@ static int DhcpMgr_build_dhcpv4_opt_list (PCOSA_CONTEXT_DHCPC_LINK_OBJECT hInsCo
             {
                 DHCPMGR_LOG_INFO("%s %d: DHCPv4 option 60 (Vendor Class Identifier) entry found without value. \n", __FUNCTION__, __LINE__);
                 char optionValue[BUFLEN_256] = {0};
-                int ret = Get_DhcpV4_CustomOption60(pDhcpc->Cfg.Interface, optionValue);
+                int ret = Get_DhcpV4_CustomOption60(pDhcpc->Cfg.Interface, optionValue, sizeof(optionValue));
                 if (ret == 0)
                 {
                     DHCPMGR_LOG_INFO("%s %d: Adding DHCPv4 option 60 (Vendor Class Identifier) custom value: %s \n", __FUNCTION__, __LINE__, optionValue);
@@ -136,7 +136,7 @@ static int DhcpMgr_build_dhcpv4_opt_list (PCOSA_CONTEXT_DHCPC_LINK_OBJECT hInsCo
             {
                 DHCPMGR_LOG_INFO("%s %d: DHCPv4 option 61 (Client Identifier) entry found without value. \n", __FUNCTION__, __LINE__);
                 char optionValue[BUFLEN_256] = {0};
-                int ret = Get_DhcpV4_CustomOption61(pDhcpc->Cfg.Interface, optionValue);
+                int ret = Get_DhcpV4_CustomOption61(pDhcpc->Cfg.Interface, optionValue, sizeof(optionValue));
                 if (ret == 0)
                 {
                     DHCPMGR_LOG_INFO("%s %d: Adding DHCPv4 option 61 (Client Identifier) custom value: %s \n", __FUNCTION__, __LINE__, optionValue);
@@ -147,7 +147,7 @@ static int DhcpMgr_build_dhcpv4_opt_list (PCOSA_CONTEXT_DHCPC_LINK_OBJECT hInsCo
             {
                 DHCPMGR_LOG_INFO("%s %d: DHCPv4 option 43 (Vendor-Specific Information) entry found without value. \n", __FUNCTION__, __LINE__);
                 char optionValue[BUFLEN_256] = {0};
-                int ret = Get_DhcpV4_CustomOption43(pDhcpc->Cfg.Interface, optionValue);
+                int ret = Get_DhcpV4_CustomOption43(pDhcpc->Cfg.Interface, optionValue, sizeof(optionValue));
                 if (ret == 0)
                 {
                     DHCPMGR_LOG_INFO("%s %d: Adding DHCPv4 option 43 (Vendor-Specific Information) custom value: %s \n", __FUNCTION__, __LINE__, optionValue);
@@ -236,7 +236,7 @@ static int DhcpMgr_build_dhcpv6_opt_list (PCOSA_CONTEXT_DHCPCV6_LINK_OBJECT hIns
                 {
                     DHCPMGR_LOG_INFO("%s %d: DHCPv6 option 15 (User Class Option) entry found without value. \n", __FUNCTION__, __LINE__);
                     char optionValue[BUFLEN_256] = {0};
-                    int ret = Get_DhcpV6_CustomOption15(pDhcp6c->Cfg.Interface, optionValue);
+                    int ret = Get_DhcpV6_CustomOption15(pDhcp6c->Cfg.Interface, optionValue, sizeof(optionValue));
                     if (ret == 0)
                     {
                         DHCPMGR_LOG_INFO("%s %d: Adding DHCPv6 option 15 (User Class Option) custom value: %s \n", __FUNCTION__, __LINE__, optionValue);
@@ -247,7 +247,7 @@ static int DhcpMgr_build_dhcpv6_opt_list (PCOSA_CONTEXT_DHCPCV6_LINK_OBJECT hIns
                 {
                     DHCPMGR_LOG_INFO("%s %d: DHCPv6 option 16 (Vendor Class Option) entry found without value. \n", __FUNCTION__, __LINE__);
                     char optionValue[BUFLEN_256] = {0};
-                    int ret = Get_DhcpV6_CustomOption16(pDhcp6c->Cfg.Interface, optionValue);
+                    int ret = Get_DhcpV6_CustomOption16(pDhcp6c->Cfg.Interface, optionValue, sizeof(optionValue));
                     if (ret == 0)
                     {
                         DHCPMGR_LOG_INFO("%s %d: Adding DHCPv6 option 16 (Vendor Class Option) custom value: %s \n", __FUNCTION__, __LINE__, optionValue);
@@ -258,7 +258,7 @@ static int DhcpMgr_build_dhcpv6_opt_list (PCOSA_CONTEXT_DHCPCV6_LINK_OBJECT hIns
                 {
                     DHCPMGR_LOG_INFO("%s %d: DHCPv6 option 17 (Vendor-Specific Information) entry found without value. \n", __FUNCTION__, __LINE__);
                     char optionValue[BUFLEN_256] = {0};
-                    int ret = Get_DhcpV6_CustomOption17(pDhcp6c->Cfg.Interface, optionValue);
+                    int ret = Get_DhcpV6_CustomOption17(pDhcp6c->Cfg.Interface, optionValue, sizeof(optionValue));
                     if (ret == 0)
                     {
                         DHCPMGR_LOG_INFO("%s %d: Adding DHCPv6 option 17 (Vendor-Specific Information) custom value: %s \n", __FUNCTION__, __LINE__, optionValue);

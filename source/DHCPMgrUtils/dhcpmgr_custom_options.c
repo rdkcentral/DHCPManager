@@ -25,42 +25,47 @@
 static int DhcpMgr_Option17Set_Common(const char *ifName, const char *OptionValue);
 
 // Weak function implementations
-__attribute__((weak)) int Get_DhcpV4_CustomOption60(const char *ifName, char *OptionValue) 
+__attribute__((weak)) int Get_DhcpV4_CustomOption60(const char *ifName, char *OptionValue,size_t OptionValueSize) 
 {
     (void)ifName;
     (void)OptionValue;
+    (void)OptionValueSize;
     DHCPMGR_LOG_INFO("%s %d Weak implementation of Get_DhcpV4_CustomOption60 \n", __FUNCTION__, __LINE__);
     return -1;
 }
 
-__attribute__((weak)) int Get_DhcpV4_CustomOption61(const char *ifName, char *OptionValue) 
+__attribute__((weak)) int Get_DhcpV4_CustomOption61(const char *ifName, char *OptionValue, size_t OptionValueSize) 
 {
     (void)ifName;
     (void)OptionValue;
+    (void)OptionValueSize;
     DHCPMGR_LOG_INFO("%s %d Weak implementation of Get_DhcpV4_CustomOption61 \n", __FUNCTION__, __LINE__);
     return -1;
 }
 
-__attribute__((weak)) int Get_DhcpV6_CustomOption15(const char *ifName, char *OptionValue) 
+__attribute__((weak)) int Get_DhcpV6_CustomOption15(const char *ifName, char *OptionValue,size_t OptionValueSize) 
 {
     (void)ifName;
     (void)OptionValue;
+    (void)OptionValueSize;
     DHCPMGR_LOG_INFO("%s %d Weak implementation of Get_DhcpV6_CustomOption15 \n", __FUNCTION__, __LINE__);
     return -1;
 }
 
-__attribute__((weak)) int Get_DhcpV6_CustomOption16(const char *ifName, char *OptionValue) 
+__attribute__((weak)) int Get_DhcpV6_CustomOption16(const char *ifName, char *OptionValue, size_t OptionValueSize) 
 {
     (void)ifName;
     (void)OptionValue;
+    (void)OptionValueSize;
     DHCPMGR_LOG_INFO("%s %d Weak implementation of Get_DhcpV6_CustomOption16 \n", __FUNCTION__, __LINE__);
     return -1;
 }
 
-__attribute__((weak)) int Get_DhcpV6_CustomOption17(const char *ifName, char *OptionValue) 
+__attribute__((weak)) int Get_DhcpV6_CustomOption17(const char *ifName, char *OptionValue, size_t OptionValueSize) 
 {
     (void)ifName;
     (void)OptionValue;
+    (void)OptionValueSize;
     DHCPMGR_LOG_INFO("%s %d Weak implementation of Get_DhcpV6_CustomOption17 \n", __FUNCTION__, __LINE__);
     return -1;
 }
@@ -71,10 +76,11 @@ __attribute__((weak)) int Set_DhcpV6_CustomOption17(const char *ifName, const ch
     return DhcpMgr_Option17Set_Common(ifName, OptionValue);
 }
 
-__attribute__((weak)) int Get_DhcpV4_CustomOption43(const char *ifName, char *OptionValue) 
+__attribute__((weak)) int Get_DhcpV4_CustomOption43(const char *ifName, char *OptionValue, size_t OptionValueSize) 
 {
     (void)ifName;
     (void)OptionValue;
+    (void)OptionValueSize;
     DHCPMGR_LOG_INFO("%s %d Weak implementation of Get_DhcpV4_CustomOption43 \n", __FUNCTION__, __LINE__);
     return -1;
 }
