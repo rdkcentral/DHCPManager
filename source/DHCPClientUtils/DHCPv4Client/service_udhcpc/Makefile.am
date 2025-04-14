@@ -27,4 +27,4 @@ udhcpc_response_handler_CPPFLAGS = -I${PKG_CONFIG_SYSROOT_DIR}$(includedir)/dbus
 
 udhcpc_response_handler_SOURCES = service_udhcpc.c
 
-udhcpc_response_handler_LDADD = -ltelemetry_msgsender -lulog -lsyscfg -lsysevent -ltime_conversion -lprint_uptime -lnet
+udhcpc_response_handler_LDADD = -ltelemetry_msgsender -lulog -lsyscfg -lsysevent -ltime_conversion -lprint_uptime 
