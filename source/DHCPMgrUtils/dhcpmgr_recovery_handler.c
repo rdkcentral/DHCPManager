@@ -35,8 +35,6 @@
 #define EXIT_SUCCESS 0
 #define MAX_PIDS 20
 #define TMP_DIR_PATH "/tmp/Dhcp_manager"
-#define EVENT_SIZE (sizeof(struct inotify_event))
-#define EVENT_BUF_LEN (1024 * (EVENT_SIZE + 16))
 
 extern ANSC_STATUS DhcpMgr_updateDHCPv4DML(PCOSA_DML_DHCPC_FULL pDhcpc);
 
@@ -100,13 +98,6 @@ static void *dhcp_pid_mon(void *args)
     int active_pids = pid_count;
     
     for (int i = 0; i < pid_count; i++) {
-        //check the pid is currently running or not
-        char procPath[64] = {0};
-        snprintf(procPath, sizeof(procPath), "/proc/%d", pids[i]);
-        if (access(procPath, F_OK) == -1) {
-            DHCPMGR_LOG_ERROR("%s:%d PID %d is not running\n", __FUNCTION__, __LINE__, pids[i]);
-            continue;
-        }
         // Check if the process is already being monitored
         // Attach each process
         if (ptrace(PTRACE_SEIZE, pids[i], NULL, NULL) == -1) {
