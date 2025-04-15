@@ -73,14 +73,6 @@
 #include "dhcpv4_server_interface.h"
 #endif
 
-#ifdef DHCPV4_CLIENT_SUPPORT
-#include "service_dhcpv4_client.h"
-#endif
-
-#ifdef DHCPV6_CLIENT_SUPPORT
-#include "service_dhcpv6_client.h"
-#endif
-
 #include "util.h"
 
 #include "dhcpmgr_controller.h"
@@ -307,33 +299,7 @@ static int is_core_dump_opened(void)
     return 0;
 }
 #endif
-#if 0
-static bool drop_root()
-{
-  appcaps.caps = NULL;
-  appcaps.user_name = NULL;
-  bool retval = false;
-  bool ret = false;
-  ret = isBlocklisted();
-  if(ret)
-  {
-    DHCPMGR_LOG_INFO("NonRoot feature is disabled\n");
-  }
-  else
-  {
-    DHCPMGR_LOG_INFO("NonRoot feature is enabled, dropping root privileges for CcspDHCPMgr process\n");
-    if(init_capability() != NULL) {
-      if(drop_root_caps(&appcaps) != -1) {
-        if(update_process_caps(&appcaps) != -1) {
-          read_capability(&appcaps);
-          retval = true;
-        }
-      }
-    }
-  }
-  return retval;
-}
-#endif
+
 int main(int argc, char* argv[])
 {
     BOOL                            bRunAsDaemon       = TRUE;
@@ -341,7 +307,6 @@ int main(int argc, char* argv[])
     int                             idx = 0;
     appcaps.caps = NULL;
     appcaps.user_name = NULL;
-    //char buf[8] = {'\0'};
     extern ANSC_HANDLE bus_handle;
     char *subSys            = NULL;  
     DmErr_t    err;
@@ -394,13 +359,6 @@ int main(int argc, char* argv[])
 
     pComponentName          = CCSP_COMPONENT_NAME_DHCPMGR;
 
-#if 0
-    if(!drop_root())
-    {
-        DHCPMGR_LOG_ERROR("drop_root function failed!\n");
-        gain_root_privilege();
-    }
-#endif
     if ( bRunAsDaemon ) 
         daemonize();
 
@@ -450,30 +408,6 @@ DHCPMGR_LOG_INFO("\nAfter daemonize before signal\n");
 
     cmd_dispatch('e');
 
-/*
-    DHCPMGR_LOG_INFO("DHCPMGR_DBG:-------Read Log Info\n");
-    char buffer[5] = {0};
-    if( 0 == syscfg_get( NULL, "X_RDKCENTRAL-COM_LoggerEnable" , buffer, sizeof( buffer ) ) &&  ( buffer[0] != '\0' ) )
-    {
-        RDKLogEnable = (BOOL)atoi(buffer);
-    }
-    memset(buffer, 0, sizeof(buffer));
-    if( 0 == syscfg_get( NULL, "X_RDKCENTRAL-COM_LogLevel" , buffer, sizeof( buffer ) ) &&  ( buffer[0] != '\0' ) )
-    {
-        RDKLogLevel = (ULONG )atoi(buffer);
-    }
-    memset(buffer, 0, sizeof(buffer));
-    if( 0 == syscfg_get( NULL, "X_RDKCENTRAL-COM_DhcpMgr_LogLevel" , buffer, sizeof( buffer ) ) &&  ( buffer[0] != '\0' ) )
-    {
-        DHCPMGR_RDKLogLevel = (ULONG)atoi(buffer);
-    }
-    memset(buffer, 0, sizeof(buffer));
-    if( 0 == syscfg_get( NULL, "X_RDKCENTRAL-COM_DhcpMgr_LoggerEnable" , buffer, sizeof( buffer ) ) &&  ( buffer[0] != '\0' ) )
-    {
-        DHCPMGR_RDKLogEnable = (BOOL)atoi(buffer);
-    }
-    DHCPMGR_LOG_INFO("DHCPMGR_DBG:-------Log Info values RDKLogEnable:%d,RDKLogLevel:%u,DHCPMGR_RDKLogLevel:%u,DHCPMGR_RDKLogEnable:%d\n",RDKLogEnable,RDKLogLevel,DHCPMGR_RDKLogLevel, DHCPMGR_RDKLogEnable );
-*/ 
 #ifdef _COSA_SIM_
     subSys = "";        /* PC simu use empty string as subsystem */
 #else
@@ -489,20 +423,6 @@ DHCPMGR_LOG_WARNING("\nAfter Cdm_Init\n");
         fprintf(stderr, "Cdm_Init: %s\n", Cdm_StrError(err));
         exit(1);
     }
-
-#if 0 //def DHCPV4_CLIENT_SUPPORT
-    //Init dhcpv4 client
-    DHCPMGR_LOG_INFO("serv_dhcp_init (dhcpv4 client) Started\n");
-    serv_dhcp_init();
-    DHCPMGR_LOG_INFO("serv_dhcp_init (dhcpv4 client) Ended\n");
-#endif
-
-#if 0//def DHCPV6_CLIENT_SUPPORT
-    //Init dhcpv6 cleint
-    DHCPMGR_LOG_INFO("init_dhcpv6_client (dhcpv6 cleint) Started\n");
-    init_dhcpv6_client ();
-    DHCPMGR_LOG_INFO("init_dhcpv6_client (dhcpv6 cleint) Ended\n");
-#endif
 
 #ifdef DHCPV4_SERVER_SUPPORT
     //Init dhcpv4 server
