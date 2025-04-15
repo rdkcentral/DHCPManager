@@ -292,14 +292,6 @@ COSA_DATAMODEL_DHCPV4,  *PCOSA_DATAMODEL_DHCPV4;
     Function declaration
 */
 
-#if 0
-ANSC_STATUS
-DhcpMgr_StartIpcServer
-    (
-        VOID
-    );
-#endif
-
 ANSC_HANDLE
 CosaDhcpv4Create
     (

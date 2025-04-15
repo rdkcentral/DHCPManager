@@ -651,7 +651,6 @@ CosaDhcpv6BackendGetDhcpv6Info
 
             }
         }
-        // CosaDmlStartDHCP6Client();
         /* We begin treat DHCPv6.Client.{i}.ReceivedOption.{i} 
                     This is one dynamic table. We get all once */
         returnStatus = CosaDmlDhcpv6cGetReceivedOptionCfg

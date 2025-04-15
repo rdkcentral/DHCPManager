@@ -698,12 +698,6 @@ CosaDmlDhcpv6Remove
     );
 
 int 
-CosaDmlStartDHCP6Client
-    (
-    void
-    );
-
-int 
 CosaDmlDhcpv6sGetIAPDPrefixes
     (
         PCOSA_DML_DHCPSV6_POOL_CFG  pCfg,
@@ -748,41 +742,11 @@ CosaDmlDhcpv6sSetType
         ULONG                        type        
     );
 
-BOOL
-CosaDmlDhcpv6cGetEnabled
-    (
-        ANSC_HANDLE                 hContext
-    );
-INT 
-append_interface
-        ( 
-               char*               Inf_name
-        );
-INT
-remove_interface
-        (
-               char*               Inf_name
-        );
 ANSC_STATUS
 CosaDmlDhcpv6SMsgHandler
     (
         ANSC_HANDLE                 hContext
     );
-
-#if defined (RDKB_EXTENDER_ENABLED) || defined (WAN_FAILOVER_SUPPORTED)
-void AssignIpv6Addr(char* ifname , char* ipv6Addr);
-void DelIpv6Addr(char* ifname , char* ipv6Addr);
-void SetV6Route(char* ifname , char* route_addr,int metric_val);
-void UnSetV6Route(char* ifname , char* route_addr,int metric_val);
-void SetV6RouteTable(char* ifname , char* route_addr,int metric_val,int table_num);
-void UnSetV6RouteFromTable(char* ifname , char* route_addr,int metric_val, int table_num);
-int Get_Device_Mode();
-
-#endif
-
-#if defined (RDKB_EXTENDER_ENABLED)
-void configureIpv6Route(uint32_t DeviceMode);
-#endif
 
 #if defined(FEATURE_RDKB_CONFIGURABLE_WAN_INTERFACE)
 #define COSA_DML_WANIface_PREF_SYSEVENT_NAME           "tr_%s_dhcpv6_client_v6pref"

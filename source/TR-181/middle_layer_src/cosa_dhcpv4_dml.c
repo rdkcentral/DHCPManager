@@ -83,10 +83,6 @@
 #include "cosa_webconfig_api.h"
 #include "util.h"
 
-#ifdef DHCPV4_CLIENT_SUPPORT
-#include "service_dhcpv4_client.h"
-#endif
-
 #ifdef DHCPV4_SERVER_SUPPORT
 #include "dhcpv4_server_interface.h"
 #endif
@@ -110,11 +106,6 @@ extern char * getTime();
 
 #ifdef DHCPV4_SERVER_SUPPORT
 int dhcpv4_server_enabled = 1;
-#endif
-
-#ifdef DHCPV4_CLIENT_SUPPORT
-void *sd;
-int dhcpv4_client_enabled = 1;
 #endif
 
 ANSC_STATUS
@@ -743,16 +734,7 @@ Client_GetParamBoolValue
     {
         /* collect value */
         *pBool   = pDhcpc->Cfg.bEnabled;
-        /* TODO : cleanup 
-        if (dhcpv4_client_enabled == 0)
-        {
-            *pBool   = FALSE;
-        }
-        else
-        {
-            *pBool   = TRUE;
-        }
-        */
+
         return TRUE;
     }
 
@@ -1147,21 +1129,6 @@ Client_SetParamBoolValue
 
         pthread_mutex_unlock(&pDhcpc->mutex); //MUTEX unlock
 
-#if 0// def DHCPV4_CLIENT_SUPPORT
-        if (bValue == TRUE)
-        {
-            //dhcpv4_client_service_start(sd);
-			CosaDmlStartDhcpv4Client(hInsContext);
-            dhcpv4_client_enabled = 1;
-        }
-        else
-        {
-            //dhcpv4_client_service_stop(sd);
-			CosaDmlStopDhcpv4Client(hInsContext);
-            dhcpv4_client_enabled = 0;
-        }
-#endif
-
         return  TRUE;
     }
 
@@ -1176,13 +1143,6 @@ Client_SetParamBoolValue
                 pthread_mutex_lock(&pDhcpc->mutex); //MUTEX lock
                 pDhcpc->Cfg.Renew = TRUE;
                 pthread_mutex_unlock(&pDhcpc->mutex); //MUTEX unlock
-                /* TODO : clean up
-                ANSC_STATUS                     returnStatus      = ANSC_STATUS_SUCCESS;
-                returnStatus = CosaDmlDhcpcRenew(hInsContext, pDhcpc->Cfg.InstanceNumber);
-                if ( returnStatus != ANSC_STATUS_SUCCESS )
-                {
-                    return  FALSE;
-                }*/
             }
             else
                 return FALSE;
@@ -1190,15 +1150,6 @@ Client_SetParamBoolValue
 
         return  TRUE;
     }
-
-    /* DHCPMGR_LOG_WARNING("Unsupported parameter '%s'\n", ParamName); */
-
-#ifdef DHCPV4_CLIENT_SUPPORT
-//    serv_dhcp_deinit();
-    //dhcpv4_client_service_stop(sd);
-	//CosaDmlStopDhcpv4Client(hInsContext);
-    dhcpv4_client_enabled = 0;
-#endif
 
     return  FALSE;
 }
@@ -5996,89 +5947,6 @@ Pool_GetParamStringValue
 
     }
 
-#if 0
-    if (strcmp(ParamName, "VendorClassID") == 0)
-    {
-        /* collect value */
-        return  update_pValue(pValue,pUlSize, pPool->Cfg.VendorClassID);
-    }
-
-    if (strcmp(ParamName, "ClientID") == 0)
-    {
-        /* collect value */
-        return  update_pValue(pValue,pUlSize, pPool->Cfg.ClientID);
-    }
-
-    if (strcmp(ParamName, "UserClassID") == 0)
-    {
-        /* collect value */
-        return  update_pValue(pValue,pUlSize, pPool->Cfg.UserClassID);
-    }
-
-    if (strcmp(ParamName, "Chaddr") == 0)
-    {
-        if (*pUlSize < 18)
-        {
-            _ansc_sprintf
-                (
-                    pValue,
-                    "%2x:%2x:%2x:%2x:%2x:%2x",
-                    pPool->Cfg.Chaddr[0],
-                    pPool->Cfg.Chaddr[1],
-                    pPool->Cfg.Chaddr[2],
-                    pPool->Cfg.Chaddr[3],
-                    pPool->Cfg.Chaddr[4],
-                    pPool->Cfg.Chaddr[5]
-                    );
-
-            return 0;
-        }
-        else
-        {
-             *pUlSize = 18;
-            return 1;
-        }
-    }
-
-    if (strcmp(ParamName, "ChaddrMask") == 0)
-    {
-        if (*pUlSize < 18)
-        {
-            _ansc_sprintf
-                (
-                    pValue,
-                    "%2x:%2x:%2x:%2x:%2x:%2x",
-                    pPool->Cfg.ChaddrMask[0],
-                    pPool->Cfg.ChaddrMask[1],
-                    pPool->Cfg.ChaddrMask[2],
-                    pPool->Cfg.ChaddrMask[3],
-                    pPool->Cfg.ChaddrMask[4],
-                    pPool->Cfg.ChaddrMask[5]
-                    );
-
-            return 0;
-        }
-        else
-        {
-            *pUlSize = 18;
-            return 1;
-        }
-    }
-
-    if (strcmp(ParamName, "ReservedAddresses") == 0)
-    {
-        /* collect value */
-        if ( CosaDmlGetIpaddrString(pValue, pUlSize, &pPool->Cfg.ReservedAddresses[0], COSA_DML_DHCP_MAX_RESERVED_ADDRESSES ) )
-        {
-            return 0;
-        }
-        else
-        {
-            return 1;
-        }
-    }
- #endif
-
     if (strcmp(ParamName, "DNSServers") == 0)
     {
         if ( CosaDmlGetIpaddrString(pValue, pUlSize, &pPool->Cfg.DNSServers[0].Value, COSA_DML_DHCP_MAX_ENTRIES ) )
@@ -6199,36 +6067,6 @@ Pool_SetParamBoolValue
         Dhcpv4_Lan_MutexUnLock();
         return TRUE;
     }
-
-#if 0
-    if (strcmp(ParamName, "VendorClassIDExclude") == 0)
-    {
-        /* save update to backup */
-        return FALSE; /* Not supported */
-        /* Structurally dead code*/
-    }
-
-    if (strcmp(ParamName, "ClientIDExclude") == 0)
-    {
-        /* save update to backup */
-        return FALSE; /* Not supported */
-        /* Structurally dead code*/
-    }
-
-    if (strcmp(ParamName, "UserClassIDExclude") == 0)
-    {
-        /* save update to backup */
-        return FALSE; /* Not supported */
-        /* Structurally dead code*/
-    }
-
-    if (strcmp(ParamName, "ChaddrExclude") == 0)
-    {
-        /* save update to backup */
-        return FALSE; /* Not supported */
-        /* Structurally dead code*/
-    }
-#endif
 
     /* check the parameter name and set the corresponding value */
     if (strcmp(ParamName, "DNSServersEnabled") == 0)
@@ -6765,50 +6603,6 @@ Pool_SetParamStringValue
 
         return TRUE;
     }
-
-#if 0
-    if (strcmp(ParamName, "VendorClassID") == 0)
-    {
-        /* save update to backup */
-        return FALSE; /* Not supported */
-        /* Structurally dead code*/
-    }
-
-    if (strcmp(ParamName, "ClientID") == 0)
-    {
-        /* save update to backup */
-        return FALSE; /* Not supported */
-        /* Structurally dead code*/
-    }
-
-    if (strcmp(ParamName, "UserClassID") == 0)
-    {
-        /* save update to backup */
-        return FALSE; /* Not supported */
-        /* Structurally dead code*/
-    }
-
-    if (strcmp(ParamName, "Chaddr") == 0)
-    {
-        /* save update to backup */
-        return FALSE; /* Not supported */
-        /* Structurally dead code*/
-    }
-
-    if (strcmp(ParamName, "ChaddrMask") == 0)
-    {
-        /* save update to backup */
-        return FALSE; /* Not supported */
-        /* Structurally dead code*/
-    }
-
-    if (strcmp(ParamName, "ReservedAddresses") == 0)
-    {
-        /* save update to backup */
-        return FALSE; /* Not supported */
-        /* Structurally dead code*/
-    }
-#endif
 
     if (strcmp(ParamName, "DNSServers") == 0)
     {
@@ -8112,95 +7906,6 @@ StaticAddress_Validate
             }
         }
     }
-#if 0 /*removed by song*/
-    /* Parent hasn't set, we don't permit child is set.*/
-    PCOSA_CONTEXT_LINK_OBJECT       pCxtLink          = (PCOSA_CONTEXT_LINK_OBJECT)hInsContext;
-    PCOSA_DML_DHCPS_SADDR           pDhcpStaAddr      = (PCOSA_DML_DHCPS_SADDR)pCxtLink->hContext;
-    PCOSA_CONTEXT_POOL_LINK_OBJECT  pCxtPoolLink      = (PCOSA_CONTEXT_POOL_LINK_OBJECT)pCxtLink->hParentTable;
-    PCOSA_DML_DHCPS_POOL_FULL       pPool             = (PCOSA_DML_DHCPS_POOL_FULL)pCxtPoolLink->hContext;
-    PCOSA_CONTEXT_LINK_OBJECT       pCxtLink2         = NULL;
-    PCOSA_DML_DHCPS_SADDR           pDhcpStaAddr2     = NULL;
-    PSINGLE_LINK_ENTRY              pSListEntry       = NULL;
-    BOOL                            bFound            = FALSE;
-    UCHAR                           strIP[32]         = {'\0'};
-    UINT                            ip[4]             = {0};
-    int                             rc                = -1;
-    int                             i                 = 0;
-    ULONG                           ipaddr, netmask, gateway;
-
-    if ( pCxtPoolLink->bNew )
-    {
-#if COSA_DHCPV4_ROLLBACK_TEST
-        StaticAddress_Rollback(hInsContext);
-#endif
-        return FALSE;
-    }
-    if ( pCxtPoolLink->AliasOfStaAddr[0] )
-    {
-        /* save update to backup */
-        bFound                = FALSE;
-        pSListEntry           = AnscSListGetFirstEntry(&pCxtPoolLink->StaticAddressList);
-        while( pSListEntry != NULL)
-        {
-            pCxtLink2         = ACCESS_COSA_CONTEXT_LINK_OBJECT(pSListEntry);
-            pSListEntry       = AnscSListGetNextEntry(pSListEntry);
-
-            pDhcpStaAddr2  = (PCOSA_DML_DHCPS_SADDR)pCxtLink2->hContext;
-
-            if( DHCPV4_STATICADDRESS_ENTRY_MATCH2(pDhcpStaAddr->Alias, pDhcpStaAddr2->Alias ) )
-            {
-                if ( (ANSC_HANDLE)pCxtLink2 == hInsContext )
-                {
-                    continue;
-                }
-
-                _ansc_strcpy(pReturnParamName, "Alias");
-
-                bFound = TRUE;
-
-                break;
-            }
-        }
-
-        if ( bFound )
-        {
-#if COSA_DHCPV4_ROLLBACK_TEST
-            StaticAddress_Rollback(hInsContext);
-#endif
-            return FALSE;
-        }
-    }
-    /* Make sure Static IP Address is properly formatted and isnt a network or multicast address */
-    ipaddr = pDhcpStaAddr->Yiaddr.Value;
-    netmask = pPool->Cfg.SubnetMask.Value;
-    gateway = pPool->Cfg.IPRouters[0].Value;
-    if (IPv4Addr_IsLoopback(ipaddr)
-        || IPv4Addr_IsMulticast(ipaddr)
-        || IPv4Addr_IsBroadcast(ipaddr, gateway, netmask)
-        || IPv4Addr_IsNetworkAddr(ipaddr, gateway, netmask)
-        || !IPv4Addr_IsSameNetwork(ipaddr, gateway, netmask))
-    {
-        DHCPMGR_LOG_WARNING("%s: Invalid Static IP Address \n", __FUNCTION__);
-        _ansc_strcpy(pReturnParamName, "Yiaddr");
-        return FALSE;
-    }
-
-    /* Make sure Static IP Address is not same as our GW address */
-    if((pDhcpStaAddr->Yiaddr.Value == pPool->Cfg.IPRouters[0].Value))
-    {
-        DHCPMGR_LOG_WARNING("Static IP Address same as the GW \n");
-        _ansc_strcpy(pReturnParamName, "Yiaddr");
-        return FALSE;
-    }
-
-    if((pDhcpStaAddr->Yiaddr.Value < pPool->Cfg.MinAddress.Value) || (pDhcpStaAddr->Yiaddr.Value > pPool->Cfg.MaxAddress.Value))
-    {
-        DHCPMGR_LOG_WARNING("Static IP Address not in Range \n");
-        _ansc_strcpy(pReturnParamName, "Yiaddr");
-        return FALSE;
-    }
-#endif
-
     return TRUE;
 }
 
