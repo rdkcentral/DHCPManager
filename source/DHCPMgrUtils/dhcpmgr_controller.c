@@ -456,6 +456,7 @@ static void* DhcpMgr_MainController( void *args )
                     pDhcpc->Cfg.Renew = FALSE;
                     DhcpMgr_PublishDhcpV4Event(pDhcpc, DHCP_LEASE_DEL); //Send lease expired event
                     DhcpMgr_clearDHCPv4Lease(pDhcpc);
+                    remove_dhcp_lease_file(pDhcpc->Cfg.InstanceNumber,DHCP_v4);
                     DhcpMgr_PublishDhcpV4Event(pDhcpc, DHCP_CLIENT_STOPPED);
                 }
             }
@@ -555,6 +556,7 @@ static void* DhcpMgr_MainController( void *args )
                     pDhcp6c->Cfg.Renew = FALSE;
                     DhcpMgr_PublishDhcpV6Event(pDhcp6c, DHCP_LEASE_DEL); //Send lease expired event
                     DhcpMgr_clearDHCPv6Lease(pDhcp6c);
+                    remove_dhcp_lease_file(pDhcp6c->Cfg.InstanceNumber,DHCP_v6);
                     DhcpMgr_PublishDhcpV6Event(pDhcp6c, DHCP_CLIENT_STOPPED);
                 }
             }

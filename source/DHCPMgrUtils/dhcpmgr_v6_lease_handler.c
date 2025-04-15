@@ -21,6 +21,7 @@
 #include "dhcpv6_interface.h"
 #include "secure_wrapper.h"
 #include "dhcpmgr_rbus_apis.h"
+#include "dhcpmgr_recovery_handler.h"
 
 static void configureNetworkInterface(PCOSA_DML_DHCPCV6_FULL pDhcp6c);
 
@@ -135,6 +136,11 @@ void DhcpMgr_ProcessV6Lease(PCOSA_DML_DHCPCV6_FULL pDhcp6c)
 
         // Clear the next pointer of the new current lease
         pDhcp6c->currentLease->next = NULL;
+        
+        if(DHCPMgr_storeDhcpv6Lease(pDhcp6c) != 0)
+        {
+            DHCPMGR_LOG_ERROR("%s %d: Failed to store lease information for interface %s.\n", __FUNCTION__, __LINE__, pDhcp6c->Cfg.Interface);
+        }
         
         if(leaseChanged)
         {

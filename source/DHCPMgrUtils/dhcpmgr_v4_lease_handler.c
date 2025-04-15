@@ -281,11 +281,10 @@ void DhcpMgr_ProcessV4Lease(PCOSA_DML_DHCPC_FULL pDhcpc)
         // Clear the next pointer of the new current lease
         pDhcpc->currentLease->next = NULL;
 
-        if (DHCPMgr_storeDhcpLease(pDhcpc->currentLease->ifname,(void*) pDhcpc,(int) DHCP_VERSION_4) != 0)
+        if (DHCPMgr_storeDhcpv4Lease(pDhcpc) != 0)
         {
              DHCPMGR_LOG_ERROR("[%s-%d] Failed to store DHCPv4 lease\n", __FUNCTION__, __LINE__);
         }
-
         if(leaseChanged)
         {
             if(newLease->isExpired == TRUE)

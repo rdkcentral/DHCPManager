@@ -20,6 +20,9 @@
 #ifndef _DHCPMGR_RECOVERY_HANDLER_H_
 #define _DHCPMGR_RECOVERY_HANDLER_H_
 
+#define DHCP_v4 0
+#define DHCP_v6 1
+
 //give brief for DhcpMgr_Dhcp_Recovery_Start
 
 /*
@@ -32,12 +35,18 @@ int DhcpMgr_Dhcp_Recovery_Start();
 /*
     * @brief Stores the DHCP lease information in a file.
     * This function stores the DHCP lease information in a file for later retrieval.
-    * @param ifname The name of the interface.
     * @param newLease A pointer to the new DHCP lease information.
-    * @param dhcpVersion The version of DHCP (4 or 6).
-    * @param instanceNum The instance number of the DHCP client.
     * @return int Returns 0 on success, or a negative error code on failure.
     */
-int DHCPMgr_storeDhcpLease(char* ifname, void*  newLease, int dhcpVersion);
+int DHCPMgr_storeDhcpv4Lease(PCOSA_DML_DHCPC_FULL  data);
+int DHCPMgr_storeDhcpv6Lease(PCOSA_DML_DHCPCV6_FULL  data);
+
+/* 
+     *@brief remove the DHCP lease file
+     *This function removes the DHCP lease file
+     *@param pid of the client process
+*/
+void remove_dhcp_lease_file(int instanceNumber,int dhcpVersion);
+
 
 #endif /* _DHCPMGR_RECOVERY_HANDLER_H_ */
