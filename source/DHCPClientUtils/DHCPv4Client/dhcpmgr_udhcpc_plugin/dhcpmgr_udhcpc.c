@@ -424,6 +424,7 @@ int main(int argc, char *argv[])
 
     init_udhcpc_env(&info,argv[1]);
 
+    //TODO : handle invalid_lease
     if ((!strcmp (argv[1],"bound")) || (!strcmp (argv[1],"renew")) || !strcmp (argv[1], "leasefail") || !strcmp (argv[1], "deconfig"))
     {    
         if (handle_events(&info) != 0)
