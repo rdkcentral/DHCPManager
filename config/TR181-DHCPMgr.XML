@@ -111,7 +111,7 @@
             <writable>true</writable>
           </parameter>
           <parameter>
-            <name>Restart</name>
+            <name>X_RDK_Restart</name>
             <type>boolean</type>
             <syntax>bool</syntax>
             <writable>true</writable>
@@ -841,7 +841,7 @@
             <writable>true</writable>
           </parameter>
           <parameter>
-            <name>Restart</name>
+            <name>X_RDK_Restart</name>
             <type>boolean</type>
             <syntax>bool</syntax>
             <writable>true</writable>
