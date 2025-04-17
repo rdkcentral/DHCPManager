@@ -1614,7 +1614,7 @@ ULONG g_dhcpv6s_refresh_count = 0;
 #endif
 
 #define DHCPVS_DEBUG_PRINT \
-DHCPMGR_LOG_INFO();
+DHCPMGR_LOG_INFO("%s %d", __FUNCTION__, __LINE__);
 
 #define SETS_INTO_UTOPIA( uniqueName, table1Name, table1Index, table2Name, table2Index, parameter, value ) \
 { \

@@ -118,7 +118,7 @@ extern int executeCmd(char *cmd);
 #endif
 
 #define DHCPVS_DEBUG_PRINT \
-DHCPMGR_LOG_INFO();
+DHCPMGR_LOG_INFO("%s %d", __FUNCTION__, __LINE__);
 
 #if defined(RDKB_EXTENDER_ENABLED) || defined(WAN_FAILOVER_SUPPORTED)
 typedef enum deviceMode

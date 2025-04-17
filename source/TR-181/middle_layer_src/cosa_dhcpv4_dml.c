@@ -763,6 +763,12 @@ Client_GetParamBoolValue
 
         return TRUE;
     }
+    if (strcmp(ParamName, "X_RDK_Restart") == 0)
+    {
+        /* collect value */
+        *pBool   = pDhcpc->Cfg.Restart;
+        return TRUE;
+    }
 
     /* DHCPMGR_LOG_WARNING("Unsupported parameter '%s'\n", ParamName); */
 
@@ -1186,6 +1192,24 @@ Client_SetParamBoolValue
             }
             else
                 return FALSE;
+        }
+
+        return  TRUE;
+    }
+
+    if(strcmp(ParamName, "Restart") == 0)
+    {
+        if (pDhcpc->Cfg.bEnabled)
+        {
+            DHCPMGR_LOG_INFO("%s %d Restart triggered for DHCPv4 Client %s \n", __FUNCTION__, __LINE__, pDhcpc->Cfg.Interface );
+            pthread_mutex_lock(&pDhcpc->mutex); //MUTEX lock
+            pDhcpc->Cfg.Restart = TRUE;
+            pthread_mutex_unlock(&pDhcpc->mutex); //MUTEX unlock
+        }
+        else
+        {
+            DHCPMGR_LOG_WARNING("%s %d DHCPv4 Client %s not enabled\n", __FUNCTION__, __LINE__, pDhcpc->Cfg.Interface );
+            return FALSE;
         }
 
         return  TRUE;

@@ -159,6 +159,7 @@ _COSA_DML_DHCPCV6_CFG
     BOOLEAN                         RequestPrefixes;
     BOOLEAN                         RapidCommit;
     BOOLEAN                         Renew;
+    BOOLEAN                         Restart;
 }
 COSA_DML_DHCPCV6_CFG,  *PCOSA_DML_DHCPCV6_CFG;
 

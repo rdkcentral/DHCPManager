@@ -722,6 +722,14 @@ Client3_GetParamBoolValue
         return TRUE;
     }
 
+    if (strcmp(ParamName, "X_RDK_Restart") == 0)
+    {
+        /* collect value */
+        *pBool   = pDhcpc->Cfg.Restart;
+
+        return TRUE;
+    }
+
 
     /* DHCPMGR_LOG_WARNING("Unsupported parameter '%s'\n", ParamName); */
     return FALSE;
@@ -1088,6 +1096,22 @@ Client3_SetParamBoolValue
         
     }
 
+    if(strcmp(ParamName, "Restart") == 0)
+    {
+        if(pDhcpc->Cfg.bEnabled)
+        {
+            DHCPMGR_LOG_INFO("%s %d Restart triggered for DHCPv6 Client %s \n", __FUNCTION__, __LINE__, pDhcpc->Cfg.Interface );
+            pthread_mutex_lock(&pDhcpc->mutex); //MUTEX lock
+            pDhcpc->Cfg.Restart = TRUE;
+            pthread_mutex_unlock(&pDhcpc->mutex); //MUTEX unlock
+            return  TRUE;
+        }
+        else
+        {
+            DHCPMGR_LOG_WARNING("%s %d Restart triggered for DHCPv6 Client %s when it is disabled \n", __FUNCTION__, __LINE__, pDhcpc->Cfg.Interface );
+            return FALSE;
+        }
+    }
     /* DHCPMGR_LOG_WARNING("Unsupported parameter '%s'\n", ParamName); */
    
 #if 0 // TODO : clean up //def DHCPV6_CLIENT_SUPPORT 
