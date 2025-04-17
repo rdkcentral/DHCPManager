@@ -629,8 +629,6 @@ void DHCPMgr_AddDhcpv4Lease(char * ifName, DHCPv4_PLUGIN_MSG *newLease)
             interfaceFound = TRUE;
             DHCPMGR_LOG_INFO("%s %d: New dhcpv4 lease msg added for %s \n", __FUNCTION__, __LINE__, pDhcpc->Cfg.Interface);
             pthread_mutex_unlock(&pDhcpc->mutex); //MUTEX release before break
-            //i want to print the data with cfg and info values as well as newLease deatils of pDhcpc
-            DHCPMGR_LOG_INFO("%s %d: dhcpv4 lease msg details : \n", __FUNCTION__, __LINE__);
             break;
         }
 
