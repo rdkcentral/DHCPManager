@@ -40,6 +40,10 @@
 #include "ccsp_psm_helper.h"
 #endif //DHCPV6C_PSM_ENABLE
 
+#define BOOTSTRAP_INFO_FILE_BACKUP  "/nvram/bootstrap.json"
+#define CLEAR_TRACK_FILE            "/nvram/ClearUnencryptedData_flags"
+#define NVRAM_BOOTSTRAP_CLEARED     (1 << 0)
+
 #define UNUSED(x) (void)(x)
 #define PARTNER_ID_LEN 64
 typedef int (*CALLBACK_FUNC_NAME)(void *);
@@ -820,6 +824,18 @@ ANSC_STATUS UpdateJsonParam
                                          cJsonOut = cJSON_Print(json);
                                          DHCPMGR_LOG_WARNING( "Updated json content is %s\n", cJsonOut);
                                          configUpdateStatus = writeToJson(cJsonOut, BOOTSTRAP_INFO_FILE);
+                                         unsigned int flags = 0;
+                                         FILE *fp = fopen(CLEAR_TRACK_FILE, "r");
+                                         if (fp)
+                                         {
+                                             fscanf(fp, "%u", &flags);
+                                             fclose(fp);
+                                         }
+                                         if ((flags & NVRAM_BOOTSTRAP_CLEARED) == 0)
+                                         {
+                                             DHCPMGR_LOG_WARNING("%s: Updating %s\n", __FUNCTION__, BOOTSTRAP_INFO_FILE_BACKUP);
+                                             writeToJson(cJsonOut, BOOTSTRAP_INFO_FILE_BACKUP);
+                                         }
                                          free(cJsonOut);
                                          if ( !configUpdateStatus)
                                          {
