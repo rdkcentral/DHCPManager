@@ -41,6 +41,7 @@
 #include "dhcp_client_common_utils.h"
 #include "cosa_apis.h"
 #include "dhcpmgr_recovery_handler.h"
+#include "dhcpmgr_custom_options.h"
 
 
 /* ---- Global Constants -------------------------- */
@@ -120,8 +121,43 @@ static int DhcpMgr_build_dhcpv4_opt_list (PCOSA_CONTEXT_DHCPC_LINK_OBJECT hInsCo
         }
         else if (pDhcpSentOpt->bEnabled)
         {
-            //TODO: add verdor specific options API call
-            add_dhcp_opt_to_list(send_opt_list, (int)pDhcpSentOpt->Tag, (char *)pDhcpSentOpt->Value);
+            if(pDhcpSentOpt->Tag == DHCPV4_OPT_60 && strlen((char *)pDhcpSentOpt->Value) <= 0)
+            {
+                DHCPMGR_LOG_INFO("%s %d: DHCPv4 option 60 (Vendor Class Identifier) entry found without value. \n", __FUNCTION__, __LINE__);
+                char optionValue[BUFLEN_256] = {0};
+                int ret = Get_DhcpV4_CustomOption60(pDhcpc->Cfg.Interface, optionValue, sizeof(optionValue));
+                if (ret == 0)
+                {
+                    DHCPMGR_LOG_INFO("%s %d: Adding DHCPv4 option 60 (Vendor Class Identifier) custom value: %s \n", __FUNCTION__, __LINE__, optionValue);
+                    add_dhcp_opt_to_list(send_opt_list, (int)pDhcpSentOpt->Tag, optionValue);
+                }
+            }
+            else if(pDhcpSentOpt->Tag == DHCPV4_OPT_61 && strlen((char *)pDhcpSentOpt->Value) <= 0)
+            {
+                DHCPMGR_LOG_INFO("%s %d: DHCPv4 option 61 (Client Identifier) entry found without value. \n", __FUNCTION__, __LINE__);
+                char optionValue[BUFLEN_256] = {0};
+                int ret = Get_DhcpV4_CustomOption61(pDhcpc->Cfg.Interface, optionValue, sizeof(optionValue));
+                if (ret == 0)
+                {
+                    DHCPMGR_LOG_INFO("%s %d: Adding DHCPv4 option 61 (Client Identifier) custom value: %s \n", __FUNCTION__, __LINE__, optionValue);
+                    add_dhcp_opt_to_list(send_opt_list, (int)pDhcpSentOpt->Tag, optionValue);
+                }
+            }
+            else if(pDhcpSentOpt->Tag == DHCPV4_OPT_43 && strlen((char *)pDhcpSentOpt->Value) <= 0)
+            {
+                DHCPMGR_LOG_INFO("%s %d: DHCPv4 option 43 (Vendor-Specific Information) entry found without value. \n", __FUNCTION__, __LINE__);
+                char optionValue[BUFLEN_256] = {0};
+                int ret = Get_DhcpV4_CustomOption43(pDhcpc->Cfg.Interface, optionValue, sizeof(optionValue));
+                if (ret == 0)
+                {
+                    DHCPMGR_LOG_INFO("%s %d: Adding DHCPv4 option 43 (Vendor-Specific Information) custom value: %s \n", __FUNCTION__, __LINE__, optionValue);
+                    add_dhcp_opt_to_list(send_opt_list, (int)pDhcpSentOpt->Tag, optionValue);
+                }
+            }
+            else
+            {
+                add_dhcp_opt_to_list(send_opt_list, (int)pDhcpSentOpt->Tag, (char *)pDhcpSentOpt->Value);
+            }
         }
     }
 
@@ -196,12 +232,47 @@ static int DhcpMgr_build_dhcpv6_opt_list (PCOSA_CONTEXT_DHCPCV6_LINK_OBJECT hIns
             pSentOption         = (PCOSA_DML_DHCPCV6_SENT)pCxtLink->hContext;
             if (pSentOption->bEnabled)
             {
-                add_dhcp_opt_to_list(send_opt_list, (INT)pSentOption->Tag, (CHAR *)pSentOption->Value);
+                if(pSentOption->Tag == DHCPV6_OPT_15 && strlen((char *)pSentOption->Value) <= 0)
+                {
+                    DHCPMGR_LOG_INFO("%s %d: DHCPv6 option 15 (User Class Option) entry found without value. \n", __FUNCTION__, __LINE__);
+                    char optionValue[BUFLEN_256] = {0};
+                    int ret = Get_DhcpV6_CustomOption15(pDhcp6c->Cfg.Interface, optionValue, sizeof(optionValue));
+                    if (ret == 0)
+                    {
+                        DHCPMGR_LOG_INFO("%s %d: Adding DHCPv6 option 15 (User Class Option) custom value: %s \n", __FUNCTION__, __LINE__, optionValue);
+                        add_dhcp_opt_to_list(send_opt_list, (int)pSentOption->Tag, optionValue);
+                    }
+                }
+                else if(pSentOption->Tag == DHCPV6_OPT_16 && strlen((char *)pSentOption->Value) <= 0)
+                {
+                    DHCPMGR_LOG_INFO("%s %d: DHCPv6 option 16 (Vendor Class Option) entry found without value. \n", __FUNCTION__, __LINE__);
+                    char optionValue[BUFLEN_256] = {0};
+                    int ret = Get_DhcpV6_CustomOption16(pDhcp6c->Cfg.Interface, optionValue, sizeof(optionValue));
+                    if (ret == 0)
+                    {
+                        DHCPMGR_LOG_INFO("%s %d: Adding DHCPv6 option 16 (Vendor Class Option) custom value: %s \n", __FUNCTION__, __LINE__, optionValue);
+                        add_dhcp_opt_to_list(send_opt_list, (int)pSentOption->Tag, optionValue);
+                    }
+                }
+                else if(pSentOption->Tag == DHCPV6_OPT_17 && strlen((char *)pSentOption->Value) <= 0)
+                {
+                    DHCPMGR_LOG_INFO("%s %d: DHCPv6 option 17 (Vendor-Specific Information) entry found without value. \n", __FUNCTION__, __LINE__);
+                    char optionValue[BUFLEN_256] = {0};
+                    int ret = Get_DhcpV6_CustomOption17(pDhcp6c->Cfg.Interface, optionValue, sizeof(optionValue));
+                    if (ret == 0)
+                    {
+                        DHCPMGR_LOG_INFO("%s %d: Adding DHCPv6 option 17 (Vendor-Specific Information) custom value: %s \n", __FUNCTION__, __LINE__, optionValue);
+                        add_dhcp_opt_to_list(send_opt_list, (int)pSentOption->Tag, optionValue);
+                    }
+                }
+                else
+                {
+                    add_dhcp_opt_to_list(send_opt_list, (INT)pSentOption->Tag, (CHAR *)pSentOption->Value);
+                }
             }
         }
     }
 
-    //TODO : Why DHCPv6 request DMl is different from v4 and othet options ?
     char *reqOptions = strdup((CHAR *)pDhcp6c->Cfg.RequestedOptions);
     char *token = NULL;
     token = strtok(reqOptions, " , ");

@@ -44,12 +44,16 @@ CcspDHCPMgr_DEPENDENCIES = \
         ${top_builddir}/source/DHCPMgrInterface/libifl.la \
         ${top_builddir}/source/TR-181/middle_layer_src/libCcspDhcpMgr_middle_layer_src.la \
         ${top_builddir}/source/TR-181/board_sbapi/libCcspDhcpMgr_board_sbapi.la \
-        ${top_builddir}/source/DHCPServerUtils/DHCPv4Server/libCcspDhcpMgr_Dhcpv4Server.la \
-        ${top_builddir}/source/DHCPServerUtils/DHCPv6Server/libCcspDhcpMgr_Dhcpv6Server.la \
         ${top_builddir}/source/DHCPServerUtils/utils/libCcspDhcpMgr_utils.la \
         ${top_builddir}/source/DHCPClientUtils/DHCPv4Client/libCcspDhcpMgr_Dhcpv4Client.la \
         ${top_builddir}/source/DHCPClientUtils/DHCPv6Client/libCcspDhcpMgr_Dhcpv6Client.la \
         ${top_builddir}/source/DHCPMgrUtils/libCcspDhcpMgrUtils.la
+
+if DHCP_SERVER_SUPPORT
+CcspDHCPMgr_DEPENDENCIES += \
+        ${top_builddir}/source/DHCPServerUtils/DHCPv4Server/libCcspDhcpMgr_Dhcpv4Server.la \
+        ${top_builddir}/source/DHCPServerUtils/DHCPv6Server/libCcspDhcpMgr_Dhcpv6Server.la 
+endif
 
 CcspDHCPMgr_CFLAGS = $(SYSTEMD_CFLAGS) $(NONROOT_CFLAGS)
 CcspDHCPMgr_SOURCES = ssp_messagebus_interface.c ssp_main.c ssp_action.c dm_pack_datamodel.c
