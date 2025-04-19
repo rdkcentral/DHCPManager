@@ -40,8 +40,8 @@
 #include "dhcpmgr_rbus_apis.h"
 #include "dhcp_client_common_utils.h"
 #include "cosa_apis.h"
+#include "dhcpmgr_recovery_handler.h"
 #include "dhcpmgr_custom_options.h"
-
 
 
 /* ---- Global Constants -------------------------- */
@@ -404,8 +404,27 @@ static void* DhcpMgr_MainController( void *args )
     BOOL bRunning = TRUE;
     struct timeval tv;
     int n = 0;
+    const char *filename = "/tmp/dhcpmanager_restarted";
+    int retStatus = 0;
 
-    int retStatus = DhcpMgr_LeaseMonitor_Start();
+    if(access(filename, F_OK) != -1)
+    {
+        retStatus = DhcpMgr_Dhcp_Recovery_Start();
+        if(retStatus != 0)
+        {
+            DHCPMGR_LOG_ERROR("%s %d - Failed to start dhcp recovery thread\n", __FUNCTION__, __LINE__);
+        }
+        else
+        {
+            DHCPMGR_LOG_INFO("%s %d - Dhcp crash recovery thread started successfully\n", __FUNCTION__, __LINE__);
+            if (remove(filename) != 0)
+            {
+                DHCPMGR_LOG_ERROR("%s %d Error deleting %s file\n", __FUNCTION__, __LINE__, filename);
+            }
+        }
+    }
+
+    retStatus = DhcpMgr_LeaseMonitor_Start();
     if(retStatus < 0)
     {
         DHCPMGR_LOG_INFO("%s %d - Lease Monitor Thread failed to start!\n", __FUNCTION__, __LINE__ );
@@ -508,6 +527,7 @@ static void* DhcpMgr_MainController( void *args )
                     pDhcpc->Cfg.Renew = FALSE;
                     DhcpMgr_PublishDhcpV4Event(pDhcpc, DHCP_LEASE_DEL); //Send lease expired event
                     DhcpMgr_clearDHCPv4Lease(pDhcpc);
+                    remove_dhcp_lease_file(pDhcpc->Cfg.InstanceNumber,DHCP_v4);
                     DhcpMgr_PublishDhcpV4Event(pDhcpc, DHCP_CLIENT_STOPPED);
                 }
             }
@@ -607,6 +627,7 @@ static void* DhcpMgr_MainController( void *args )
                     pDhcp6c->Cfg.Renew = FALSE;
                     DhcpMgr_PublishDhcpV6Event(pDhcp6c, DHCP_LEASE_DEL); //Send lease expired event
                     DhcpMgr_clearDHCPv6Lease(pDhcp6c);
+                    remove_dhcp_lease_file(pDhcp6c->Cfg.InstanceNumber,DHCP_v6);
                     DhcpMgr_PublishDhcpV6Event(pDhcp6c, DHCP_CLIENT_STOPPED);
                 }
             }
