@@ -205,7 +205,10 @@ static void DhcpMgr_createDhcpv6LeaseInfoMsg(DHCPv6_PLUGIN_MSG *src, DHCP_MGR_IP
 
     if(src->mapt.Assigned == TRUE)
     {
-        DhcpMgr_MaptParseOpt95Response(dest->sitePrefix, src->mapt.Container, &dest->mapt);
+        unsigned char  maptContainer[BUFLEN_256]; /* MAP-T option 95 in hex format*/
+        memset(maptContainer, 0, sizeof(maptContainer));
+        memcpy(maptContainer, src->mapt.Container, sizeof(src->mapt.Container));
+        DhcpMgr_MaptParseOpt95Response(dest->sitePrefix, maptContainer, &dest->mapt);
         dest->maptAssigned = TRUE;
     }
 }
