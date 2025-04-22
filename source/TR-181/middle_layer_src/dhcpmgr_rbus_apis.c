@@ -26,7 +26,7 @@
 #include "util.h"
 #include "dhcpv4_interface.h"
 #include "dhcpv6_interface.h"
-
+#include "dhcpmgr_map_apis.h"
 
 #define  ARRAY_SZ(x) (sizeof(x) / sizeof((x)[0]))
 #define  MAC_ADDR_SIZE 18
@@ -66,7 +66,7 @@ ANSC_STATUS DhcpMgr_Rbus_Init()
     rc = rbus_open(&rbusHandle, componentName);
     if (rc != RBUS_ERROR_SUCCESS)
     {
-        DHCPMGR_LOG_ERROR("WanMgr_Rbus_Init rbus initialization failed\n");
+        DHCPMGR_LOG_ERROR("DhcpManager_Rbus_Init rbus initialization failed\n");
         return rc;
     }
 
@@ -203,9 +203,11 @@ static void DhcpMgr_createDhcpv6LeaseInfoMsg(DHCPv6_PLUGIN_MSG *src, DHCP_MGR_IP
     dest->prefixAssigned = src->ia_pd.assigned;
     dest->domainNameAssigned = (strlen(src->domainName) > 0);
 
-    //TODO: MAPT implementation
-    //dest->mapInfo.Assigned = src->mapt.Assigned;
-    //memcpy(dest->mapInfo.Container, src->mapt.Container, sizeof(dest->mapInfo.Container));
+    if(src->mapt.Assigned == TRUE)
+    {
+        DhcpMgr_MaptParseOpt95Response(dest->sitePrefix, src->mapt.Container, &dest->mapt);
+        dest->maptAssigned = TRUE;
+    }
 }
 
 /**
