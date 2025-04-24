@@ -33,6 +33,7 @@
 #include "dhcp_lease_monitor_thrd.h"
 #include "dhcp_client_common_utils.h"
 #include "dhcpmgr_rbus_apis.h"
+#include "dhcpmgr_recovery_handler.h"
 
 
 #include <string.h>
@@ -53,7 +54,7 @@
  *
  * @return ANSC_STATUS Status of the update operation.
  */
-static ANSC_STATUS DhcpMgr_updateDHCPv4DML(PCOSA_DML_DHCPC_FULL pDhcpc)
+ANSC_STATUS DhcpMgr_updateDHCPv4DML(PCOSA_DML_DHCPC_FULL pDhcpc)
 {
 
     DHCPv4_PLUGIN_MSG *current = pDhcpc->currentLease;
@@ -278,7 +279,11 @@ void DhcpMgr_ProcessV4Lease(PCOSA_DML_DHCPC_FULL pDhcpc)
 
         // Clear the next pointer of the new current lease
         pDhcpc->currentLease->next = NULL;
-        
+
+        if (DHCPMgr_storeDhcpv4Lease(pDhcpc) != 0)
+        {
+             DHCPMGR_LOG_ERROR("[%s-%d] Failed to store DHCPv4 lease\n", __FUNCTION__, __LINE__);
+        }
         if(leaseChanged)
         {
             if(newLease->isExpired == TRUE)
@@ -293,11 +298,8 @@ void DhcpMgr_ProcessV4Lease(PCOSA_DML_DHCPC_FULL pDhcpc)
             DHCPMGR_LOG_INFO("%s %d: NewLease->dnsServer1 %s  \n",__FUNCTION__, __LINE__,  newLease->dnsServer1 );
             configureNetworkInterface(pDhcpc);
             DhcpMgr_updateDHCPv4DML(pDhcpc);
-
             DhcpMgr_PublishDhcpV4Event(pDhcpc, DHCP_LEASE_UPDATE);
-            
         }
-
     }
 }
 

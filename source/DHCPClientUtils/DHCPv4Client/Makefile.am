@@ -30,7 +30,7 @@ libCcspDhcpMgr_Dhcpv4Client_la_CPPFLAGS = -I$(top_srcdir)/source/DHCPClientUtils
                                           -I$(top_srcdir)/source/DHCPServerUtils/utils \
                                           -I$(top_srcdir)/source/DHCPServerUtils/utils/include \
                                           -I$(top_srcdir)/source/DHCPMgrInterface \
-                                          -I$(top_srcdir)/source/DHCPMgrInterface/include
+                                          -I$(top_srcdir)/source/DHCPMgrInterface/include 
 
 libCcspDhcpMgr_Dhcpv4Client_la_SOURCES = dhcp_client_common.c dhcpv4_interface.c dhcpv4_interface_udhcpc.c
 
