@@ -154,6 +154,7 @@ _COSA_DML_DHCPC_CFG
 
     BOOLEAN                         bEnabled;
     BOOLEAN                         Renew;
+    BOOLEAN                         Restart;
     char                            Interface[COSA_DML_ALIAS_NAME_LENGTH]; /* IP interface name */
     BOOLEAN                         PassthroughEnable;
     char                            PassthroughDHCPPool[64];            /* DHCP server pool alias */

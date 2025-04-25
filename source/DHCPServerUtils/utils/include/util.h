@@ -54,15 +54,10 @@ int serv_can_stop(int sefd, token_t tok, const char *servname);
 int pid_of(const char *name, const char *keyword);
 int sysctl_iface_set(const char *path, const char *ifname, const char *content);
 
-#define DHCPMGR_LOG_INFO(format, ...)     \
-                              CcspTraceInfo   (("%s - "format"\n", (char *)__FUNCTION__, ##__VA_ARGS__))
-#define DHCPMGR_LOG_ERROR(format, ...)    \
-                              CcspTraceError  (("%s - "format"\n", (char *)__FUNCTION__, ##__VA_ARGS__))
-#define DHCPMGR_LOG_NOTICE(format, ...)   \
-                              CcspTraceNotice (("%s - "format"\n", (char *)__FUNCTION__, ##__VA_ARGS__))
-#define DHCPMGR_LOG_WARNING(format, ...)  \
-                              CcspTraceWarning(("%s - "format"\n", (char *)__FUNCTION__, ##__VA_ARGS__))
-#define DHCPMGR_LOG_DEBUG(format, ...)  \
-                              CcspTraceDebug(("%s - "format"\n", (char *)__FUNCTION__, ##__VA_ARGS__))
+#define DHCPMGR_LOG_INFO(format, ...)     CcspTraceInfo   ((format, ##__VA_ARGS__))
+#define DHCPMGR_LOG_ERROR(format, ...)    CcspTraceError  ((format, ##__VA_ARGS__))
+#define DHCPMGR_LOG_NOTICE(format, ...)   CcspTraceNotice ((format, ##__VA_ARGS__))
+#define DHCPMGR_LOG_WARNING(format, ...)  CcspTraceWarning((format, ##__VA_ARGS__))
+#define DHCPMGR_LOG_DEBUG(format, ...)    CcspTraceDebug  ((format, ##__VA_ARGS__))
 
 #endif /* __SW_UTIL__ */
