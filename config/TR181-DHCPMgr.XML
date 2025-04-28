@@ -1,4 +1,8 @@
 <?xml version="1.0" encoding="utf-8" ?>
+<?define FEATURE_SUPPORT_MAPT_NAT46=True?>
+<?define FEATURE_SUPPORT_MAPT_NAT46=True?>
+<?define FEATURE_SUPPORT_MAPT_NAT46=True?>
+<?define FEATURE_SUPPORT_MAPT_NAT46=True?>
 <!--
  If not stated otherwise in this file or this component's LICENSE file the
  following copyright and licenses apply:
@@ -263,6 +267,7 @@
             </object>
           </objects>
         </object>
+<?ifdef DHCPV4_SERVER_SUPPORT?>
         <object>
           <name>Server</name>
           <objectType>object</objectType>
@@ -304,9 +309,9 @@
             <name>PoolNumberOfEntries</name>
             <type>unsignedInt</type>
             <syntax>uint32</syntax>
-          </parameter>
-          </parameters>
-          <objects>
+            </parameter>
+            </parameters>
+            <objects>
             <object>
               <name>Pool</name>
               <objectType>writableTable</objectType>
@@ -741,6 +746,7 @@
             </object>
           </objects>
         </object>
+<?endif?>
       </objects>
     </object>
     <object>
@@ -1081,6 +1087,7 @@
 
           </objects>
         </object>
+<?ifdef DHCPV6_SERVER_SUPPORT?>
         <object>
           <name>Server</name>
           <objectType>object</objectType>
@@ -1496,6 +1503,7 @@
             </object>
           </objects>
         </object>
+<?endif?>
       </objects>
     </object>
  </objects>
