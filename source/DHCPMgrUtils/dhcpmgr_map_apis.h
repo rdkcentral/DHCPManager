@@ -1,5 +1,5 @@
 /*
- * If not stated otherwise in this file or this component's LICENSE file the
+ * If not stated otherwise in this file or this component's Licenses.txt file the
  * following copyright and licenses apply:
  *
  * Copyright 2020 RDK Management
@@ -33,41 +33,12 @@
    limitations under the License.
 **********************************************************************/
 
-/**************************************************************************
-
-    module: cosa_mapt_apis.h
-
-        For COSA Data Model Library Development.
-
-    -------------------------------------------------------------------
-
-    description:
-
-        This file implementes back-end apis for the COSA Data Model Library
-
-    -------------------------------------------------------------------
-
-    author:
-
-        COSA XML TOOL CODE GENERATOR 1.0
-
-    -------------------------------------------------------------------
-
-    revision:
-
-        12/07/2021    initial revision.
+#ifndef  _DHCPV6_MSG_APIS_H
+#define  _DHCPV6_MSG_APIS_H
 
 
-**************************************************************************/
-#ifdef   FEATURE_SUPPORT_MAPT_NAT46
-#ifndef  _COSA_MAPT_APIS_H
-#define  _COSA_MAPT_APIS_H
-
+#include "ipc_msg.h"
 #include "cosa_apis.h"
-
-#define COSA_MAPT_SYSCFG_NAMESPACE      "CosaMAPT"
-#define COSA_MAPT_ID_SYSCFG_NAMESPACE   COSA_MAPT_SYSCFG_NAMESPACE"IDs"
-
 /*
  * DHCP MAPT options macro definitions
  */
@@ -76,29 +47,6 @@
 #define MAPT_OPTION_S46_DMR             91
 #define MAPT_OPTION_S46_PORT_PARAMS     93
 #define MAPT_OPTION_S46_CONT_MAPT       95
-
-/*
- * MAPT events macro definitions
- */
-#define EVENT_MAPT_TRANSPORT_MODE       "map_transport_mode"
-#define EVENT_MAPT_CONFIG_FLAG          "mapt_config_flag"
-#define EVENT_MAPT_EA_LENGTH            "map_ea_length"
-#define EVENT_MAPT_IS_FMR               "map_is_fmr"
-#define EVENT_MAPT_RATIO                "mapt_ratio"
-#define EVENT_MAPT_PSID_OFFSET          "mapt_psid_offset"
-#define EVENT_MAPT_PSID_VALUE           "mapt_psid_value"
-#define EVENT_MAPT_PSID_LENGTH          "mapt_psid_length"
-#define EVENT_MAPT_IPADDRESS            "mapt_ip_address"
-#define EVENT_MAPT_IPV6_ADDRESS         "mapt_ipv6_address"
-#define EVENT_MAPT_RULE_IPADDRESS       "map_rule_ip_address"
-#define EVENT_MAPT_RULE_IPV6_ADDRESS    "map_rule_ipv6_address"
-#define EVENT_MAPT_BR_IPV6_PREFIX       "map_br_ipv6_prefix"
-#define EVENT_FIREWALL_RESTART          "firewall-restart"
-#define EVENT_NTPD_RESTART          	"ntpd-restart"
-
-#define MAPT_INTERFACE                  "map0"
-#define MAPT_MTU_SIZE                   "1500"
-#define MAPT_V4_MTU_SIZE                "1472"
 
 #define BUFLEN_4                        4
 #define BUFLEN_8                        8
@@ -111,13 +59,6 @@
 #define BUFLEN_256                      256
 #define BUFLEN_512                      512
 #define BUFLEN_1024                     1024
-
-#define SYSCFG_UPNP_IGD_ENABLED         "upnp_igd_enabled"
-#define SYSCFG_DMZ_ENABLED              "dmz_enabled"
-#define SYSCFG_PORT_FORWARDING_ENABLED  "CosaNAT::port_forward_enabled"
-#define SYSCFG_PORT_TRIGGERING_ENABLED  "CosaNAT::port_trigger_enabled"
-#define SYSCFG_MGMT_HTTPS_ENABLED       "mgmt_wan_httpsaccess"
-#define SYSCFG_MGMT_HTTP_ENABLED        "mgmt_wan_httpaccess"
 
 /*
  * Data type Macro definitions
@@ -211,6 +152,8 @@
 #define MAPT_LOG_WARNING(format, ...)  \
                               CcspTraceWarning(("%s - "format"\n", __FUNCTION__, ##__VA_ARGS__))
 
+
+
 /*
  * Enums and structure definition
  */
@@ -220,20 +163,6 @@ _RETURN_STATUS
    STATUS_SUCCESS = 0,
    STATUS_FAILURE = -1
 } RETURN_STATUS;
-
-
-typedef enum
-_RB_STATE
-{
-   RB_NONE        = 0x00,
-   RB_ALL         = 0x1F,
-   RB_UPNPIGD     = 0x10,
-   RB_EVENTS      = 0x08,
-   RB_FIREWALL    = 0x04,
-   RB_CONFIG      = 0x02,
-   RB_DHCPCLIENT  = 0x01
-} RB_STATE;
-
 
 typedef struct
 _COSA_DML_MAPT_DATA
@@ -254,6 +183,8 @@ _COSA_DML_MAPT_DATA
    UINT16     PsidLen;
    UINT32     PsidOffset;
    UINT32     IPv4Suffix;
+   UINT16     IPv4Psid;
+   UINT16     IPv4PsidLen;
    UINT32     Ratio;
    BOOLEAN    bFMR;
 } COSA_DML_MAPT_DATA, *PCOSA_DML_MAPT_DATA;
@@ -266,26 +197,22 @@ _COSA_DML_MAPT_OPTION
    UINT16     OptLen;
 } __attribute__ ((__packed__)) COSA_DML_MAPT_OPTION, *PCOSA_DML_MAPT_OPTION;
 
-/*************************************
-    The actual function declaration
-**************************************/
-/*
- * Description:
- *   This routine parses the option-95 response and sets the configs required.
- * Arguments:
- *   pPdIPv6Prefix       Obtained IPv6 prefix through prefix delegation.
- *   uiPdIPv6PrefixLen   IPv6 prefix length.
- *   pOptionBuf          Buffer containing option-95 response.
- *   uiOptionBufLen      Response buffer length.
- * Return:
- *   Status of operation.
+/**
+ * @brief Parses the MAPT option 95 response.
+ *
+ * This function processes the MAPT option 95 response, extracts the relevant information and updates ipc_dhcpv6_data_t struct with mapt details
+ *
+ * @param[in] pPdIPv6Prefix Pointer to the IPv6 prefix.
+ * @param[in] pOptionBuf Pointer to the buffer containing the option 95 data.
+ * @param[out] mapt Pointer to the structure where the parsed MAP-T data will be stored.
+ *
+ * @return ANSC_STATUS indicating the success or failure of the operation.
  */
-ANSC_STATUS
-CosaDmlMaptProcessOpt95Response
+
+ANSC_STATUS DhcpMgr_MaptParseOpt95Response
     (
-        PCHAR              pPdIPv6Prefix,
-        PUCHAR             pOptionBuf
+        const PCHAR          pPdIPv6Prefix,
+        PUCHAR         pOptionBuf,
+        ipc_mapt_data_t *mapt
     );
 #endif
-#endif
-

@@ -26,6 +26,7 @@ noinst_LTLIBRARIES = libCcspDhcpMgr_middle_layer_src.la
 libCcspDhcpMgr_middle_layer_src_la_CPPFLAGS = -I$(top_srcdir)/source/TR-181/include \
                                               -I$(top_srcdir)/source/TR-181/middle_layer_src \
                                               -I$(top_srcdir)/source/DHCPMgrUtils/include \
+                                              -I$(top_srcdir)/source/DHCPMgrUtils \
                                               -I$(top_srcdir)/source/DHCPMgrInterface/include \
                                               -I$(top_srcdir)/source/DHCPClientUtils/DHCPv4Client/include \
                                               -I$(top_srcdir)/source/DHCPClientUtils/DHCPv4Client \
