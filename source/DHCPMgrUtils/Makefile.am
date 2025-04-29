@@ -36,11 +36,10 @@ libCcspDhcpMgrUtils_la_CPPFLAGS = -I$(top_srcdir)/source/DHCPMgrUtils/include \
                                   -I$(top_srcdir)/source/TR-181/include \
                                   -I$(top_srcdir)/source/TR-181/middle_layer_src \
                                   -I$(top_srcdir)/source/DHCPMgrInterface/include \
-                                  -I$(top_srcdir)/source/DHCPServerUtils/utils/include 
+                                  -I$(top_srcdir)/source/DHCPServerUtils/utils/include
 
+libCcspDhcpMgrUtils_la_SOURCES = cosa_common_util.c helpers.c dhcpmgr_recovery_handler.c dhcpmgr_controller.c dhcp_lease_monitor_thrd.c dhcpmgr_v4_lease_handler.c dhcpmgr_map_apis.c dhcpmgr_v6_lease_handler.c
 
-
-libCcspDhcpMgrUtils_la_SOURCES = cosa_common_util.c helpers.c dhcpmgr_controller.c dhcp_lease_monitor_thrd.c dhcpmgr_v4_lease_handler.c dhcpmgr_v6_lease_handler.c dhcpmgr_map_apis.c
 
 libCcspDhcpMgrUtils_la_LIBADD = -lccsp_common -ltelemetry_msgsender -lulog -lsyscfg -lsysevent -ltime_conversion -lprint_uptime \
         ${top_builddir}/source/DHCPClientUtils/DHCPv4Client/libCcspDhcpMgr_Dhcpv4Client.la \
