@@ -23,6 +23,10 @@
 #include "dhcpmgr_rbus_apis.h"
 #include "dhcpmgr_recovery_handler.h"
 #include "dhcpmgr_custom_options.h"
+#include "ifl.h"
+
+#define COSA_DML_WANIface_PREF_PRETM_SYSEVENT_NAME     "tr_%s_dhcpv6_client_pref_pretm"
+#define COSA_DML_WANIface_PREF_VLDTM_SYSEVENT_NAME     "tr_%s_dhcpv6_client_pref_vldtm"
 
 static void configureNetworkInterface(PCOSA_DML_DHCPCV6_FULL pDhcp6c);
 
@@ -208,6 +212,19 @@ static void configureNetworkInterface(PCOSA_DML_DHCPCV6_FULL pDhcp6c)
     {
         snprintf(validLftStr, sizeof(validLftStr), "%u", validLifeTime);
     }
+
+    //setting the sysevent for PD valid and pref time
+    snprintf(PDSyseventName,sizeof(PDSyseventName),COSA_DML_WANIface_PREF_PRETM_SYSEVENT_NAME,interface);
+    snprintf(PDSyseventValue, sizeof(PDSyseventValue), "%u", pDhcp6c->currentLease->ia_pd.PreferedLifeTime);
+    ifl_set_event(PDSyseventName,PDSyseventValue);
+
+    memset(PDSyseventName,0,sizeof(PDSyseventName));
+    memset(PDSyseventValue,0,sizeof(PDSyseventValue));
+
+    snprintf(PDSyseventName,sizeof(PDSyseventName),COSA_DML_WANIface_PREF_VLDTM_SYSEVENT_NAME,interface);
+    snprintf(PDSyseventValue, sizeof(PDSyseventValue), "%u", pDhcp6c->currentLease->ia_pd.ValidLifeTime);
+    ifl_set_event(PDSyseventName,PDSyseventValue);
+
 
     // Log the configuration details
     DHCPMGR_LOG_INFO("%s %d: Configuring interface %s with IPv6 address %s\n", __FUNCTION__, __LINE__, interface, ipv6Address);
