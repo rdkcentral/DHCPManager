@@ -194,6 +194,8 @@ static void configureNetworkInterface(PCOSA_DML_DHCPCV6_FULL pDhcp6c)
     // Set lifetime strings based on timeout values
     char preferredLftStr[20] = {0};
     char validLftStr[20] = {0};
+    char PDSyseventName[48] = {0};
+    char PDSyseventValue[16] = {0};
 
     if (preferedLifeTime == 0 || preferedLifeTime == UINT32_MAX) 
     {
