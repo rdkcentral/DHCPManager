@@ -46,7 +46,6 @@
 #include <sys/stat.h>
 #include "sysevent/sysevent.h"
 #include "cosa_apis_util.h"
-#include "service_dhcpv6_client.h"
 #include "ifl.h"
 
 extern void* g_pDslhDmlAgent;
