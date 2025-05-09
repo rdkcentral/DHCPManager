@@ -237,41 +237,49 @@ static void ConfigureIpv6Sysevents(PCOSA_DML_DHCPCV6_FULL pDhcp6c)
     char iana_pretm[32] = {0};
     char iana_vldtm[32] = {0};
 
-    //copy the IAPD values to the sysevent
-    snprintf(iapd_iaid, sizeof(iapd_iaid), "%u", pDhcp6c->currentLease->ia_pd.IA_ID);
-    snprintf(iapd_t1, sizeof(iapd_t1), "%u", pDhcp6c->currentLease->ia_pd.T1);
-    snprintf(iapd_t2, sizeof(iapd_t2), "%u", pDhcp6c->currentLease->ia_pd.T2);
-    snprintf(iapd_pretm, sizeof(iapd_pretm), "%u", pDhcp6c->currentLease->ia_pd.PreferedLifeTime);
-    snprintf(iapd_vldtm, sizeof(iapd_vldtm), "%u", pDhcp6c->currentLease->ia_pd.ValidLifeTime);
+    //Do configure the sysevents only if prefix assigned
+    if(pDhcp6c->currentLease->ia_pd.assigned)
+    {
+        //copy the IAPD values to the sysevent
+        snprintf(iapd_iaid, sizeof(iapd_iaid), "%u", pDhcp6c->currentLease->ia_pd.IA_ID);
+        snprintf(iapd_t1, sizeof(iapd_t1), "%u", pDhcp6c->currentLease->ia_pd.T1);
+        snprintf(iapd_t2, sizeof(iapd_t2), "%u", pDhcp6c->currentLease->ia_pd.T2);
+        snprintf(iapd_pretm, sizeof(iapd_pretm), "%u", pDhcp6c->currentLease->ia_pd.PreferedLifeTime);
+        snprintf(iapd_vldtm, sizeof(iapd_vldtm), "%u", pDhcp6c->currentLease->ia_pd.ValidLifeTime);
 
-    IPv6Events eventv6[] = {
+        IPv6Events eventv6[] = {
         {pDhcp6c->currentLease->ia_pd.Prefix, COSA_DML_WANIface_PREF_SYSEVENT_NAME},
         {iapd_iaid, COSA_DML_WANIface_PREF_IAID_SYSEVENT_NAME},
         {iapd_t1,   COSA_DML_WANIface_PREF_T1_SYSEVENT_NAME},
         {iapd_t2,   COSA_DML_WANIface_PREF_T2_SYSEVENT_NAME},
         {iapd_pretm,COSA_DML_WANIface_PREF_PRETM_SYSEVENT_NAME},
         {iapd_vldtm,COSA_DML_WANIface_PREF_VLDTM_SYSEVENT_NAME}
-    };
+        };
 
-    processv6LesSysevents(eventv6, sizeof(eventv6) / sizeof(eventv6[0]), interface);
+        processv6LesSysevents(eventv6, sizeof(eventv6) / sizeof(eventv6[0]), interface);
+    }
 
-    //copy the IANA values to the sysevent
-    snprintf(iana_iaid, sizeof(iana_iaid), "%u", pDhcp6c->currentLease->ia_na.IA_ID);
-    snprintf(iana_t1, sizeof(iana_t1), "%u", pDhcp6c->currentLease->ia_na.T1);
-    snprintf(iana_t2, sizeof(iana_t2), "%u", pDhcp6c->currentLease->ia_na.T2);
-    snprintf(iana_pretm, sizeof(iana_pretm), "%u", pDhcp6c->currentLease->ia_na.PreferedLifeTime);
-    snprintf(iana_vldtm, sizeof(iana_vldtm), "%u", pDhcp6c->currentLease->ia_na.ValidLifeTime);
+    //Do configure the sysevents only if address assigned
+    if(pDhcp6c->currentLease->ia_na.assigned)
+    {
+        //copy the IANA values to the sysevent
+        snprintf(iana_iaid, sizeof(iana_iaid), "%u", pDhcp6c->currentLease->ia_na.IA_ID);
+        snprintf(iana_t1, sizeof(iana_t1), "%u", pDhcp6c->currentLease->ia_na.T1);
+        snprintf(iana_t2, sizeof(iana_t2), "%u", pDhcp6c->currentLease->ia_na.T2);
+        snprintf(iana_pretm, sizeof(iana_pretm), "%u", pDhcp6c->currentLease->ia_na.PreferedLifeTime);
+        snprintf(iana_vldtm, sizeof(iana_vldtm), "%u", pDhcp6c->currentLease->ia_na.ValidLifeTime);
     
-    IPv6Events eventMaps[] = {
+        IPv6Events eventMaps[] = {
         {pDhcp6c->currentLease->ia_na.address, COSA_DML_WANIface_ADDR_SYSEVENT_NAME},
         {iana_iaid, COSA_DML_WANIface_ADDR_IAID_SYSEVENT_NAME},
         {iana_t1,   COSA_DML_WANIface_ADDR_T1_SYSEVENT_NAME},
         {iana_t2,   COSA_DML_WANIface_ADDR_T2_SYSEVENT_NAME},
         {iana_pretm,COSA_DML_WANIface_ADDR_PRETM_SYSEVENT_NAME},
         {iana_vldtm,COSA_DML_WANIface_ADDR_VLDTM_SYSEVENT_NAME}
-    };
+        };
 
-    processv6LesSysevents(eventMaps, sizeof(eventMaps) / sizeof(eventMaps[0]), interface);
+        processv6LesSysevents(eventMaps, sizeof(eventMaps) / sizeof(eventMaps[0]), interface);
+    }
 }
 
 /**
