@@ -138,7 +138,7 @@
 #define PSM_ENABLE_STRING_TRUE  "TRUE"
 #define PSM_ENABLE_STRING_FALSE "FALSE"
 
-#define BOOTSTRAP_INFO_FILE             "/nvram/bootstrap.json"
+#define BOOTSTRAP_INFO_FILE             "/opt/secure/bootstrap.json"
 
 COSA_DML_DHCPC_FULL     CH_g_dhcpv4_client[COSA_DML_DHCP_MAX_ENTRIES];
 COSA_DML_DHCP_OPT       g_dhcpv4_client_sent[COSA_DML_DHCP_MAX_ENTRIES][COSA_DML_DHCP_MAX_OPT_ENTRIES];
@@ -703,7 +703,7 @@ static void getDHCPv4ServerPoolParametersFromPSM(ULONG instancenum, PCOSA_DML_DH
         ((CCSP_MESSAGE_BUS_INFO *)bus_handle)->freefunc(param_value);
     }
 
-    // Get the UpdateSource info from /nvram/bootstrap.json
+    // Get the UpdateSource info from /opt/secure/bootstrap.json
     CosaDhcpInitJournal(pPoolCfg);
 
     return;
@@ -3530,7 +3530,7 @@ void FillPartnerIDJournal
                 }
 }
 
-//Get the UpdateSource info from /nvram/bootstrap.json. This is needed to know for override precedence rules in set handlers
+//Get the UpdateSource info from /opt/secure/bootstrap.json. This is needed to know for override precedence rules in set handlers
 ANSC_STATUS
 CosaDhcpInitJournal
     (

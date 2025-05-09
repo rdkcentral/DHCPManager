@@ -207,28 +207,7 @@ static int dibbler_get_send_options(FILE * fout,  dhcp_opt_list * send_opt_list)
                 snprintf(args, sizeof(args), "\n\tpd %s \n", (opt_list->dhcp_opt_val == NULL) ? "" : opt_list->dhcp_opt_val);
                 fputs(args, fout);
                 break;
-        
-            case DHCPV6_OPT_15:
-            {
-                char str[BUFLEN_64] = {0};
-                char option15[100] = {0};
-                char temp[16] = {0};
-        
-                strncpy(str, opt_list->dhcp_opt_val, sizeof(str) - 1);
-        
-                snprintf(temp, sizeof(temp), "0x%04X", (int)strlen(str) + 1);
-                strncat(option15, temp, sizeof(option15) - strlen(option15) - 1);
-        
-                for (int i = 0; i < (int)strlen(str) + 1; i++)
-                {
-                    snprintf(temp, sizeof(temp), "%02X", str[i]);
-                    strncat(option15, temp, sizeof(option15) - strlen(option15) - 1);
-                }
-        
-                snprintf(args, sizeof(args), "\n\toption 00%d hex %s\n", opt_list->dhcp_opt, option15);
-                fputs(args, fout);
-                break;
-            }
+                  
             case DHCPV6_OPT_14:
                 fputs("\n\t rapid-commit yes\n", fout);
                 break;
@@ -448,7 +427,7 @@ pid_t start_dhcpv6_client(char *interfaceName, dhcp_opt_list *req_opt_list, dhcp
     char cmd_args[BUFLEN_256] = {0};
     snprintf(cmd_args, sizeof(cmd_args), "%s -w %s", DIBBLER_CLIENT_RUN_CMD, config_path);
 
-    pid_t ret = start_exe(DIBBLER_CLIENT_PATH, cmd_args);
+    pid_t ret = start_exe2(DIBBLER_CLIENT_PATH, cmd_args);
     if (ret <= 0)
     {
         DHCPMGR_LOG_ERROR("%s %d: unable to start dibbler-client %d.\n", __FUNCTION__, __LINE__, ret);

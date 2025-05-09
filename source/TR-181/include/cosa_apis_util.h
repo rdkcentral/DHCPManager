@@ -30,7 +30,7 @@ extern ANSC_HANDLE bus_handle;
 #endif
 
 #define PARTNERS_INFO_FILE              "/nvram/partners_defaults.json"
-#define BOOTSTRAP_INFO_FILE             "/nvram/bootstrap.json"
+#define BOOTSTRAP_INFO_FILE             "/opt/secure/bootstrap.json"
 /*
 enum LM_ADDR_SOURCE{
         LM_ADDRESS_SOURCE_STATIC =0,

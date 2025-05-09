@@ -21,6 +21,8 @@
 #include "dhcpv6_interface.h"
 #include "secure_wrapper.h"
 #include "dhcpmgr_rbus_apis.h"
+#include "dhcpmgr_recovery_handler.h"
+#include "dhcpmgr_custom_options.h"
 
 static void configureNetworkInterface(PCOSA_DML_DHCPCV6_FULL pDhcp6c);
 
@@ -136,8 +138,14 @@ void DhcpMgr_ProcessV6Lease(PCOSA_DML_DHCPCV6_FULL pDhcp6c)
         // Clear the next pointer of the new current lease
         pDhcp6c->currentLease->next = NULL;
         
+        if(DHCPMgr_storeDhcpv6Lease(pDhcp6c) != 0)
+        {
+            DHCPMGR_LOG_ERROR("%s %d: Failed to store lease information for interface %s.\n", __FUNCTION__, __LINE__, pDhcp6c->Cfg.Interface);
+        }
+        
         if(leaseChanged)
         {
+            //TODO : check any sysvent required for lease update
             DHCPMGR_LOG_INFO("%s %d: NewLease address %s  \n", __FUNCTION__, __LINE__, newLease->ia_na.address);
             DHCPMGR_LOG_INFO("%s %d: NewLease prefix %s  \n", __FUNCTION__, __LINE__, newLease->ia_pd.Prefix);
             DHCPMGR_LOG_INFO("%s %d: NewLease PrefixLength %d  \n", __FUNCTION__, __LINE__, newLease->ia_pd.PrefixLength);
@@ -146,7 +154,11 @@ void DhcpMgr_ProcessV6Lease(PCOSA_DML_DHCPCV6_FULL pDhcp6c)
             DHCPMGR_LOG_INFO("%s %d: NewLease PreferedLifeTime %d  \n", __FUNCTION__, __LINE__, newLease->ia_pd.PreferedLifeTime);
             DHCPMGR_LOG_INFO("%s %d: NewLease ValidLifeTime %d  \n", __FUNCTION__, __LINE__, newLease->ia_pd.ValidLifeTime);
             configureNetworkInterface(pDhcp6c);
-            
+            if(newLease->vendor.Assigned == TRUE)
+            {
+                DHCPMGR_LOG_INFO("%s %d: NewLease vendor data %s  \n", __FUNCTION__, __LINE__, newLease->vendor.Data);
+                Set_DhcpV6_CustomOption17(pDhcp6c->Cfg.Interface, newLease->vendor.Data); 
+            }
             DhcpMgr_PublishDhcpV6Event(pDhcp6c, DHCP_LEASE_UPDATE);
             
         }

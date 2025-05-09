@@ -706,6 +706,14 @@ Client3_GetParamBoolValue
         return TRUE;
     }
 
+    if (strcmp(ParamName, "X_RDK_Restart") == 0)
+    {
+        /* collect value */
+        *pBool   = pDhcpc->Cfg.Restart;
+
+        return TRUE;
+    }
+
     return FALSE;
 }
 
@@ -1032,6 +1040,23 @@ Client3_SetParamBoolValue
         {
             return FALSE;
         }        
+    }
+
+    if(strcmp(ParamName, "Restart") == 0)
+    {
+        if(pDhcpc->Cfg.bEnabled)
+        {
+            DHCPMGR_LOG_INFO("%s %d Restart triggered for DHCPv6 Client %s \n", __FUNCTION__, __LINE__, pDhcpc->Cfg.Interface );
+            pthread_mutex_lock(&pDhcpc->mutex); //MUTEX lock
+            pDhcpc->Cfg.Restart = TRUE;
+            pthread_mutex_unlock(&pDhcpc->mutex); //MUTEX unlock
+            return  TRUE;
+        }
+        else
+        {
+            DHCPMGR_LOG_WARNING("%s %d Restart triggered for DHCPv6 Client %s when it is disabled \n", __FUNCTION__, __LINE__, pDhcpc->Cfg.Interface );
+            return FALSE;
+        }
     }
 
     return FALSE;
@@ -7853,11 +7878,12 @@ Option4_SetParamUlongValue
     if (strcmp(ParamName, "Tag") == 0)
     {
         /* save update to backup */
+#if DHCPV6_SERVER_SUPPORT
         if ( !tagPermitted( uValue ) )
         {
             return FALSE;
         }
-
+#endif
         pDhcpOption->Tag =  uValue;
 
         return TRUE;

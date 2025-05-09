@@ -40,7 +40,8 @@
 #include "dhcpmgr_rbus_apis.h"
 #include "dhcp_client_common_utils.h"
 #include "cosa_apis.h"
-
+#include "dhcpmgr_recovery_handler.h"
+#include "dhcpmgr_custom_options.h"
 
 
 /* ---- Global Constants -------------------------- */
@@ -120,8 +121,43 @@ static int DhcpMgr_build_dhcpv4_opt_list (PCOSA_CONTEXT_DHCPC_LINK_OBJECT hInsCo
         }
         else if (pDhcpSentOpt->bEnabled)
         {
-            //TODO: add verdor specific options API call
-            add_dhcp_opt_to_list(send_opt_list, (int)pDhcpSentOpt->Tag, (char *)pDhcpSentOpt->Value);
+            if(pDhcpSentOpt->Tag == DHCPV4_OPT_60 && strlen((char *)pDhcpSentOpt->Value) <= 0)
+            {
+                DHCPMGR_LOG_INFO("%s %d: DHCPv4 option 60 (Vendor Class Identifier) entry found without value. \n", __FUNCTION__, __LINE__);
+                char optionValue[BUFLEN_256] = {0};
+                int ret = Get_DhcpV4_CustomOption60(pDhcpc->Cfg.Interface, optionValue, sizeof(optionValue));
+                if (ret == 0)
+                {
+                    DHCPMGR_LOG_INFO("%s %d: Adding DHCPv4 option 60 (Vendor Class Identifier) custom value: %s \n", __FUNCTION__, __LINE__, optionValue);
+                    add_dhcp_opt_to_list(send_opt_list, (int)pDhcpSentOpt->Tag, optionValue);
+                }
+            }
+            else if(pDhcpSentOpt->Tag == DHCPV4_OPT_61 && strlen((char *)pDhcpSentOpt->Value) <= 0)
+            {
+                DHCPMGR_LOG_INFO("%s %d: DHCPv4 option 61 (Client Identifier) entry found without value. \n", __FUNCTION__, __LINE__);
+                char optionValue[BUFLEN_256] = {0};
+                int ret = Get_DhcpV4_CustomOption61(pDhcpc->Cfg.Interface, optionValue, sizeof(optionValue));
+                if (ret == 0)
+                {
+                    DHCPMGR_LOG_INFO("%s %d: Adding DHCPv4 option 61 (Client Identifier) custom value: %s \n", __FUNCTION__, __LINE__, optionValue);
+                    add_dhcp_opt_to_list(send_opt_list, (int)pDhcpSentOpt->Tag, optionValue);
+                }
+            }
+            else if(pDhcpSentOpt->Tag == DHCPV4_OPT_43 && strlen((char *)pDhcpSentOpt->Value) <= 0)
+            {
+                DHCPMGR_LOG_INFO("%s %d: DHCPv4 option 43 (Vendor-Specific Information) entry found without value. \n", __FUNCTION__, __LINE__);
+                char optionValue[BUFLEN_256] = {0};
+                int ret = Get_DhcpV4_CustomOption43(pDhcpc->Cfg.Interface, optionValue, sizeof(optionValue));
+                if (ret == 0)
+                {
+                    DHCPMGR_LOG_INFO("%s %d: Adding DHCPv4 option 43 (Vendor-Specific Information) custom value: %s \n", __FUNCTION__, __LINE__, optionValue);
+                    add_dhcp_opt_to_list(send_opt_list, (int)pDhcpSentOpt->Tag, optionValue);
+                }
+            }
+            else
+            {
+                add_dhcp_opt_to_list(send_opt_list, (int)pDhcpSentOpt->Tag, (char *)pDhcpSentOpt->Value);
+            }
         }
     }
 
@@ -196,12 +232,47 @@ static int DhcpMgr_build_dhcpv6_opt_list (PCOSA_CONTEXT_DHCPCV6_LINK_OBJECT hIns
             pSentOption         = (PCOSA_DML_DHCPCV6_SENT)pCxtLink->hContext;
             if (pSentOption->bEnabled)
             {
-                add_dhcp_opt_to_list(send_opt_list, (INT)pSentOption->Tag, (CHAR *)pSentOption->Value);
+                if(pSentOption->Tag == DHCPV6_OPT_15 && strlen((char *)pSentOption->Value) <= 0)
+                {
+                    DHCPMGR_LOG_INFO("%s %d: DHCPv6 option 15 (User Class Option) entry found without value. \n", __FUNCTION__, __LINE__);
+                    char optionValue[BUFLEN_256] = {0};
+                    int ret = Get_DhcpV6_CustomOption15(pDhcp6c->Cfg.Interface, optionValue, sizeof(optionValue));
+                    if (ret == 0)
+                    {
+                        DHCPMGR_LOG_INFO("%s %d: Adding DHCPv6 option 15 (User Class Option) custom value: %s \n", __FUNCTION__, __LINE__, optionValue);
+                        add_dhcp_opt_to_list(send_opt_list, (int)pSentOption->Tag, optionValue);
+                    }
+                }
+                else if(pSentOption->Tag == DHCPV6_OPT_16 && strlen((char *)pSentOption->Value) <= 0)
+                {
+                    DHCPMGR_LOG_INFO("%s %d: DHCPv6 option 16 (Vendor Class Option) entry found without value. \n", __FUNCTION__, __LINE__);
+                    char optionValue[BUFLEN_256] = {0};
+                    int ret = Get_DhcpV6_CustomOption16(pDhcp6c->Cfg.Interface, optionValue, sizeof(optionValue));
+                    if (ret == 0)
+                    {
+                        DHCPMGR_LOG_INFO("%s %d: Adding DHCPv6 option 16 (Vendor Class Option) custom value: %s \n", __FUNCTION__, __LINE__, optionValue);
+                        add_dhcp_opt_to_list(send_opt_list, (int)pSentOption->Tag, optionValue);
+                    }
+                }
+                else if(pSentOption->Tag == DHCPV6_OPT_17 && strlen((char *)pSentOption->Value) <= 0)
+                {
+                    DHCPMGR_LOG_INFO("%s %d: DHCPv6 option 17 (Vendor-Specific Information) entry found without value. \n", __FUNCTION__, __LINE__);
+                    char optionValue[BUFLEN_256] = {0};
+                    int ret = Get_DhcpV6_CustomOption17(pDhcp6c->Cfg.Interface, optionValue, sizeof(optionValue));
+                    if (ret == 0)
+                    {
+                        DHCPMGR_LOG_INFO("%s %d: Adding DHCPv6 option 17 (Vendor-Specific Information) custom value: %s \n", __FUNCTION__, __LINE__, optionValue);
+                        add_dhcp_opt_to_list(send_opt_list, (int)pSentOption->Tag, optionValue);
+                    }
+                }
+                else
+                {
+                    add_dhcp_opt_to_list(send_opt_list, (INT)pSentOption->Tag, (CHAR *)pSentOption->Value);
+                }
             }
         }
     }
 
-    //TODO : Why DHCPv6 request DMl is different from v4 and othet options ?
     char *reqOptions = strdup((CHAR *)pDhcp6c->Cfg.RequestedOptions);
     char *token = NULL;
     token = strtok(reqOptions, " , ");
@@ -333,8 +404,27 @@ static void* DhcpMgr_MainController( void *args )
     BOOL bRunning = TRUE;
     struct timeval tv;
     int n = 0;
+    const char *filename = "/tmp/dhcpmanager_restarted";
+    int retStatus = 0;
 
-    int retStatus = DhcpMgr_LeaseMonitor_Start();
+    if(access(filename, F_OK) != -1)
+    {
+        retStatus = DhcpMgr_Dhcp_Recovery_Start();
+        if(retStatus != 0)
+        {
+            DHCPMGR_LOG_ERROR("%s %d - Failed to start dhcp recovery thread\n", __FUNCTION__, __LINE__);
+        }
+        else
+        {
+            DHCPMGR_LOG_INFO("%s %d - Dhcp crash recovery thread started successfully\n", __FUNCTION__, __LINE__);
+            if (remove(filename) != 0)
+            {
+                DHCPMGR_LOG_ERROR("%s %d Error deleting %s file\n", __FUNCTION__, __LINE__, filename);
+            }
+        }
+    }
+
+    retStatus = DhcpMgr_LeaseMonitor_Start();
     if(retStatus < 0)
     {
         DHCPMGR_LOG_INFO("%s %d - Lease Monitor Thread failed to start!\n", __FUNCTION__, __LINE__ );
@@ -422,7 +512,16 @@ static void* DhcpMgr_MainController( void *args )
                     send_dhcpv4_renew(pDhcpc->Info.ClientProcessId);
                     pDhcpc->Cfg.Renew = FALSE;
                 }
-
+                else if (pDhcpc->Cfg.Restart == TRUE)
+                {
+                    //Only stoping the client here, restart will be done in the next iteration
+                    DHCPMGR_LOG_INFO("%s %d: Restarting dhcpv4 client : %s PID : %d\n",__FUNCTION__, __LINE__, pDhcpc->Cfg.Interface, pDhcpc->Info.ClientProcessId);
+                    send_dhcpv4_release(pDhcpc->Info.ClientProcessId);
+                    pDhcpc->Info.Status = COSA_DML_DHCP_STATUS_Disabled;
+                    pDhcpc->Cfg.Restart = FALSE;
+                    DhcpMgr_PublishDhcpV4Event(pDhcpc, DHCP_LEASE_DEL);
+                }
+                
                 //Process new lease
                 DhcpMgr_ProcessV4Lease(pDhcpc);
             }
@@ -432,11 +531,13 @@ static void* DhcpMgr_MainController( void *args )
                 if(pDhcpc->Info.Status == COSA_DML_DHCP_STATUS_Enabled)
                 {
                     DHCPMGR_LOG_INFO("%s %d: Stopping the dhcpv4 client : %s PID : %d \n",__FUNCTION__, __LINE__, pDhcpc->Cfg.Interface, pDhcpc->Info.ClientProcessId);
-                    stop_dhcpv4_client(pDhcpc->Info.ClientProcessId);
+                    //Always send release and stop the client
+                    send_dhcpv4_release(pDhcpc->Info.ClientProcessId); 
                     pDhcpc->Info.Status = COSA_DML_DHCP_STATUS_Disabled;
                     pDhcpc->Cfg.Renew = FALSE;
                     DhcpMgr_PublishDhcpV4Event(pDhcpc, DHCP_LEASE_DEL); //Send lease expired event
                     DhcpMgr_clearDHCPv4Lease(pDhcpc);
+                    remove_dhcp_lease_file(pDhcpc->Cfg.InstanceNumber,DHCP_v4);
                     DhcpMgr_PublishDhcpV4Event(pDhcpc, DHCP_CLIENT_STOPPED);
                 }
             }
@@ -521,6 +622,16 @@ static void* DhcpMgr_MainController( void *args )
                     send_dhcpv6_renew(pDhcp6c->Info.ClientProcessId);
                     pDhcp6c->Cfg.Renew = FALSE;
                 }
+                else if( pDhcp6c->Cfg.Restart == TRUE)
+                {
+                    //Only stoping the client here, restart will be done in the next iteration
+                    DHCPMGR_LOG_INFO("%s %d: Restarting dhcpv6 client : %s PID : %d\n",__FUNCTION__, __LINE__, pDhcp6c->Cfg.Interface, pDhcp6c->Info.ClientProcessId);
+                    send_dhcpv6_release(pDhcp6c->Info.ClientProcessId);
+                    pDhcp6c->Info.Status = COSA_DML_DHCP_STATUS_Disabled;
+                    pDhcp6c->Cfg.Restart = FALSE;
+                    DhcpMgr_PublishDhcpV6Event(pDhcp6c, DHCP_LEASE_DEL);
+                    DhcpMgr_clearDHCPv6Lease(pDhcp6c);
+                }
 
                 //Process new lease
                 DhcpMgr_ProcessV6Lease(pDhcp6c);
@@ -531,11 +642,13 @@ static void* DhcpMgr_MainController( void *args )
                 if(pDhcp6c->Info.Status == COSA_DML_DHCP_STATUS_Enabled)
                 {
                     DHCPMGR_LOG_INFO("%s %d: Stopping the dhcpv6 client : %s PID : %d \n",__FUNCTION__, __LINE__, pDhcp6c->Cfg.Interface, pDhcp6c->Info.ClientProcessId);
-                    stop_dhcpv6_client(pDhcp6c->Info.ClientProcessId);
+                    //Always send release and stop the client. 
+                    send_dhcpv6_release(pDhcp6c->Info.ClientProcessId);
                     pDhcp6c->Info.Status = COSA_DML_DHCP_STATUS_Disabled;
                     pDhcp6c->Cfg.Renew = FALSE;
                     DhcpMgr_PublishDhcpV6Event(pDhcp6c, DHCP_LEASE_DEL); //Send lease expired event
                     DhcpMgr_clearDHCPv6Lease(pDhcp6c);
+                    remove_dhcp_lease_file(pDhcp6c->Cfg.InstanceNumber,DHCP_v6);
                     DhcpMgr_PublishDhcpV6Event(pDhcp6c, DHCP_CLIENT_STOPPED);
                 }
             }

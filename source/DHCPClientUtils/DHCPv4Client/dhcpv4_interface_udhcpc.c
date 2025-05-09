@@ -108,21 +108,7 @@ static int udhcpc_get_send_options (char * buff, dhcp_opt_list * send_opt_list)
     while ((send_opt_list != NULL) && (send_opt_list->dhcp_opt_val != NULL))
     {
         memset (&args, 0, BUFLEN_128);
-        if (send_opt_list->dhcp_opt == DHCPV4_OPT_60)
-        {
-            // Option 60 - Vendor Class Identifier has udhcp cmd line arg "-V <option-str>"
-            snprintf (args, BUFLEN_128, "-V %s ", send_opt_list->dhcp_opt_val);
-        }
-        else
-        {
-            /* char * buffer = ascii_to_hex (send_opt_list->dhcp_opt_val, strlen(send_opt_list->dhcp_opt_val)); */
-            /* if (buffer != NULL) */
-            /* { */
-            /*     snprintf (args, BUFLEN_128, "-x 0x%02X:%s ", send_opt_list->dhcp_opt, buffer); */
-            /*     free(buffer); */
-            /* } */
-            snprintf (args, BUFLEN_128, "-x 0x%02X:%s ", send_opt_list->dhcp_opt, send_opt_list->dhcp_opt_val);
-        }
+        snprintf (args, BUFLEN_128, "-x 0x%02X:%s ", send_opt_list->dhcp_opt, send_opt_list->dhcp_opt_val);
         send_opt_list = send_opt_list->next;
         strcat (buff,args);
     }

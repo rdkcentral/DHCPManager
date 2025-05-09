@@ -322,7 +322,7 @@ int main(int argc, char* argv[])
     if (access("/tmp/dhcpmgr_initialized", F_OK) == 0)
     {
         DHCPMGR_LOG_INFO("/tmp/dhcpmgr_initialized already exists, removing it");
-        remove_file("/tmp/dhcpmgr_initialized");
+        remove("/tmp/dhcpmgr_initialized");
     }
 
     for (idx = 1; idx < argc; idx++)

@@ -81,10 +81,10 @@
 #include "cosa_apis_util.h"
 #include "util.h"
 #include "ifl.h"
-#include <libnet.h>
+//#include <libnet.h>
+#include "dibbler_client_utils.h"
 
 #define DHCPV6_BINARY   "dibbler-client"
-
 extern void* g_pDslhDmlAgent;
 extern ANSC_HANDLE bus_handle;
 extern char g_Subsystem[32];
@@ -1102,11 +1102,13 @@ BOOL tagPermitted(int tag)
 #endif
 #endif
 
+#if defined(RA_MONITOR_SUPPORT) || defined(DHCPV6_SERVER_SUPPORT)
 static struct {
     pthread_t          dbgthrdc;
     pthread_t          dbgthrds;
     pthread_t          dbgthrd_rtadv;
 }g_be_ctx;
+#endif
 
 #ifdef RA_MONITOR_SUPPORT
 typedef struct
@@ -1194,7 +1196,7 @@ ULONG g_dhcpv6s_refresh_count = 0;
 #endif
 
 #define DHCPVS_DEBUG_PRINT \
-DHCPMGR_LOG_INFO();
+DHCPMGR_LOG_INFO("%s %d", __FUNCTION__, __LINE__);
 
 #define SETS_INTO_UTOPIA( uniqueName, table1Name, table1Index, table2Name, table2Index, parameter, value ) \
 { \

@@ -17,22 +17,14 @@
 # limitations under the License.
 ##########################################################################
 
-SUBDIRS = DHCPMgrInterface  IPv6rtmon TR-181
+AM_LDFLAGS = -lpthread -lz -lnanomsg
 
+bin_PROGRAMS = udhcpc_response_handler
 
-if DHCP_SERVER_SUPPORT
-SUBDIRS += DHCPServerUtils
-endif
+udhcpc_response_handler_CPPFLAGS = -I${PKG_CONFIG_SYSROOT_DIR}$(includedir)/dbus-1.0 \
+                                   -I${PKG_CONFIG_SYSROOT_DIR}$(libdir)/dbus-1.0/include \
+                                   -I$(top_srcdir)/source/DHCPServerUtils/utils/include
 
-SUBDIRS += DHCPServerUtils/utils
+udhcpc_response_handler_SOURCES = service_udhcpc.c
 
-
-if DHCP_CLIENT_SUPPORT
-SUBDIRS += DHCPClientUtils
-endif
-
-if RA_MONITOR_SUPPORT
-SUBDIRS += IPv6rtmon
-endif
-
-SUBDIRS += DHCPMgrUtils DHCPMgrSsp
+udhcpc_response_handler_LDADD = -ltelemetry_msgsender -lulog -lsyscfg -lsysevent -ltime_conversion -lprint_uptime 
