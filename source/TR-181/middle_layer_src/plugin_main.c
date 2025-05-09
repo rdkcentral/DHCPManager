@@ -195,6 +195,7 @@ COSA_Init
     pPlugInfo->RegisterFunction(pPlugInfo->hContext, "ReqOption_Commit", ReqOption_Commit);
     pPlugInfo->RegisterFunction(pPlugInfo->hContext, "ReqOption_Rollback", ReqOption_Rollback);
 
+#ifdef DHCPV4_SERVER_SUPPORT
     pPlugInfo->RegisterFunction(pPlugInfo->hContext, "Server_GetParamBoolValue", Server_GetParamBoolValue);
     pPlugInfo->RegisterFunction(pPlugInfo->hContext, "Server_GetParamIntValue", Server_GetParamIntValue);
     pPlugInfo->RegisterFunction(pPlugInfo->hContext, "Server_GetParamUlongValue", Server_GetParamUlongValue);
@@ -287,7 +288,7 @@ COSA_Init
     pPlugInfo->RegisterFunction(pPlugInfo->hContext, "Option2_GetParamUlongValue", Option2_GetParamUlongValue);
     pPlugInfo->RegisterFunction(pPlugInfo->hContext, "Option2_GetParamStringValue", Option2_GetParamStringValue);
 
-
+#endif
 
 
     pPlugInfo->RegisterFunction(pPlugInfo->hContext, "DHCPv6_GetParamBoolValue", DHCPv6_GetParamBoolValue);
@@ -310,6 +311,7 @@ COSA_Init
     pPlugInfo->RegisterFunction(pPlugInfo->hContext, "Client3_Validate", Client3_Validate);
     pPlugInfo->RegisterFunction(pPlugInfo->hContext, "Client3_Commit", Client3_Commit);
     pPlugInfo->RegisterFunction(pPlugInfo->hContext, "Client3_Rollback", Client3_Rollback);
+
 
     pPlugInfo->RegisterFunction(pPlugInfo->hContext, "Server2_GetEntryCount", Server2_GetEntryCount);
     pPlugInfo->RegisterFunction(pPlugInfo->hContext, "Server2_GetEntry", Server2_GetEntry);
@@ -349,6 +351,7 @@ COSA_Init
     pPlugInfo->RegisterFunction(pPlugInfo->hContext, "dhcp6c_mapt_mape_GetParamUlongValue", dhcp6c_mapt_mape_GetParamUlongValue);
     pPlugInfo->RegisterFunction(pPlugInfo->hContext, "dhcp6c_mapt_mape_GetParamStringValue", dhcp6c_mapt_mape_GetParamStringValue);
 
+#ifdef DHCPV6_SERVER_SUPPORT
     pPlugInfo->RegisterFunction(pPlugInfo->hContext, "Server3_GetParamBoolValue", Server3_GetParamBoolValue);
     pPlugInfo->RegisterFunction(pPlugInfo->hContext, "Server3_GetParamIntValue", Server3_GetParamIntValue);
     pPlugInfo->RegisterFunction(pPlugInfo->hContext, "Server3_GetParamUlongValue", Server3_GetParamUlongValue);
@@ -427,7 +430,7 @@ COSA_Init
     pPlugInfo->RegisterFunction(pPlugInfo->hContext, "Option4_Validate", Option4_Validate);
     pPlugInfo->RegisterFunction(pPlugInfo->hContext, "Option4_Commit", Option4_Commit);
     pPlugInfo->RegisterFunction(pPlugInfo->hContext, "Option4_Rollback", Option4_Rollback);
-
+#endif
     g_pDslhDmlAgent                 = pPlugInfo->hDmlAgent;
     pGetParamValueByPathNameProc = (COSAGetParamValueByPathNameProc)pPlugInfo->AcquireFunction("COSAGetParamValueByPathName");
     if( pGetParamValueByPathNameProc != NULL)

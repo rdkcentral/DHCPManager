@@ -23,8 +23,54 @@
 #include "dhcpmgr_rbus_apis.h"
 #include "dhcpmgr_recovery_handler.h"
 #include "dhcpmgr_custom_options.h"
+#include "ifl.h"
+
+#define COSA_DML_WANIface_PREF_SYSEVENT_NAME           "tr_%s_dhcpv6_client_v6pref"
+#define COSA_DML_WANIface_PREF_IAID_SYSEVENT_NAME      "tr_%s_dhcpv6_client_pref_iaid"
+#define COSA_DML_WANIface_PREF_T1_SYSEVENT_NAME        "tr_%s_dhcpv6_client_pref_t1"
+#define COSA_DML_WANIface_PREF_T2_SYSEVENT_NAME        "tr_%s_dhcpv6_client_pref_t2"
+#define COSA_DML_WANIface_PREF_PRETM_SYSEVENT_NAME     "tr_%s_dhcpv6_client_pref_pretm"
+#define COSA_DML_WANIface_PREF_VLDTM_SYSEVENT_NAME     "tr_%s_dhcpv6_client_pref_vldtm"
+
+#define COSA_DML_WANIface_ADDR_SYSEVENT_NAME           "tr_%s_dhcpv6_client_v6addr"
+#define COSA_DML_WANIface_ADDR_IAID_SYSEVENT_NAME      "tr_%s_dhcpv6_client_addr_iaid"
+#define COSA_DML_WANIface_ADDR_T1_SYSEVENT_NAME        "tr_%s_dhcpv6_client_addr_t1"
+#define COSA_DML_WANIface_ADDR_T2_SYSEVENT_NAME        "tr_%s_dhcpv6_client_addr_t2"
+#define COSA_DML_WANIface_ADDR_PRETM_SYSEVENT_NAME     "tr_%s_dhcpv6_client_addr_pretm"
+#define COSA_DML_WANIface_ADDR_VLDTM_SYSEVENT_NAME     "tr_%s_dhcpv6_client_addr_vldtm"
+
+typedef struct
+{
+    char* value;       // Pointer to the IANA/IAPD value etc..
+    char* eventName;   // Corresponding event name
+} IPv6Events;
+
 
 static void configureNetworkInterface(PCOSA_DML_DHCPCV6_FULL pDhcp6c);
+static void ConfigureIpv6Sysevents(PCOSA_DML_DHCPCV6_FULL pDhcp6c);
+
+/**
+ * @brief processv6LesSysevents This function will set the sysevent values for IA_PD and IA_NA
+ *
+ * @param IPv6Events , size_t ,  const char*
+ *
+ * @return void
+ */
+
+static void processv6LesSysevents(IPv6Events* eventMaps, size_t size, const char* IfaceName)
+{
+    for (size_t i = 0; i < size; i++) 
+    {
+        if (eventMaps[i].value[0] != '\0')
+        {
+            char sysEventName[256] = {0};
+            snprintf(sysEventName, sizeof(sysEventName), eventMaps[i].eventName, IfaceName);
+            CcspTraceInfo(("%s - %d: Setting sysevent %s to %s \n", __FUNCTION__, __LINE__, sysEventName, eventMaps[i].value));
+ //           sysevent_set(sysevent_fd, sysevent_token, sysEventName, eventMaps[i].value, 0);
+            ifl_set_event(sysEventName,eventMaps[i].value);
+        }
+    }
+}
 
 /**
  * @brief Compares two DHCPv6 plugin messages to determine if they are identical.
@@ -154,6 +200,7 @@ void DhcpMgr_ProcessV6Lease(PCOSA_DML_DHCPCV6_FULL pDhcp6c)
             DHCPMGR_LOG_INFO("%s %d: NewLease PreferedLifeTime %d  \n", __FUNCTION__, __LINE__, newLease->ia_pd.PreferedLifeTime);
             DHCPMGR_LOG_INFO("%s %d: NewLease ValidLifeTime %d  \n", __FUNCTION__, __LINE__, newLease->ia_pd.ValidLifeTime);
             configureNetworkInterface(pDhcp6c);
+            ConfigureIpv6Sysevents(pDhcp6c);
             if(newLease->vendor.Assigned == TRUE)
             {
                 DHCPMGR_LOG_INFO("%s %d: NewLease vendor data %s  \n", __FUNCTION__, __LINE__, newLease->vendor.Data);
@@ -165,6 +212,76 @@ void DhcpMgr_ProcessV6Lease(PCOSA_DML_DHCPCV6_FULL pDhcp6c)
 
     }
 }
+
+/**
+ * @brief Configures the IPv6 sysevents for the current lease.
+ *
+ * This function sets the sysevent values for the IAPD and IANA parameters of the current lease.
+ *
+ * @param[in] pDhcp6c Pointer to the DHCP client structure containing lease information.
+ *
+ * @return void
+ */
+
+static void ConfigureIpv6Sysevents(PCOSA_DML_DHCPCV6_FULL pDhcp6c)
+{
+    const char *interface = pDhcp6c->Cfg.Interface;
+    char iapd_iaid[32] = {0};
+    char iapd_t1[32] = {0};
+    char iapd_t2[32] = {0};
+    char iapd_pretm[32] = {0};
+    char iapd_vldtm[32] = {0};
+    char iana_iaid[32] = {0};
+    char iana_t1[32] = {0};
+    char iana_t2[32] = {0};
+    char iana_pretm[32] = {0};
+    char iana_vldtm[32] = {0};
+
+    //Do configure the sysevents only if prefix assigned
+    if(pDhcp6c->currentLease->ia_pd.assigned)
+    {
+        //copy the IAPD values to the sysevent
+        snprintf(iapd_iaid, sizeof(iapd_iaid), "%u", pDhcp6c->currentLease->ia_pd.IA_ID);
+        snprintf(iapd_t1, sizeof(iapd_t1), "%u", pDhcp6c->currentLease->ia_pd.T1);
+        snprintf(iapd_t2, sizeof(iapd_t2), "%u", pDhcp6c->currentLease->ia_pd.T2);
+        snprintf(iapd_pretm, sizeof(iapd_pretm), "%u", pDhcp6c->currentLease->ia_pd.PreferedLifeTime);
+        snprintf(iapd_vldtm, sizeof(iapd_vldtm), "%u", pDhcp6c->currentLease->ia_pd.ValidLifeTime);
+
+        IPv6Events eventv6[] = {
+        {pDhcp6c->currentLease->ia_pd.Prefix, COSA_DML_WANIface_PREF_SYSEVENT_NAME},
+        {iapd_iaid, COSA_DML_WANIface_PREF_IAID_SYSEVENT_NAME},
+        {iapd_t1,   COSA_DML_WANIface_PREF_T1_SYSEVENT_NAME},
+        {iapd_t2,   COSA_DML_WANIface_PREF_T2_SYSEVENT_NAME},
+        {iapd_pretm,COSA_DML_WANIface_PREF_PRETM_SYSEVENT_NAME},
+        {iapd_vldtm,COSA_DML_WANIface_PREF_VLDTM_SYSEVENT_NAME}
+        };
+
+        processv6LesSysevents(eventv6, sizeof(eventv6) / sizeof(eventv6[0]), interface);
+    }
+
+    //Do configure the sysevents only if address assigned
+    if(pDhcp6c->currentLease->ia_na.assigned)
+    {
+        //copy the IANA values to the sysevent
+        snprintf(iana_iaid, sizeof(iana_iaid), "%u", pDhcp6c->currentLease->ia_na.IA_ID);
+        snprintf(iana_t1, sizeof(iana_t1), "%u", pDhcp6c->currentLease->ia_na.T1);
+        snprintf(iana_t2, sizeof(iana_t2), "%u", pDhcp6c->currentLease->ia_na.T2);
+        snprintf(iana_pretm, sizeof(iana_pretm), "%u", pDhcp6c->currentLease->ia_na.PreferedLifeTime);
+        snprintf(iana_vldtm, sizeof(iana_vldtm), "%u", pDhcp6c->currentLease->ia_na.ValidLifeTime);
+    
+        IPv6Events eventMaps[] = {
+        {pDhcp6c->currentLease->ia_na.address, COSA_DML_WANIface_ADDR_SYSEVENT_NAME},
+        {iana_iaid, COSA_DML_WANIface_ADDR_IAID_SYSEVENT_NAME},
+        {iana_t1,   COSA_DML_WANIface_ADDR_T1_SYSEVENT_NAME},
+        {iana_t2,   COSA_DML_WANIface_ADDR_T2_SYSEVENT_NAME},
+        {iana_pretm,COSA_DML_WANIface_ADDR_PRETM_SYSEVENT_NAME},
+        {iana_vldtm,COSA_DML_WANIface_ADDR_VLDTM_SYSEVENT_NAME}
+        };
+
+        processv6LesSysevents(eventMaps, sizeof(eventMaps) / sizeof(eventMaps[0]), interface);
+    }
+}
+
 /**
  * @brief Configures the network interface with the IPv6 address from the current lease.
  *

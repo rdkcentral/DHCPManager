@@ -263,6 +263,7 @@
             </object>
           </objects>
         </object>
+<?ifdef DHCPV4_SERVER_SUPPORT?>
         <object>
           <name>Server</name>
           <objectType>object</objectType>
@@ -304,9 +305,9 @@
             <name>PoolNumberOfEntries</name>
             <type>unsignedInt</type>
             <syntax>uint32</syntax>
-          </parameter>
-          </parameters>
-          <objects>
+            </parameter>
+            </parameters>
+            <objects>
             <object>
               <name>Pool</name>
               <objectType>writableTable</objectType>
@@ -741,6 +742,7 @@
             </object>
           </objects>
         </object>
+<?endif?>
       </objects>
     </object>
     <object>
@@ -1081,6 +1083,7 @@
 
           </objects>
         </object>
+<?ifdef DHCPV6_SERVER_SUPPORT?>
         <object>
           <name>Server</name>
           <objectType>object</objectType>
@@ -1496,6 +1499,7 @@
             </object>
           </objects>
         </object>
+<?endif?>
       </objects>
     </object>
  </objects>
