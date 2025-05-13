@@ -398,18 +398,6 @@ typedef  struct _COSA_DML_DHCPSV4_CLIENTCONTENT COSA_DML_DHCPSV4_CLIENTCONTENT, 
                 FUNCTION PROTOTYPES
 **********************************************************************/
 
-ANSC_STATUS
-CosaDmlStopDhcpv4Client
-    (
-        ANSC_HANDLE hInsContext
-    );
-
-ANSC_STATUS
-CosaDmlStartDhcpv4Client
-    (
-        ANSC_HANDLE hInsContext
-    );
-
 PCOSA_DML_DHCPC_REQ_OPT
 CosaDmlDhcpcGetReqOption_Entry
 (
@@ -946,4 +934,3 @@ extern ANSC_STATUS fillCurrentPartnerId
         PULONG                      pulSize
     );
 #endif
-
