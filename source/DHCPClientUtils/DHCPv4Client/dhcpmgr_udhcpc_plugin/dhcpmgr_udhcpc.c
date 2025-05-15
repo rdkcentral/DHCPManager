@@ -420,7 +420,7 @@ int main(int argc, char *argv[])
         return -1;
     }
 
-    DHCPMGR_LOG_INFO ("service_udhcpc arg %s",argv[1]);
+    DHCPMGR_LOG_INFO ("udhcpc plugin arg %s",argv[1]);
 
     init_udhcpc_env(&info,argv[1]);
 

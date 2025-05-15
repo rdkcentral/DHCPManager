@@ -82,7 +82,6 @@
 #include "util.h"
 #include "ifl.h"
 //#include <libnet.h>
-#include "dibbler_client_utils.h"
 
 #define DHCPV6_BINARY   "dibbler-client"
 extern void* g_pDslhDmlAgent;
