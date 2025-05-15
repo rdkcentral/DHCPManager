@@ -95,24 +95,25 @@ static int hex_to_ascii(const char *hex, char *ascii, size_t ascii_len)
     {
         DHCPMGR_LOG_ERROR("%s %d: Invalid arguments.\n", __FUNCTION__, __LINE__);
         return -1;
-        size_t hex_len = strlen(hex);
-        if (hex_len % 2 != 0 || (hex_len / 2) >= ascii_len)
-        {
-            DHCPMGR_LOG_ERROR("%s %d: Invalid hex string length.\n", __FUNCTION__, __LINE__);
-            return -1;
-        }
-
-        for (size_t i = 0; i < hex_len; i += 2)
-        {
-            char byte_str[3] = { hex[i], hex[i + 1], '\0' };
-            char byte = (char)strtol(byte_str, NULL, 16);
-            ascii[i / 2] = byte;
-        }
-
-        ascii[hex_len / 2] = '\0'; // Null-terminate the ASCII string
-        return 0;
     }
-    return -1;
+
+    size_t hex_len = strlen(hex);
+    if (hex_len % 2 != 0 || (hex_len / 2) >= ascii_len)
+    {
+        DHCPMGR_LOG_ERROR("%s %d: Invalid hex string length.\n", __FUNCTION__, __LINE__);
+        return -1;
+    }
+
+    for (size_t i = 0; i < hex_len; i += 2)
+    {
+        char byte_str[3] = { hex[i], hex[i + 1], '\0' };
+        char byte = (char)strtol(byte_str, NULL, 16);
+        ascii[i / 2] = byte;
+    }
+
+    ascii[hex_len / 2] = '\0'; // Null-terminate the ASCII string
+    DHCPMGR_LOG_INFO("%s %d: hex %s to ascii str %s \n", __FUNCTION__, __LINE__, hex , ascii);
+    return 0;
 }
 
 /*
