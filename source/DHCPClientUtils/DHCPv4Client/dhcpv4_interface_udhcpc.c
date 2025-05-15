@@ -80,6 +80,40 @@ static int udhcpc_get_req_options (char * buff, dhcp_opt_list * req_opt_list)
     return SUCCESS;
 
 }
+/**
+ * @brief 
+ * This function takes a hexadecimal string as input and converts it to its ASCII representation.
+ *
+ * @param[in] hex Input hexadecimal string.
+ * @param[out] ascii Output buffer to store the ASCII string.
+ * @param[in] ascii_len Length of the output buffer.
+ * @return 0 on success, -1 on failure.
+ */
+static int hex_to_ascii(const char *hex, char *ascii, size_t ascii_len)
+{
+    if (hex == NULL || ascii == NULL || ascii_len == 0)
+    {
+        DHCPMGR_LOG_ERROR("%s %d: Invalid arguments.\n", __FUNCTION__, __LINE__);
+        return -1;
+        size_t hex_len = strlen(hex);
+        if (hex_len % 2 != 0 || (hex_len / 2) >= ascii_len)
+        {
+            DHCPMGR_LOG_ERROR("%s %d: Invalid hex string length.\n", __FUNCTION__, __LINE__);
+            return -1;
+        }
+
+        for (size_t i = 0; i < hex_len; i += 2)
+        {
+            char byte_str[3] = { hex[i], hex[i + 1], '\0' };
+            char byte = (char)strtol(byte_str, NULL, 16);
+            ascii[i / 2] = byte;
+        }
+
+        ascii[hex_len / 2] = '\0'; // Null-terminate the ASCII string
+        return 0;
+    }
+    return -1;
+}
 
 /*
  * udhcpc_get_send_options ()
@@ -108,7 +142,24 @@ static int udhcpc_get_send_options (char * buff, dhcp_opt_list * send_opt_list)
     while ((send_opt_list != NULL) && (send_opt_list->dhcp_opt_val != NULL))
     {
         memset (&args, 0, BUFLEN_128);
-        snprintf (args, BUFLEN_128, "-x 0x%02X:%s ", send_opt_list->dhcp_opt, send_opt_list->dhcp_opt_val);
+        if (send_opt_list->dhcp_opt == DHCPV4_OPT_60)
+        {
+            /* Option 60 - Vendor Class Identifier has udhcp cmd line arg "-V <option-str>"
+             * If this option is not set with '-V' then udhcpc will add a default vendor class option with its name and version. 
+             * So we need to set this option with '-V' with ACSII string.
+             */
+              
+            char ascii_val[BUFLEN_128] = {0};
+            if( hex_to_ascii(send_opt_list->dhcp_opt_val, ascii_val, sizeof(ascii_val)) == 0)
+            {
+
+                snprintf(args, BUFLEN_128, "-V %s ", ascii_val);
+            }
+        }
+        else
+        {
+            snprintf (args, BUFLEN_128, "-x 0x%02X:%s ", send_opt_list->dhcp_opt, send_opt_list->dhcp_opt_val);
+        }
         send_opt_list = send_opt_list->next;
         strcat (buff,args);
     }
