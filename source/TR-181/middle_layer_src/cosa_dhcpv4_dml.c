@@ -1157,7 +1157,7 @@ Client_SetParamBoolValue
         return  TRUE;
     }
 
-    if(strcmp(ParamName, "Restart") == 0)
+    if(strcmp(ParamName, "X_RDK_Restart") == 0)
     {
         if (pDhcpc->Cfg.bEnabled)
         {

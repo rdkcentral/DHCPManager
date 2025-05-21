@@ -278,8 +278,26 @@ static int DhcpMgr_build_dhcpv6_opt_list (PCOSA_CONTEXT_DHCPCV6_LINK_OBJECT hIns
     token = strtok(reqOptions, " , ");
     while (token != NULL)
     {
-        DHCPMGR_LOG_INFO("token : %d\n", atoi(token));
-        add_dhcp_opt_to_list(req_opt_list, atoi(token), NULL);
+        int opt = atoi(token);
+        if(opt == 95)
+        {
+            /* Check for MAPT RFC */
+            char MaptEnable[BUFLEN_16] = {0};
+            syscfg_get(NULL, "MAPT_Enable", MaptEnable, sizeof(MaptEnable));
+            if(strcmp(MaptEnable, "true") == 0)
+            {
+                DHCPMGR_LOG_INFO("%s %d: MAPT RFC enabled and  DHCPv6 MAPT option is requested - (Number: %d, RFC Value: %s)\n", __FUNCTION__, __LINE__, opt, MaptEnable);
+            }
+            else
+            {
+                DHCPMGR_LOG_WARNING("%s %d: MAPT RFC Disabled and  DHCPv6 MAPT option is requested. Skipping MAPT option - (Number: %d, Value: %s)\n", __FUNCTION__, __LINE__, opt, MaptEnable);
+                token = strtok(NULL, " , ");
+                continue;
+            }
+        }
+        
+        DHCPMGR_LOG_INFO("Adding Request option : %d\n", opt);
+        add_dhcp_opt_to_list(req_opt_list, opt, NULL);
         token = strtok(NULL, " , ");
     }
     if(reqOptions)

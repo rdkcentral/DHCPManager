@@ -71,9 +71,9 @@ ANSC_STATUS DhcpMgr_updateDHCPv4DML(PCOSA_DML_DHCPC_FULL pDhcpc)
         /* Update the DHCPCStatus */
         pDhcpc->Info.DHCPStatus = COSA_DML_DHCPC_STATUS_Bound;
         /* Update the IP address assigned */
-        AnscWriteUlong(&pDhcpc->Info.IPAddress.Value, _ansc_inet_addr(current->address));
+        pDhcpc->Info.IPAddress.Value = inet_addr(current->address);
         /* Update the Subnet Mask */
-        AnscWriteUlong(&pDhcpc->Info.SubnetMask.Value, _ansc_inet_addr(current->netmask));
+        pDhcpc->Info.SubnetMask.Value = inet_addr(current->netmask);
         /* Update the leaseTime */
         pDhcpc->Info.LeaseTimeRemaining = current->leaseTime;
         pDhcpc->Info.NumDnsServers = 0;
@@ -81,25 +81,27 @@ ANSC_STATUS DhcpMgr_updateDHCPv4DML(PCOSA_DML_DHCPC_FULL pDhcpc)
         /* Update the DNS Servers */
         if(strlen(current->dnsServer)>0)
         {
-            AnscWriteUlong(&pDhcpc->Info.DNSServers[pDhcpc->Info.NumDnsServers].Value, _ansc_inet_addr(current->dnsServer));
+            pDhcpc->Info.DNSServers[pDhcpc->Info.NumDnsServers].Value = inet_addr(current->dnsServer);
             pDhcpc->Info.NumDnsServers++;
         }
         if(strlen(current->dnsServer1)>0)
         {
-            AnscWriteUlong(&pDhcpc->Info.DNSServers[pDhcpc->Info.NumDnsServers].Value, _ansc_inet_addr(current->dnsServer1));
+            pDhcpc->Info.DNSServers[pDhcpc->Info.NumDnsServers].Value = inet_addr(current->dnsServer1);
             pDhcpc->Info.NumDnsServers++;
         }
 
         /* Update the IPRouters */
-        char *tok = strtok (current->gateway, " ");
+        char gateway_copy[BUFLEN_64] ={0};
+        strncpy(gateway_copy, current->gateway, sizeof(gateway_copy) - 1);
+        char *tok = strtok(gateway_copy, " ");
         while (tok != NULL)
         {
-            AnscWriteUlong(&pDhcpc->Info.IPRouters[pDhcpc->Info.NumIPRouters].Value, _ansc_inet_addr(tok));
+            pDhcpc->Info.IPRouters[pDhcpc->Info.NumIPRouters].Value = inet_addr(tok);
             pDhcpc->Info.NumIPRouters++;
             tok = strtok (NULL, " ");
         }
         //Update the DHCP Server
-        AnscWriteUlong(&pDhcpc->Info.DHCPServer.Value, _ansc_inet_addr(current->dhcpServerId));
+        pDhcpc->Info.DHCPServer.Value = inet_addr(current->dhcpServerId);
     }
     /*
     //TODO : check the sip server options
