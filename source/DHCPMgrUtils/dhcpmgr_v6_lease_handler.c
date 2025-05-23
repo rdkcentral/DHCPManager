@@ -127,7 +127,7 @@ void DhcpMgr_ProcessV6Lease(PCOSA_DML_DHCPCV6_FULL pDhcp6c)
             DHCPMGR_LOG_INFO("%s %d: lease updated for %s \n",__FUNCTION__, __LINE__, pDhcp6c->Cfg.Interface);
             leaseChanged = TRUE;
         }
-        else if(current->isExpired == TRUE && newLease->isExpired == FALSE)
+        else if(current->isExpired == FALSE && newLease->isExpired == TRUE)
         {
             DhcpMgr_PublishDhcpV6Event(pDhcp6c, DHCP_LEASE_DEL);
             DHCPMGR_LOG_INFO("%s %d: lease expired  for %s \n",__FUNCTION__, __LINE__, pDhcp6c->Cfg.Interface);
