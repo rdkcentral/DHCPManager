@@ -256,8 +256,15 @@ CosaDmlMaptParseResponse
 
             case MAPT_OPTION_S46_BR:
             {
-               MAPT_LOG_WARNING("Parsing OPTION_S46_BR is not supported !");
-               //retStatus = STATUS_NOT_SUPPORTED;
+               UCHAR br_ipv6Addr[BUFLEN_24];  // Buffer to hold the BR IPv6 address
+
+               //Directly copy the 16-byte IPv6 address from the current option buffer
+               memset(&br_ipv6Addr, 0, sizeof(br_ipv6Addr));
+               memcpy(&br_ipv6Addr, pCurOption, 16);
+
+               CosaDmlMaptGetIPv6StringFromHex(br_ipv6Addr, g_stMaptData.BrIPv6Prefix);
+               MAPT_LOG_INFO("<<<TRACE>>> g_stMaptData.BrIPv6Address : %s", g_stMaptData.BrIPv6Prefix);
+               MAPT_LOG_INFO("Parsing MAPT_OPTION_S46_BR Successful.");
                break;
             }
 

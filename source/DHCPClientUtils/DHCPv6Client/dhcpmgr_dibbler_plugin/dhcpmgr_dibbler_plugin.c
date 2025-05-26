@@ -46,6 +46,7 @@
 #define DHCPv6_OPTION_NTP                    "SRV_OPTION31"
 #define DHCPv6_OPTION_DSLITE                 "SRV_OPTION64"
 #define DHCPv6_OPTION_MAPT                   "SRV_OPTION95"
+#define DHCPv6_OPTION_MAPE                   "SRV_OPTION94"
 
 #if 0  // Uncomment the following code to enable plugin logs
 
@@ -232,6 +233,17 @@ static int get_and_fill_env_data_dhcp6(DHCPv6_PLUGIN_MSG *dhcpv6_data, char *inp
     {
         strncpy((char *) dhcpv6_data->mapt.Container, env, sizeof(dhcpv6_data->mapt.Container));
         dhcpv6_data->mapt.Assigned = true;
+    }
+    else
+    {
+        DHCPMGR_LOG_INFO("[%s-%d] MAP-T configuration is missing\n", __FUNCTION__, __LINE__);
+    }
+
+    /** MAP-E Configuration */
+    if ((env = getenv(DHCPv6_OPTION_MAPE)) != NULL)
+    {
+        strncpy((char *) dhcpv6_data->mape.Container, env, sizeof(dhcpv6_data->mape.Container));
+        dhcpv6_data->mape.Assigned = true;
     }
     else
     {
