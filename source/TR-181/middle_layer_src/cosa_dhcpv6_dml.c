@@ -3190,6 +3190,7 @@ ReceivedOption_GetParamStringValue
 
     return -1;
 }
+#if defined(FEATURE_MAPT) || defined(FEATURE_SUPPORT_MAPT_NAT46)
 
 /**********************************************************************
 
@@ -3232,19 +3233,18 @@ dhcp6c_mapt_mape_GetParamBoolValue
 
     PCOSA_CONTEXT_DHCPCV6_LINK_OBJECT pCxtLink        = (PCOSA_CONTEXT_DHCPCV6_LINK_OBJECT)hInsContext;
     PCOSA_DML_DHCPCV6_FULL            pDhcpc          = (PCOSA_DML_DHCPCV6_FULL)pCxtLink->hContext;
+      
+    const DML_DHCPCV6_MAP_INFO    *MapInfo = &(pDhcpc->Info.MapInfo);
     /* check the parameter name and return the corresponding value */
     if (strcmp(ParamName, "MapIsFMR") == 0)
     {
-#if defined(FEATURE_MAPT) || defined(FEATURE_SUPPORT_MAPT_NAT46)
-        char temp[32] = {0};
-        commonSyseventGet(SYSEVENT_MAP_IS_FMR, temp, sizeof(temp));
-        if (strcmp(temp, "TRUE") == 0)
-            *pBool  = TRUE;
+        if(MapInfo->MaptAssigned || MapInfo->MapeAssigned)
+        {
+                *pBool  = MapInfo->IsFMR;
+        }
         else
             *pBool  = FALSE;
-#else
-        *pBool  = FALSE;
-#endif
+
         return TRUE;
     }
 
@@ -3289,63 +3289,54 @@ dhcp6c_mapt_mape_GetParamUlongValue
         ULONG*                      puLong
     )
 {
-    UNREFERENCED_PARAMETER(hInsContext);
-#if defined(_HUB4_PRODUCT_REQ_) || defined(FEATURE_SUPPORT_MAPT_NAT46)
-    char temp[64] = {0};
-#endif
+    PCOSA_CONTEXT_DHCPCV6_LINK_OBJECT pCxtLink        = (PCOSA_CONTEXT_DHCPCV6_LINK_OBJECT)hInsContext;
+    PCOSA_DML_DHCPCV6_FULL            pDhcpc          = (PCOSA_DML_DHCPCV6_FULL)pCxtLink->hContext;
+      
+    const DML_DHCPCV6_MAP_INFO    *MapInfo = &(pDhcpc->Info.MapInfo);
+    *puLong = 0; /* default value */
     /* check the parameter name and return the corresponding value */
     if (strcmp(ParamName, "MapEALen") == 0)
     {
-#if defined(_HUB4_PRODUCT_REQ_) || defined(FEATURE_SUPPORT_MAPT_NAT46)
-        commonSyseventGet(SYSEVENT_MAP_EA_LEN, temp, sizeof(temp));
-        *puLong  = strtoul(temp, NULL, 10);
-#else
-        *puLong  = 0;
-#endif
+        if(MapInfo->MaptAssigned || MapInfo->MapeAssigned)
+        {
+           *puLong  = MapInfo->MapEALen;
+        }
         return TRUE;
     }
 
     if (strcmp(ParamName, "MapPSIDOffset") == 0)
     {
-#if defined(_HUB4_PRODUCT_REQ_) || defined(FEATURE_SUPPORT_MAPT_NAT46)
-        commonSyseventGet(SYSEVENT_MAPT_PSID_OFFSET, temp, sizeof(temp));
-        *puLong  = strtoul(temp, NULL, 10);
-#else
-        *puLong  = 0;
-#endif
+        if(MapInfo->MaptAssigned || MapInfo->MapeAssigned)
+        {
+           *puLong  = MapInfo->MapPSIDOffset;
+        }
         return TRUE;
     }
 
     if (strcmp(ParamName, "MapPSIDLen") == 0)
     {
-#if defined(_HUB4_PRODUCT_REQ_) || defined(FEATURE_SUPPORT_MAPT_NAT46)
-         commonSyseventGet(SYSEVENT_MAPT_PSID_LENGTH, temp, sizeof(temp));
-        *puLong  = strtoul(temp, NULL, 10);
-#else
-        *puLong  = 0;
-#endif
+        if(MapInfo->MaptAssigned || MapInfo->MapeAssigned)
+        {
+           *puLong  = MapInfo->MapPSIDLen;
+        }
         return TRUE;
     }
 
     if (strcmp(ParamName, "MapPSID") == 0)
     {
-#if defined(_HUB4_PRODUCT_REQ_) || defined(FEATURE_SUPPORT_MAPT_NAT46)
-        commonSyseventGet(SYSEVENT_MAPT_PSID_VALUE, temp, sizeof(temp));
-        *puLong  = strtoul(temp, NULL, 10);
-#else
-        *puLong  = 0;
-#endif
+        if(MapInfo->MaptAssigned || MapInfo->MapeAssigned)
+        {
+           *puLong  = MapInfo->MapPSIDValue;
+        }
         return TRUE;
     }
 
     if (strcmp(ParamName, "MapRatio") == 0)
     {
-#if defined(FEATURE_SUPPORT_MAPT_NAT46)
-        commonSyseventGet(SYSEVENT_MAPT_RATIO, temp, sizeof(temp));
-        *puLong  = strtoul(temp, NULL, 10);
-#else
-        *puLong  = 0;
-#endif
+        if(MapInfo->MaptAssigned || MapInfo->MapeAssigned)
+        {
+           *puLong  = MapInfo->MapRatio;
+        }
         return TRUE;
     }
 
@@ -3399,24 +3390,31 @@ dhcp6c_mapt_mape_GetParamStringValue
         ULONG*                      pUlSize
     )
 {
-    UNREFERENCED_PARAMETER(hInsContext);
-#if defined(_HUB4_PRODUCT_REQ_) || defined(FEATURE_SUPPORT_MAPT_NAT46)
-    char temp[64] = {0};
-#endif
+    PCOSA_CONTEXT_DHCPCV6_LINK_OBJECT pCxtLink        = (PCOSA_CONTEXT_DHCPCV6_LINK_OBJECT)hInsContext;
+    PCOSA_DML_DHCPCV6_FULL            pDhcpc          = (PCOSA_DML_DHCPCV6_FULL)pCxtLink->hContext;
+      
+    const DML_DHCPCV6_MAP_INFO    *MapInfo = &(pDhcpc->Info.MapInfo);
+    AnscCopyString(pValue, ""); // default value
+
     /* check the parameter name and return the corresponding value */
     if (strcmp(ParamName, "MapTransportMode") == 0)
     {
-#if defined(_HUB4_PRODUCT_REQ_) || defined(FEATURE_SUPPORT_MAPT_NAT46)
-        commonSyseventGet(SYSEVENT_MAP_TRANSPORT_MODE, temp, sizeof(temp));
+        char *temp;
+        if( MapInfo->MaptAssigned )
+        {
+            temp = "MAPT";
+        }
+        else if( MapInfo->MapeAssigned )
+        {
+            temp = "MAPE";
+        }
+        else
+        {
+            temp = "NON-MAP";
+        }
         if ( AnscSizeOfString(temp) < *pUlSize)
         {
             AnscCopyString(pValue, temp);
-#if defined (FEATURE_SUPPORT_MAPT_NAT46)
-            if ( !(*temp) )
-            {
-                 AnscCopyString(pValue, "NONE");
-            }
-#endif
             return 0;
         }
         else
@@ -3424,95 +3422,62 @@ dhcp6c_mapt_mape_GetParamStringValue
             *pUlSize = AnscSizeOfString(temp)+1;
             return 1;
         }
-#else
-    UNREFERENCED_PARAMETER(pUlSize);
-        AnscCopyString(pValue, "");
-        return 0;
-#endif
     }
 
     if (strcmp(ParamName, "MapBRPrefix") == 0)
     {
-#if defined(_HUB4_PRODUCT_REQ_) || defined(FEATURE_SUPPORT_MAPT_NAT46)
-        commonSyseventGet(SYSEVENT_MAP_BR_IPV6_PREFIX, temp, sizeof(temp));
-        if ( AnscSizeOfString(temp) < *pUlSize)
+
+        if ( AnscSizeOfString((const char *)MapInfo->MapBRPrefix) < *pUlSize)
         {
-            AnscCopyString(pValue, temp);
+            AnscCopyString(pValue, (const char *)MapInfo->MapBRPrefix);
             return 0;
         }
         else
         {
-            *pUlSize = AnscSizeOfString(temp)+1;
+            *pUlSize = AnscSizeOfString((const char *)MapInfo->MapBRPrefix)+1;
             return 1;
         }
-#else
-        AnscCopyString(pValue, "");
-        return 0;
-#endif
     }
 
     if (strcmp(ParamName, "MapRuleIPv4Prefix") == 0)
     {
-#if defined(_HUB4_PRODUCT_REQ_) || defined(FEATURE_SUPPORT_MAPT_NAT46)
-        commonSyseventGet(SYSEVENT_MAP_RULE_IPADDRESS, temp, sizeof(temp));
-        if ( AnscSizeOfString(temp) < *pUlSize)
+        if ( AnscSizeOfString((const char *)MapInfo->MapRuleIPv4Prefix) < *pUlSize)
         {
-            AnscCopyString(pValue, temp);
+            AnscCopyString(pValue,(const char *) MapInfo->MapRuleIPv4Prefix);
             return 0;
         }
         else
         {
-            *pUlSize = AnscSizeOfString(temp)+1;
+            *pUlSize = AnscSizeOfString((const char *)MapInfo->MapRuleIPv4Prefix)+1;
             return 1;
         }
-#else
-        AnscCopyString(pValue, "");
-        return 0;
-#endif
     }
 
     if (strcmp(ParamName, "MapRuleIPv6Prefix") == 0)
     {
-#if defined(_HUB4_PRODUCT_REQ_) || defined(FEATURE_SUPPORT_MAPT_NAT46)
-        commonSyseventGet(SYSEVENT_MAP_RULE_IPV6_ADDRESS, temp, sizeof(temp));
-        if ( AnscSizeOfString(temp) < *pUlSize)
+        if ( AnscSizeOfString((const char *)MapInfo->MapRuleIPv6Prefix) < *pUlSize)
         {
-            AnscCopyString(pValue, temp);
+            AnscCopyString(pValue, (const char *)MapInfo->MapRuleIPv6Prefix);
             return 0;
         }
         else
         {
-            *pUlSize = AnscSizeOfString(temp)+1;
+            *pUlSize = AnscSizeOfString((const char *)MapInfo->MapRuleIPv6Prefix)+1;
             return 1;
         }
-#else
-        AnscCopyString(pValue, "");
-        return 0;
-#endif
     }
 
     if (strcmp(ParamName, "MapIpv4Address") == 0)
     {
-#if defined(_HUB4_PRODUCT_REQ_) || defined(FEATURE_SUPPORT_MAPT_NAT46)
-        commonSyseventGet(SYSEVENT_MAPT_IPADDRESS, temp, sizeof(temp));
-        if ( AnscSizeOfString(temp) < *pUlSize)
-        {
-            AnscCopyString(pValue, temp);
-            return 0;
-        }
-        else
-        {
-            *pUlSize = AnscSizeOfString(temp)+1;
-            return 1;
-        }
-#else
+        //TODO: This value calculated in WanManager, so we don't have it here.
+        DHCPMGR_LOG_ERROR("%s %d MapIpv4Address not available in this context\n", __FUNCTION__, __LINE__);
         AnscCopyString(pValue, "");
         return 0;
-#endif
     }
 
     return -1;
 }
+#endif /* defined(FEATURE_MAPT) || defined(FEATURE_SUPPORT_MAPT_NAT46) */
 /***********************************************************************
 
  APIs for Object:

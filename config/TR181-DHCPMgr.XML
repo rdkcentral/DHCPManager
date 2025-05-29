@@ -1000,7 +1000,6 @@
             </parameter>
               </parameters>
             </object>
-
             <object>
               <name>X_RDKCENTRAL-COM_RcvOption</name>
               <objectType>object</objectType>
@@ -1077,7 +1076,6 @@
               </parameter>
               </parameters>
             </object>
-
           </objects>
         </object>
 <?ifdef DHCPV6_SERVER_SUPPORT?>

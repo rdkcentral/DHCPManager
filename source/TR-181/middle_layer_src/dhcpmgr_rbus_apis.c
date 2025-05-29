@@ -177,6 +177,8 @@ static void DhcpMgr_createLeaseInfoMsg(DHCPv4_PLUGIN_MSG *src, DHCP_MGR_IPV4_MSG
     dest->upstreamCurrRate = src->upstreamCurrRate;
     dest->downstreamCurrRate = src->downstreamCurrRate;
 }
+
+#if defined(FEATURE_MAPT) || defined(FEATURE_SUPPORT_MAPT_NAT46)
 /**
  * @brief Updates the MapInfo field of a DHCPv6 client structure from the mapt field of a DHCP_MGR_IPV6_MSG.
  *
@@ -186,11 +188,11 @@ static void DhcpMgr_createLeaseInfoMsg(DHCPv4_PLUGIN_MSG *src, DHCP_MGR_IPV4_MSG
 static void DhcpMgr_UpdateDhcpv6MapInfo(PCOSA_DML_DHCPCV6_FULL pDhcpv6c, DHCP_MGR_IPV6_MSG *src)
 {
     DHCPMGR_LOG_INFO("%s: Entry\n", __FUNCTION__);
-    
+
     if (!pDhcpv6c || !src)
         return;
 
-    PDML_DHCPCV6_MAP_INFO mapInfo = &pDhcpv6c->MapInfo;
+    PDML_DHCPCV6_MAP_INFO mapInfo = &pDhcpv6c->Info.MapInfo;
     ipc_mapt_data_t *mapt = &src->mapt;
 
     mapInfo->MaptAssigned = src->maptAssigned ? TRUE : FALSE;
@@ -206,6 +208,8 @@ static void DhcpMgr_UpdateDhcpv6MapInfo(PCOSA_DML_DHCPCV6_FULL pDhcpv6c, DHCP_MG
     snprintf((char*)mapInfo->MapRuleIPv6Prefix, sizeof(mapInfo->MapRuleIPv6Prefix), "%s", mapt->ruleIPv6Prefix);
     
 }
+#endif // FEATURE_MAPT || FEATURE_SUPPORT_MAPT_NAT46
+
 /**
  * @brief Copies DHCPv6_PLUGIN_MSG to DHCP_MGR_IPV6_MSG struct for the rbus event publish.
  *
@@ -382,11 +386,13 @@ int DhcpMgr_PublishDhcpV6Event(PCOSA_DML_DHCPCV6_FULL pDhcpv6c, DHCP_MESSAGE_TYP
         rbusValue_Init(&leaseInfoVal);
         rbusValue_SetBytes(leaseInfoVal, &leaseInfo, sizeof(leaseInfo));
         rbusObject_SetValue(rdata, "LeaseInfo", leaseInfoVal);
+#if defined(FEATURE_MAPT) || defined(FEATURE_SUPPORT_MAPT_NAT46)
         //Update MAPT dml values 
         if(leaseInfo.maptAssigned)
         {
             DhcpMgr_UpdateDhcpv6MapInfo(pDhcpv6c, &leaseInfo);
         }
+#endif // FEATURE_MAPT || FEATURE_SUPPORT_MAPT_NAT46
     }
 
     int index = pDhcpv6c->Cfg.InstanceNumber;
