@@ -164,12 +164,30 @@ _COSA_DML_DHCPCV6_CFG
 COSA_DML_DHCPCV6_CFG,  *PCOSA_DML_DHCPCV6_CFG;
 
 typedef struct
+_DML_DHCPCV6_MAP_INFO
+{
+    BOOLEAN                         MaptAssigned;
+    BOOLEAN                         MapeAssigned;
+    BOOLEAN                         IsFMR;
+    ULONG                           MapEALen;
+    ULONG                           MapPSIDOffset;  
+    ULONG                           MapPSIDLen;   
+    ULONG                           MapPSIDValue;
+    ULONG                           MapRatio;
+    UCHAR                           MapBRPrefix[40];
+    UCHAR                           MapRuleIPv4Prefix[40];
+    UCHAR                           MapRuleIPv6Prefix[40];
+    UCHAR                           MapIpv4Address[40];
+}
+DML_DHCPCV6_MAP_INFO, *PDML_DHCPCV6_MAP_INFO;
+typedef struct
 _COSA_DML_DHCPCV6_INFO
 {
     COSA_DML_DHCP_STATUS            Status;
     UCHAR                           SupportedOptions[512];
     UCHAR                           DUID[131];
     pid_t                           ClientProcessId;
+    DML_DHCPCV6_MAP_INFO            MapInfo; /* MAP-T related info */
 }
 COSA_DML_DHCPCV6_INFO,  *PCOSA_DML_DHCPCV6_INFO;
 

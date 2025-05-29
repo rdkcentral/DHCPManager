@@ -3229,11 +3229,13 @@ dhcp6c_mapt_mape_GetParamBoolValue
         BOOL*                       pBool
     )
 {
-    UNREFERENCED_PARAMETER(hInsContext);
+
+    PCOSA_CONTEXT_DHCPCV6_LINK_OBJECT pCxtLink        = (PCOSA_CONTEXT_DHCPCV6_LINK_OBJECT)hInsContext;
+    PCOSA_DML_DHCPCV6_FULL            pDhcpc          = (PCOSA_DML_DHCPCV6_FULL)pCxtLink->hContext;
     /* check the parameter name and return the corresponding value */
     if (strcmp(ParamName, "MapIsFMR") == 0)
     {
-#if defined(_HUB4_PRODUCT_REQ_) || defined(FEATURE_SUPPORT_MAPT_NAT46)
+#if defined(FEATURE_MAPT) || defined(FEATURE_SUPPORT_MAPT_NAT46)
         char temp[32] = {0};
         commonSyseventGet(SYSEVENT_MAP_IS_FMR, temp, sizeof(temp));
         if (strcmp(temp, "TRUE") == 0)
