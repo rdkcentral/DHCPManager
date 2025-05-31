@@ -440,13 +440,6 @@ CosaDmlDhcpv6cGetCfg
         PCOSA_DML_DHCPCV6_CFG       pCfg
     );
 
-ANSC_STATUS
-CosaDmlDhcpv6cGetInfo
-    (
-        ANSC_HANDLE                 hContext,
-        ULONG                       ulInstanceNumber,
-        PCOSA_DML_DHCPCV6_INFO      pInfo
-    );
 
 ANSC_STATUS
 CosaDmlDhcpv6cGetServerCfg

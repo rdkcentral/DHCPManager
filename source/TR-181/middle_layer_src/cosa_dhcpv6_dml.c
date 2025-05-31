@@ -822,8 +822,9 @@ Client3_GetParamUlongValue
     /* check the parameter name and return the corresponding value */
     if (strcmp(ParamName, "Status") == 0)
     {
-        /* collect value */
-        CosaDmlDhcpv6cGetInfo(pDhcpc, pCxtLink->InstanceNumber, &pDhcpc->Info);
+            DHCPMGR_LOG_INFO("%s:%d IPv4 Rule Prefix: %s\n", __FUNCTION__, __LINE__, pDhcpc->Info.MapInfo.MapRuleIPv4Prefix);
+    DHCPMGR_LOG_INFO("%s:%d IPv6 Rule Prefix: %s\n", __FUNCTION__, __LINE__, pDhcpc->Info.MapInfo.MapRuleIPv6Prefix);
+
 
         *puLong   = pDhcpc->Info.Status;
 
@@ -928,7 +929,8 @@ Client3_GetParamStringValue
 
     if (strcmp(ParamName, "DUID") == 0)
     {
-        CosaDmlDhcpv6cGetInfo(pDhcpc, pCxtLink->InstanceNumber, &pDhcpc->Info);
+            DHCPMGR_LOG_INFO("%s:%d IPv4 Rule Prefix: %s\n", __FUNCTION__, __LINE__, pDhcpc->Info.MapInfo.MapRuleIPv4Prefix);
+    DHCPMGR_LOG_INFO("%s:%d IPv6 Rule Prefix: %s\n", __FUNCTION__, __LINE__, pDhcpc->Info.MapInfo.MapRuleIPv6Prefix);
 
         /* collect value */
         return  update_pValue(pValue,pUlSize, (char*)pDhcpc->Info.DUID);

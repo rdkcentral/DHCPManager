@@ -453,27 +453,6 @@ CosaDmlDhcpv6cGetCfg
     return ANSC_STATUS_FAILURE;
 }
 
-ANSC_STATUS
-CosaDmlDhcpv6cGetInfo
-    (
-        ANSC_HANDLE                 hContext,
-        ULONG                       ulInstanceNumber,
-        PCOSA_DML_DHCPCV6_INFO      pInfo
-    )
-{
-    ULONG                           index  = 0;
-
-    for( index = 0 ; index < sizeof (g_dhcpv6_client)/sizeof(COSA_DML_DHCPCV6_FULL); index++)
-    {
-        if ( ulInstanceNumber == g_dhcpv6_client[index].Cfg.InstanceNumber )
-        {
-            AnscCopyMemory(pInfo,  &g_dhcpv6_client[index].Info, sizeof(COSA_DML_DHCPCV6_INFO));
-            return ANSC_STATUS_SUCCESS;
-        }
-    }
-
-    return ANSC_STATUS_FAILURE;
-}
 
 /* this memory need to be freed by caller */
 ANSC_STATUS
@@ -2307,45 +2286,6 @@ CosaDmlDhcpv6cGetCfg
     return ANSC_STATUS_SUCCESS;
 }
 
-ANSC_STATUS
-CosaDmlDhcpv6cGetInfo
-    (
-        ANSC_HANDLE                 hContext,
-        ULONG                       ulInstanceNumber,
-        PCOSA_DML_DHCPCV6_INFO      pInfo
-    )
-{
-    int pid = -1;
-    char l_cWanState[16] = {0};
-    UNREFERENCED_PARAMETER(ulInstanceNumber);
-    PCOSA_DML_DHCPCV6_FULL            pDhcpc            = (PCOSA_DML_DHCPCV6_FULL)hContext;
-
-    _get_client_duid(g_dhcpv6_client.Info.DUID, sizeof(pInfo->DUID));
-    if (pDhcpc)
-    {
-        pid = pid_of(DHCPV6_BINARY,NULL);
-        commonSyseventGet("wan-status", l_cWanState, sizeof(l_cWanState));
-
-        /* To-do:pDhcpc->Cfg.bEnabled is not properly set. */
-        /*The below commented code needs to be handled after it is properly set */
-        if (/*(pDhcpc->Cfg.bEnabled) &&*/ (pid > 0))
-        {
-            g_dhcpv6_client.Info.Status = pDhcpc->Info.Status = COSA_DML_DHCP_STATUS_Enabled;
-        }
-        else if(/*(pDhcpc->Cfg.bEnabled) &&*/ (pid < 0) && (!strcmp(l_cWanState,"started")))
-        {
-            g_dhcpv6_client.Info.Status = pDhcpc->Info.Status = COSA_DML_DHCP_STATUS_Error_Misconfigured;
-        }
-        else
-        {
-            g_dhcpv6_client.Info.Status = pDhcpc->Info.Status = COSA_DML_DHCP_STATUS_Disabled;
-        }
-    }
-
-    AnscCopyMemory(pInfo,  &g_dhcpv6_client.Info, sizeof(COSA_DML_DHCPCV6_INFO));
-
-    return ANSC_STATUS_SUCCESS;
-}
 
 #define CLIENT_SERVER_INFO_FILE "/tmp/.dibbler-info/client_server"
 /*this file's format:
