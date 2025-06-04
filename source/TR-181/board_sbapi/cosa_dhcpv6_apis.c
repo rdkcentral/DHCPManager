@@ -2113,7 +2113,7 @@ static int _dibbler_client_operation(char * arg)
 #if defined (FEATURE_RDKB_DHCP_MANAGER) || defined(CISCO_CONFIG_DHCPV6_PREFIX_DELEGATION) && ! defined(DHCPV6_PREFIX_FIX)
         commonSyseventSet("dhcpv6_client-stop", "");
 #else
-//        dhcpv6_client_service_disable();
+        dhcpv6_client_service_disable();
 #endif
 
 #if defined (_COSA_BCM_ARM_) && !defined (FEATURE_RDKB_DHCP_MANAGER)
