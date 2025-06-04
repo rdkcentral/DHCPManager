@@ -21,8 +21,10 @@
 #include "dhcpmgr_custom_options.h"
 #include "util.h"
 #include "ifl.h"
+#include "ipc_msg.h"
 
-static int DhcpMgr_Option17Set_Common(const char *ifName, const char *OptionValue);
+static int DhcpMgr_Option17Set_Common(const char *ifName, const char *OptionValue,uint32_t *ipv6_TimeOffset);
+static int set_mta_config(const char *OptionValue, char *version);
 
 // Weak function implementations
 __attribute__((weak)) int Get_DhcpV4_CustomOption60(const char *ifName, char *OptionValue,size_t OptionValueSize) 
@@ -42,7 +44,21 @@ __attribute__((weak)) int Get_DhcpV4_CustomOption61(const char *ifName, char *Op
     DHCPMGR_LOG_INFO("%s %d Weak implementation of Get_DhcpV4_CustomOption61 \n", __FUNCTION__, __LINE__);
     return -1;
 }
+#ifdef EROUTER_DHCP_OPTION_MTA
+__attribute__((weak)) int Get_DhcpV4_CustomOption_mta(char *OptionValue, size_t OptionValueSize) 
+{
+    (void)OptionValue;
+    (void)OptionValueSize;
+    DHCPMGR_LOG_INFO("%s %d Weak implementation of Get_DhcpV4_CustomOption_mta \n", __FUNCTION__, __LINE__);
+    return -1;
+}
 
+__attribute__((weak)) int Set_DhcpV4_CustomOption_mta(const char *OptionValue,char *version) 
+{
+    DHCPMGR_LOG_INFO("%s %d Weak implementation of Set_DhcpV4_CustomOption_mta \n", __FUNCTION__, __LINE__);
+    return set_mta_config(OptionValue, version);
+}
+#endif
 __attribute__((weak)) int Get_DhcpV6_CustomOption15(const char *ifName, char *OptionValue,size_t OptionValueSize) 
 {
     (void)ifName;
@@ -70,10 +86,10 @@ __attribute__((weak)) int Get_DhcpV6_CustomOption17(const char *ifName, char *Op
     return -1;
 }
 
-__attribute__((weak)) int Set_DhcpV6_CustomOption17(const char *ifName, const char *OptionValue)
+__attribute__((weak)) int Set_DhcpV6_CustomOption17(const char *ifName, const char *OptionValue, uint32_t *ipv6_TimeOffset) 
 {
     DHCPMGR_LOG_INFO("%s %d Weak implementation of Set_DhcpV6_CustomOption17 \n", __FUNCTION__, __LINE__);
-    return DhcpMgr_Option17Set_Common(ifName, OptionValue);
+    return DhcpMgr_Option17Set_Common(ifName, OptionValue, ipv6_TimeOffset);
 }
 
 __attribute__((weak)) int Get_DhcpV4_CustomOption43(const char *ifName, char *OptionValue, size_t OptionValueSize) 
@@ -92,7 +108,6 @@ __attribute__((weak)) int Set_DhcpV4_CustomOption43(const char *ifName, const ch
     DHCPMGR_LOG_INFO("%s %d Weak implementation of Set_DhcpV4_CustomOption43 \n", __FUNCTION__, __LINE__);
     return -1;
 }
-
 
 /* The following functions are implemented based on the reference from the dibbler notify script file */
 /**
@@ -213,7 +228,7 @@ static char* parse_dhcp_17_suboption(const char *dhcp_option_val, const char *ip
  *
  */
 //TODO: This function directly sets generic system events. If multiple WAN leases share this information, it may cause conflicts. These system events should be configured specifically for the active interface only.
-static int DhcpMgr_Option17Set_Common(const char *ifName, const char *OptionValue)
+static int DhcpMgr_Option17Set_Common(const char *ifName, const char *OptionValue,uint32_t *ipv6_TimeOffset)
 {
     if (ifName == NULL || OptionValue == NULL)
     {
@@ -246,7 +261,9 @@ static int DhcpMgr_Option17Set_Common(const char *ifName, const char *OptionValu
             } else if (strcmp(suboption, "38") == 0) 
             {
                 DHCPMGR_LOG_INFO("Suboption TimeOffset is %s in option %s\n", suboption_data, OptionValue);
-                ifl_set_event("ipv6-timeoffset", suboption_data);
+                *ipv6_TimeOffset = atoi(suboption_data);
+                DHCPMGR_LOG_INFO("ipv6_TimeOffset value is %u\n", *ipv6_TimeOffset);
+                //ifl_set_event("ipv6-timeoffset", suboption_data);
                 // Additional processing for TimeOffset can be added here
             } else if (strcmp(suboption, "39") == 0) 
             {
@@ -326,3 +343,132 @@ static int DhcpMgr_Option17Set_Common(const char *ifName, const char *OptionValu
     free(srv_option17);
     return 0;
 }
+
+#ifdef EROUTER_DHCP_OPTION_MTA
+
+static void parse_nested_option(const char *nested_val, char *primary, char *secondary)
+{
+    if (!nested_val) return;
+
+    char subop[3] = {0};
+    char len_str[3] = {0};
+    char value[256] = {0};
+    int len = 0;
+
+    while (strlen(nested_val) >= 4) {
+        memcpy(subop, nested_val, 2);
+        nested_val += 2;
+
+        memcpy(len_str, nested_val, 2);
+        nested_val += 2;
+
+        len = strtol(len_str, NULL, 16);
+        int hex_len = len * 2;
+        if ((int)strlen(nested_val) < hex_len) break;
+
+        memset(value, 0, sizeof(value));
+        memcpy(value, nested_val, hex_len);
+        nested_val += hex_len;
+
+        if (atoi(subop) == 1 && primary) {
+            strcpy(primary, value);
+        } else if (atoi(subop) == 2 && secondary) {
+            strcpy(secondary, value);
+        }
+    }
+}
+
+static int set_mta_config(const char *OptionValue, char *version)
+{
+    bool mta_param_rx = false;
+
+    if(OptionValue == NULL)
+    {
+        DHCPMGR_LOG_ERROR("%s %d: Invalid args..\n", __FUNCTION__, __LINE__);
+        return -1;
+    }
+    if (strcmp(version, "v4") == 0)
+    {
+        char *opt122 = strdup(OptionValue);
+        if (opt122 == NULL)
+        {
+            return -1;
+        }
+
+        char subop[16] = {0};
+        int len = 0;
+        char buff[128] = {0};
+
+        while (strlen(opt122))
+        {
+            // Get sub-option
+            memset(subop, 0, sizeof(subop));
+            memcpy(subop, opt122, 2);
+            opt122 += 2;
+
+            // Get length of suboption value
+            memset(buff, 0, sizeof(buff));
+            memcpy(buff, opt122, 2);
+            opt122 += 2;
+
+            len = atoi(buff);
+
+            // Get value of the suboption
+            memset(buff, 0, sizeof(buff));
+            memcpy(buff, opt122, len * 2);
+            opt122 += len * 2;
+
+            if (atoi(subop) == 1)
+            {
+                ifl_set_event("MTA_DHCPv4_PrimaryAddress", buff);
+                mta_param_rx = true;
+            }
+            else if (atoi(subop) == 2)
+            {
+                ifl_set_event("MTA_DHCPv4_SecondaryAddress", buff);
+                mta_param_rx = true;
+            }
+        }   
+    }
+    else if (strcmp(version, "v6") == 0) 
+    {
+        const char *opt125 = OptionValue;
+        char subop[3] = {0}, len_str[3] = {0}, value[512] = {0};
+        int len = 0;
+
+        while (strlen(opt125) >= 4) {
+            memcpy(subop, opt125, 2); opt125 += 2;
+            memcpy(len_str, opt125, 2); opt125 += 2;
+
+            len = strtol(len_str, NULL, 16);
+            int hex_len = len * 2;
+            if ((int)strlen(opt125) < hex_len) break;
+
+            memset(value, 0, sizeof(value));
+            memcpy(value, opt125, hex_len); opt125 += hex_len;
+
+            if (strcasecmp(subop, "7C") == 0) {
+                ifl_set_event("MTA_IP_PREF", value);
+                mta_param_rx = true;
+            } else if (strcasecmp(subop, "7B") == 0) {
+                char primary[256] = {0}, secondary[256] = {0};
+                parse_nested_option(value, primary, secondary);
+
+                if (strlen(primary) > 0) {
+                    ifl_set_event("MTA_DHCPv6_PrimaryAddress", primary);
+                    mta_param_rx = true;
+                }
+                if (strlen(secondary) > 0) {
+                    ifl_set_event("MTA_DHCPv6_SecondaryAddress", secondary);
+                    mta_param_rx = true;
+                }
+            }
+        }
+    }
+
+    if (mta_param_rx) {
+        ifl_set_event("dhcp_mta_option", "received");
+    }
+    return 0;
+}
+#endif

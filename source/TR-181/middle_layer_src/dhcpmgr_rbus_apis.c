@@ -203,6 +203,15 @@ static void DhcpMgr_createDhcpv6LeaseInfoMsg(DHCPv6_PLUGIN_MSG *src, DHCP_MGR_IP
     dest->prefixAssigned = src->ia_pd.assigned;
     dest->domainNameAssigned = (strlen(src->domainName) > 0);
 
+    if(src->ipv6_TimeOffset)
+    {
+        dest->ipv6_TimeOffset = src->ipv6_TimeOffset;
+    }
+    else
+    {
+        dest->ipv6_TimeOffset = 0; // Default value if not assigned
+    }
+
     if(src->mapt.Assigned == TRUE)
     {
         unsigned char  maptContainer[BUFLEN_256]; /* MAP-T option 95 in hex format*/

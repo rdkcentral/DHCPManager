@@ -22,6 +22,8 @@
 #define DHCP_RENEWL_TIME "renewaltime"
 #define DHCP_ACK_OPT58 "opt58"
 #define DHCP_ACK_OPT59 "opt59"
+#define DHCP_MTA_IPV4 "opt122"
+#define DHCP_MTA_IPV6 "opt125"
 #define DHCP_REBINDING_TIME "rebindingtime"
 #define DHCP_SERVER_ID "serverid"
 #define DHCP_SIPSRV "sipsrv"
