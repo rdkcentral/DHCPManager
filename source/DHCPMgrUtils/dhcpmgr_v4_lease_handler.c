@@ -34,6 +34,7 @@
 #include "dhcp_client_common_utils.h"
 #include "dhcpmgr_rbus_apis.h"
 #include "dhcpmgr_recovery_handler.h"
+#include "dhcpmgr_custom_options.h"
 
 
 #include <string.h>
@@ -299,6 +300,20 @@ void DhcpMgr_ProcessV4Lease(PCOSA_DML_DHCPC_FULL pDhcpc)
             DHCPMGR_LOG_INFO("%s %d: NewLease->dnsServer %s  \n",__FUNCTION__, __LINE__, newLease->dnsServer );
             DHCPMGR_LOG_INFO("%s %d: NewLease->dnsServer1 %s  \n",__FUNCTION__, __LINE__,  newLease->dnsServer1 );
             configureNetworkInterface(pDhcpc);
+#ifdef EROUTER_DHCP_OPTION_MTA
+            if( newLease->mtaOption.Assigned122 == TRUE)
+            {
+                DHCPMGR_LOG_INFO("%s %d: NewLease->mtaOption Data %s  \n", __FUNCTION__, __LINE__, newLease->mtaOption.option_122);
+                Set_DhcpV4_CustomOption_mta(newLease->mtaOption.option_122,"v4");
+            }
+            if (newLease->mtaOption.Assigned125 == TRUE)
+            {
+                DHCPMGR_LOG_INFO("%s %d: NewLease->mtaOption Data %s  \n", __FUNCTION__, __LINE__, newLease->mtaOption.option_125);
+                Set_DhcpV4_CustomOption_mta(newLease->mtaOption.option_125,"v6");
+            }
+            
+            DHCPMGR_LOG_INFO("%s %d: Handling EROUTER_DHCP_OPTION_MTA\n", __FUNCTION__, __LINE__);
+#endif
             DhcpMgr_updateDHCPv4DML(pDhcpc);
             DhcpMgr_PublishDhcpV4Event(pDhcpc, DHCP_LEASE_UPDATE);
         }
