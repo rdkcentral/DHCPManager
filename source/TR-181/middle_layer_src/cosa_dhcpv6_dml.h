@@ -456,6 +456,7 @@ SentOption1_Rollback
         ANSC_HANDLE                 hInsContext
     );
 
+#if defined(FEATURE_MAPT) || defined(FEATURE_SUPPORT_MAPT_NAT46)
 /***********************************************************************
 
  APIs for Object:
@@ -491,7 +492,7 @@ dhcp6c_mapt_mape_GetParamStringValue
         char*                       pValue,
         ULONG*                      pUlSize
     );
-
+#endif
 /***********************************************************************
 
  APIs for Object:
