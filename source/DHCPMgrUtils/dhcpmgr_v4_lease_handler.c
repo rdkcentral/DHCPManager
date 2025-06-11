@@ -53,12 +53,24 @@
  *
  * @return uint32_t The system uptime in seconds.
  */
-uint32_t WanManager_getUpTime()
+uint32_t sysinfo_getUpTime()
 {
     struct sysinfo info;
     sysinfo( &info );
     return( info.uptime );
 }
+
+/**
+ * @brief Updates system events based on changes in DHCPv4 plugin message parameters.
+ *
+ * This function compares the current and new DHCPv4 plugin message parameters and updates
+ * the corresponding system events if changes are detected. It handles updates for the DHCP
+ * server ID, lease time, DHCP state, and start time.
+ *
+ * @param current Pointer to the current DHCPv4 plugin message structure.
+ * @param newLease Pointer to the new DHCPv4 plugin message structure.
+ * @param interface Pointer to the interface name string.
+ */
 
 void set_inf_sysevents(DHCPv4_PLUGIN_MSG *current, DHCPv4_PLUGIN_MSG *newLease,char* interface)
 {
@@ -87,7 +99,7 @@ void set_inf_sysevents(DHCPv4_PLUGIN_MSG *current, DHCPv4_PLUGIN_MSG *newLease,c
     }
 
     snprintf(syseventParam, sizeof(syseventParam), "ipv4_%s_start_time", interface);
-    snprintf(buf, sizeof(buf), "%u", WanManager_getUpTime());
+    snprintf(buf, sizeof(buf), "%u", sysinfo_getUpTime());
     ifl_set_event(syseventParam, buf);
 }
 
