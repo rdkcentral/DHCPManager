@@ -20,7 +20,7 @@
 #ifndef DHCP_CUSTOM_OPTIONS_H
 #define DHCP_CUSTOM_OPTIONS_H
 #include <stdlib.h>
-
+#include <stdint.h>
 /**
  * @brief Creates a custom DHCPv4 Option 43 (Vendor Specific Information) at runtime.
  *
@@ -97,6 +97,35 @@ int Get_DhcpV6_CustomOption17(const char *ifName, char *OptionValue, size_t Opti
  * @param[in] OptionValue The buffer with  option data.
  * @return int 0 on success, non-zero on failure.
  */
-int Set_DhcpV6_CustomOption17(const char *ifName, const char *OptionValue);
+int Set_DhcpV6_CustomOption17(const char *ifName, const char *OptionValue, uint32_t *ipv6_TimeOffset);
 
+#ifdef EROUTER_DHCP_OPTION_MTA
+/**
+ * @brief Retrieves a custom DHCPv4 option for the specified network interface.
+ *
+ * This function provides a weak implementation for retrieving a custom DHCPv4 option
+ * for the given network interface. It logs the operation and returns a failure code.
+ *
+ * @param OptionValue The buffer to store the retrieved option value.
+ * @param OptionValueSize The size of the buffer.
+ * 
+ * @return Returns an integer indicating the success or failure of the operation.
+ *         Typically, 0 indicates success, while a non-zero value indicates an error.
+ */
+int Get_DhcpV4_CustomOption_mta(char *OptionValue, size_t OptionValueSize);
+
+/**
+ * @brief Sets a custom DHCPv4 option for the specified network interface.
+ *
+ * This function configures a custom DHCPv4 option for the given network interface
+ * by applying the provided option value.
+ *
+ * @param ifName The name of the network interface to configure.
+ * @param OptionValue The value of the custom DHCPv4 option to set.qx2
+ * 
+ * @return Returns an integer indicating the success or failure of the operation.
+ *         Typically, 0 indicates success, while a non-zero value indicates an error.
+ */
+int Set_DhcpV4_CustomOption_mta(const char *OptionValue,char *version);
+#endif
 #endif // DHCP_CUSTOM_OPTIONS_H

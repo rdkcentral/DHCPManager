@@ -22,6 +22,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "util.h"
+#include "ifl.h"
 #include "ansc_platform.h"
 #include "cosa_apis.h"
 #include "cosa_dml_api_common.h"
@@ -34,6 +35,7 @@
 #include "dhcp_client_common_utils.h"
 #include "dhcpmgr_rbus_apis.h"
 #include "dhcpmgr_recovery_handler.h"
+#include "dhcpmgr_custom_options.h"
 
 
 #include <string.h>
@@ -41,7 +43,65 @@
 #include <sys/ioctl.h>
 #include <net/if.h>
 #include <arpa/inet.h>
+#include <sys/sysinfo.h>
 
+/**
+ * @brief Retrieves the system uptime in seconds.
+ *
+ * This function uses the sysinfo system call to obtain the system's uptime
+ * and returns it as an unsigned 32-bit integer.
+ *
+ * @return uint32_t The system uptime in seconds.
+ */
+uint32_t sysinfo_getUpTime()
+{
+    struct sysinfo info;
+    sysinfo( &info );
+    return( info.uptime );
+}
+
+/**
+ * @brief Updates system events based on changes in DHCPv4 plugin message parameters.
+ *
+ * This function compares the current and new DHCPv4 plugin message parameters and updates
+ * the corresponding system events if changes are detected. It handles updates for the DHCP
+ * server ID, lease time, DHCP state, and start time.
+ *
+ * @param current Pointer to the current DHCPv4 plugin message structure.
+ * @param newLease Pointer to the new DHCPv4 plugin message structure.
+ * @param interface Pointer to the interface name string.
+ */
+
+void set_inf_sysevents(DHCPv4_PLUGIN_MSG *current, DHCPv4_PLUGIN_MSG *newLease,char* interface)
+{
+    char syseventParam[BUFLEN_32];
+    char buf[BUFLEN_64] = {0};
+
+    if(strcmp(current->dhcpServerId, newLease->dhcpServerId) != 0)
+    {
+        snprintf(syseventParam, sizeof(syseventParam), "ipv4_%s_dhcp_server", interface);
+        snprintf(buf, sizeof(buf), "%s", newLease->dhcpServerId);
+        ifl_set_event(syseventParam, buf);
+    }
+
+    if(current->leaseTime != newLease->leaseTime)
+    {
+        snprintf(syseventParam, sizeof(syseventParam), "ipv4_%s_lease_time", interface);
+        snprintf(buf, sizeof(buf), "%d", newLease->leaseTime);
+        ifl_set_event(syseventParam, buf);
+    }
+
+    if(strcmp(current->dhcpState, newLease->dhcpState) != 0)
+    {
+        snprintf(syseventParam, sizeof(syseventParam), "ipv4_%s_dhcp_state", interface);
+        snprintf(buf, sizeof(buf), "%s", newLease->dhcpState);
+        ifl_set_event(syseventParam, buf);
+    }
+
+    snprintf(syseventParam, sizeof(syseventParam), "ipv4_%s_start_time", interface);
+    snprintf(buf, sizeof(buf), "%u", sysinfo_getUpTime());
+    ifl_set_event(syseventParam, buf);
+}
 
 /* ---- Global Constants -------------------------- */
 
@@ -263,6 +323,13 @@ void DhcpMgr_ProcessV4Lease(PCOSA_DML_DHCPC_FULL pDhcpc)
             DhcpMgr_PublishDhcpV4Event(pDhcpc, DHCP_LEASE_RENEW);
             DHCPMGR_LOG_INFO("%s %d: lease renewed for %s \n",__FUNCTION__, __LINE__, pDhcpc->Cfg.Interface);
         }
+
+    //setting the sysevents for interface specific
+
+    #if defined(FEATURE_RDKB_CONFIGURABLE_WAN_INTERFACE)
+        set_inf_sysevents(DHCPv4_PLUGIN_MSG *current, DHCPv4_PLUGIN_MSG *newLease, pDhcpc->Cfg.Interface);
+    #endif
+
         //TODO : check any sysvent required for lease update
         DHCPMGR_LOG_INFO("%s %d: New lease  : %s \n",__FUNCTION__, __LINE__, newLease->isExpired?"Expired" : "Valid");
 
@@ -299,6 +366,20 @@ void DhcpMgr_ProcessV4Lease(PCOSA_DML_DHCPC_FULL pDhcpc)
             DHCPMGR_LOG_INFO("%s %d: NewLease->dnsServer %s  \n",__FUNCTION__, __LINE__, newLease->dnsServer );
             DHCPMGR_LOG_INFO("%s %d: NewLease->dnsServer1 %s  \n",__FUNCTION__, __LINE__,  newLease->dnsServer1 );
             configureNetworkInterface(pDhcpc);
+#ifdef EROUTER_DHCP_OPTION_MTA
+            if( newLease->mtaOption.Assigned122 == TRUE)
+            {
+                DHCPMGR_LOG_INFO("%s %d: NewLease->mtaOption Data %s  \n", __FUNCTION__, __LINE__, newLease->mtaOption.option_122);
+                Set_DhcpV4_CustomOption_mta(newLease->mtaOption.option_122,"v4");
+            }
+            if (newLease->mtaOption.Assigned125 == TRUE)
+            {
+                DHCPMGR_LOG_INFO("%s %d: NewLease->mtaOption Data %s  \n", __FUNCTION__, __LINE__, newLease->mtaOption.option_125);
+                Set_DhcpV4_CustomOption_mta(newLease->mtaOption.option_125,"v6");
+            }
+            
+            DHCPMGR_LOG_INFO("%s %d: Handling EROUTER_DHCP_OPTION_MTA\n", __FUNCTION__, __LINE__);
+#endif
             DhcpMgr_updateDHCPv4DML(pDhcpc);
             DhcpMgr_PublishDhcpV4Event(pDhcpc, DHCP_LEASE_UPDATE);
         }
