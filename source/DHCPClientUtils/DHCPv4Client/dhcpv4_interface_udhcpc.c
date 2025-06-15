@@ -326,7 +326,9 @@ int send_dhcpv4_release(pid_t processID)
         DHCPMGR_LOG_ERROR("%s %d: unable to send signal to pid %d\n", __FUNCTION__, __LINE__, processID);
         return FAILURE;    
     }
-    stop_dhcpv4_client(processID);
+    sleep(2); // wait for the udhcpc to send a release packet
+    DHCPMGR_LOG_INFO("%s %d Calling stop after sending release. \n", __FUNCTION__, __LINE__);
+    stop_dhcpv4_client(processID); //sending release may terminate the UDHCPC for some platforms. Calling stop API to have a common behavior.
     return SUCCESS;
 }
 
