@@ -405,24 +405,22 @@ void DhcpMgr_clearDHCPv4Lease(PCOSA_DML_DHCPC_FULL pDhcpc)
     }
 
     pDhcpc->Info.DHCPStatus = COSA_DML_DHCPC_STATUS_Init;
-    AnscWriteUlong(&pDhcpc->Info.IPAddress.Value, 0);
-    AnscWriteUlong(&pDhcpc->Info.SubnetMask.Value, 0);
+    pDhcpc->Info.IPAddress.Value = 0; 
+    pDhcpc->Info.SubnetMask.Value = 0;
     pDhcpc->Info.LeaseTimeRemaining = 0;
-    
-    
-    AnscWriteUlong(&pDhcpc->Info.DHCPServer.Value, 0);
+    pDhcpc->Info.DHCPServer.Value = 0;
 
     // Clear DNS Servers
     for (ULONG i = 0; i < pDhcpc->Info.NumDnsServers; i++)
     {
-        AnscWriteUlong(&pDhcpc->Info.DNSServers[i].Value, 0);
+        pDhcpc->Info.DNSServers[i].Value = 0;
     }
     pDhcpc->Info.NumDnsServers = 0;
 
     // Clear IP Routers
     for (ULONG i = 0; i < pDhcpc->Info.NumIPRouters; i++) 
     {
-        AnscWriteUlong(&pDhcpc->Info.IPRouters[i].Value, 0);
+        pDhcpc->Info.IPRouters[i].Value = 0;
     }
     pDhcpc->Info.NumIPRouters = 0;
 
