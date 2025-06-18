@@ -204,10 +204,9 @@ void DhcpMgr_ProcessV6Lease(PCOSA_DML_DHCPCV6_FULL pDhcp6c)
             if(newLease->vendor.Assigned == TRUE)
             {
                 DHCPMGR_LOG_INFO("%s %d: NewLease vendor data %s  \n", __FUNCTION__, __LINE__, newLease->vendor.Data);
-                Set_DhcpV6_CustomOption17(pDhcp6c->Cfg.Interface, newLease->vendor.Data); 
+                Set_DhcpV6_CustomOption17(pDhcp6c->Cfg.Interface, newLease->vendor.Data, &newLease->ipv6_TimeOffset); 
             }
             DhcpMgr_PublishDhcpV6Event(pDhcp6c, DHCP_LEASE_UPDATE);
-            
         }
 
     }

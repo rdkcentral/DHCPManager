@@ -253,6 +253,31 @@ static int get_and_fill_env_data (DHCPv4_PLUGIN_MSG *dhcpv4_data, udhcpc_env_t* 
             DHCPMGR_LOG_ERROR("[%s-%d] Timeoffset is not available in dhcp ack \n",  __FUNCTION__,__LINE__);
         }
 
+#if defined (EROUTER_DHCP_OPTION_MTA)
+        /* opt122 and opt125 for MTA */
+        if ((env = getenv(DHCP_MTA_IPV4)) != NULL)
+        {
+            strncpy(dhcpv4_data->mtaOption.option_122, env, sizeof(dhcpv4_data->mtaOption.option_122));
+            if (dhcpv4_data->mtaOption.option_122 == NULL)
+            {
+                DHCPMGR_LOG_ERROR("[%s-%d] Failed to copy data for MTA IPv4 option \n", __FUNCTION__, __LINE__);
+            }
+            dhcpv4_data->mtaOption.Assigned122 = 1;
+        }
+        else if ((env = getenv(DHCP_MTA_IPV6)) != NULL)
+        {
+            strncpy(dhcpv4_data->mtaOption.option_125, env, sizeof(dhcpv4_data->mtaOption.option_125));
+            if (dhcpv4_data->mtaOption.option_125 == NULL)
+            {
+                DHCPMGR_LOG_ERROR("[%s-%d] Failed to copy data for MTA IPv6 option \n", __FUNCTION__, __LINE__);
+            }
+            dhcpv4_data->mtaOption.Assigned125 = 1;
+        }
+        else
+        {
+            DHCPMGR_LOG_ERROR("[%s-%d] MTA option is not available in dhcp ack \n",  __FUNCTION__,__LINE__);
+        }
+#endif
         /** UpstreamCurrRate. **/
         if ((env = getenv(DHCP_UPSTREAMRATE)) != NULL)
         {
