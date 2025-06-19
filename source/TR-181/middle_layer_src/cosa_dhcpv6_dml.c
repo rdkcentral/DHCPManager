@@ -3465,9 +3465,19 @@ dhcp6c_mapt_mape_GetParamStringValue
 
     if (strcmp(ParamName, "MapIpv4Address") == 0)
     {
-        //TODO: This value calculated in WanManager, so we don't have it here.
-        DHCPMGR_LOG_ERROR("%s %d MapIpv4Address not available in this context\n", __FUNCTION__, __LINE__);
-        AnscCopyString(pValue, "");
+        DHCPMGR_LOG_ERROR("%s %d MapIpv4Address not available in this context. returning from the device's sysvent db\n", __FUNCTION__, __LINE__);
+        char temp[256] = {0};
+        commonSyseventGet(SYSEVENT_MAPT_IPADDRESS, temp, sizeof(temp));
+        if ( AnscSizeOfString(temp) < *pUlSize)
+        {
+            AnscCopyString(pValue, temp);
+            return 0;
+        }
+        else
+        {
+            *pUlSize = AnscSizeOfString(temp)+1;
+            return 1;
+        }
         return 0;
     }
 
