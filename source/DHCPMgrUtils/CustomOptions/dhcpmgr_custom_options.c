@@ -23,8 +23,8 @@
 #include "ifl.h"
 #include "ipc_msg.h"
 
-#ifdef EROUTER_DHCP_OPTION_MTA
 static int DhcpMgr_Option17Set_Common(const char *ifName, const char *OptionValue,uint32_t *ipv6_TimeOffset);
+#ifdef EROUTER_DHCP_OPTION_MTA
 static int set_mta_config(const char *OptionValue, char *version);
 #endif
 
