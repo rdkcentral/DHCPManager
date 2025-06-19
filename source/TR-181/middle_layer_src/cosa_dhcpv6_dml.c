@@ -3465,6 +3465,7 @@ dhcp6c_mapt_mape_GetParamStringValue
 
     if (strcmp(ParamName, "MapIpv4Address") == 0)
     {
+        //TODO: This is a temporary solution, need to use the BBF MAP. DML from the WanManager
         DHCPMGR_LOG_ERROR("%s %d MapIpv4Address not available in this context. returning from the device's sysvent db\n", __FUNCTION__, __LINE__);
         char temp[256] = {0};
         commonSyseventGet(SYSEVENT_MAPT_IPADDRESS, temp, sizeof(temp));
