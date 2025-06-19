@@ -750,7 +750,7 @@ void DHCPMgr_AddDhcpv4Lease(char * ifName, DHCPv4_PLUGIN_MSG *newLease)
     {
         //if we are here, we didn't find the correct interface the received lease. free the memory
         free(newLease);
-        DHCPMGR_LOG_ERROR("%s %d: dhcpv4 lease msg not added for ineterface %s. DHCP client may not be running. \n", __FUNCTION__, __LINE__, pDhcpc->Cfg.Interface);
+        DHCPMGR_LOG_ERROR("%s %d: dhcpv4 lease msg not added for ineterface %s. DHCP client may not be running. \n", __FUNCTION__, __LINE__, ifName);
     }
 
     return;

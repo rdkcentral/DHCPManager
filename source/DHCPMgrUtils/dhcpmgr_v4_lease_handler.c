@@ -72,9 +72,9 @@ uint32_t sysinfo_getUpTime()
  * @param interface Pointer to the interface name string.
  */
 
-void set_inf_sysevents(DHCPv4_PLUGIN_MSG *current, DHCPv4_PLUGIN_MSG *newLease,char* interface)
+void set_inf_sysevents(const DHCPv4_PLUGIN_MSG *const current, const DHCPv4_PLUGIN_MSG *const newLease, const char *const interface)
 {
-    char syseventParam[BUFLEN_32];
+    char syseventParam[BUFLEN_128] = {0};
     char buf[BUFLEN_64] = {0};
 
     if(strcmp(current->dhcpServerId, newLease->dhcpServerId) != 0)
@@ -324,11 +324,8 @@ void DhcpMgr_ProcessV4Lease(PCOSA_DML_DHCPC_FULL pDhcpc)
             DHCPMGR_LOG_INFO("%s %d: lease renewed for %s \n",__FUNCTION__, __LINE__, pDhcpc->Cfg.Interface);
         }
 
-    //setting the sysevents for interface specific
-
-    #if defined(FEATURE_RDKB_CONFIGURABLE_WAN_INTERFACE)
-        set_inf_sysevents(DHCPv4_PLUGIN_MSG *current, DHCPv4_PLUGIN_MSG *newLease, pDhcpc->Cfg.Interface);
-    #endif
+        //setting the sysevents for interface specific
+        set_inf_sysevents(current, newLease, pDhcpc->Cfg.Interface);
 
         //TODO : check any sysvent required for lease update
         DHCPMGR_LOG_INFO("%s %d: New lease  : %s \n",__FUNCTION__, __LINE__, newLease->isExpired?"Expired" : "Valid");
