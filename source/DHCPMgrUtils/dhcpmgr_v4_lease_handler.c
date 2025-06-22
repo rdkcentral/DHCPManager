@@ -77,21 +77,21 @@ void set_inf_sysevents(const DHCPv4_PLUGIN_MSG *const current, const DHCPv4_PLUG
     char syseventParam[BUFLEN_128] = {0};
     char buf[BUFLEN_64] = {0};
 
-    if(strcmp(current->dhcpServerId, newLease->dhcpServerId) != 0)
+    if(current == NULL || strcmp(current->dhcpServerId, newLease->dhcpServerId) != 0)
     {
         snprintf(syseventParam, sizeof(syseventParam), "ipv4_%s_dhcp_server", interface);
         snprintf(buf, sizeof(buf), "%s", newLease->dhcpServerId);
         ifl_set_event(syseventParam, buf);
     }
 
-    if(current->leaseTime != newLease->leaseTime)
+    if(current == NULL || current->leaseTime != newLease->leaseTime)
     {
         snprintf(syseventParam, sizeof(syseventParam), "ipv4_%s_lease_time", interface);
         snprintf(buf, sizeof(buf), "%d", newLease->leaseTime);
         ifl_set_event(syseventParam, buf);
     }
 
-    if(strcmp(current->dhcpState, newLease->dhcpState) != 0)
+    if(current == NULL || strcmp(current->dhcpState, newLease->dhcpState) != 0)
     {
         snprintf(syseventParam, sizeof(syseventParam), "ipv4_%s_dhcp_state", interface);
         snprintf(buf, sizeof(buf), "%s", newLease->dhcpState);
