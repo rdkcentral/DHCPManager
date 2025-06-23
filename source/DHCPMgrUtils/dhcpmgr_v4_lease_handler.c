@@ -327,7 +327,6 @@ void DhcpMgr_ProcessV4Lease(PCOSA_DML_DHCPC_FULL pDhcpc)
         //setting the sysevents for interface specific
         set_inf_sysevents(current, newLease, pDhcpc->Cfg.Interface);
 
-        //TODO : check any sysvent required for lease update
         DHCPMGR_LOG_INFO("%s %d: New lease  : %s \n",__FUNCTION__, __LINE__, newLease->isExpired?"Expired" : "Valid");
 
         // Free the current lease
