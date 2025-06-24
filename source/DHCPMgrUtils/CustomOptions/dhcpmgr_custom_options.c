@@ -24,7 +24,9 @@
 #include "ipc_msg.h"
 
 static int DhcpMgr_Option17Set_Common(const char *ifName, const char *OptionValue,uint32_t *ipv6_TimeOffset);
+#ifdef EROUTER_DHCP_OPTION_MTA
 static int set_mta_config(const char *OptionValue, char *version);
+#endif
 
 // Weak function implementations
 __attribute__((weak)) int Get_DhcpV4_CustomOption60(const char *ifName, char *OptionValue,size_t OptionValueSize) 
