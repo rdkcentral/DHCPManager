@@ -347,9 +347,11 @@ COSA_Init
     pPlugInfo->RegisterFunction(pPlugInfo->hContext, "ReceivedOption_GetParamUlongValue", ReceivedOption_GetParamUlongValue);
     pPlugInfo->RegisterFunction(pPlugInfo->hContext, "ReceivedOption_GetParamStringValue", ReceivedOption_GetParamStringValue);
 
+#if defined(FEATURE_MAPT) || defined(FEATURE_SUPPORT_MAPT_NAT46)
     pPlugInfo->RegisterFunction(pPlugInfo->hContext, "dhcp6c_mapt_mape_GetParamBoolValue", dhcp6c_mapt_mape_GetParamBoolValue);
     pPlugInfo->RegisterFunction(pPlugInfo->hContext, "dhcp6c_mapt_mape_GetParamUlongValue", dhcp6c_mapt_mape_GetParamUlongValue);
     pPlugInfo->RegisterFunction(pPlugInfo->hContext, "dhcp6c_mapt_mape_GetParamStringValue", dhcp6c_mapt_mape_GetParamStringValue);
+#endif
 
 #ifdef DHCPV6_SERVER_SUPPORT
     pPlugInfo->RegisterFunction(pPlugInfo->hContext, "Server3_GetParamBoolValue", Server3_GetParamBoolValue);
