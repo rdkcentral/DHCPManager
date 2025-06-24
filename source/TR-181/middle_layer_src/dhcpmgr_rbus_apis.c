@@ -28,8 +28,7 @@
 #include "dhcpv6_interface.h"
 #if defined(FEATURE_MAPT) || defined(FEATURE_SUPPORT_MAPT_NAT46)
 #include "dhcpmgr_map_apis.h"
-#if defined(FEATURE_MAPT) || defined(FEATURE_SUPPORT_MAPT_NAT46)
-
+#endif
 
 #define  ARRAY_SZ(x) (sizeof(x) / sizeof((x)[0]))
 #define  MAC_ADDR_SIZE 18
