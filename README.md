@@ -9,7 +9,7 @@ DHCPManager is not a standalone binary. It must be compiled with RDKB (Reference
 •	Manages both client and server configurations
 •	Designed for embedded systems and network appliances
 •	Compatible with RDKB-based platforms
-•	Publishes DHCP lease events to WANMANAGER
+•	Publishes DHCP lease events to Subscribers
 •	Supports LAN-side DHCP server for IPv4 and IPv6
 
 🛠️ Build Instructions
@@ -19,9 +19,9 @@ To build DHCPManager as part of the RDKB build system:
 
 1.	Ensure you have the RDKB build environment set up.
 2.	Clone the DHCPManager repository into the appropriate RDKB source directory.
-3.	Include DHCPManager in your RDKB build configuration.
+3.	Include DHCPManager Distro (dhcp_manager) in your RDKB build configuration.
 4.	Run the RDKB build process to compile DHCPManager along with other components.
-5.	Refer to the RDKB documentation for detailed build and integration steps.
+5.	Refer to the RDKB documentation for detailed build and integration steps. (From RC2.11.0a, The DHCPMANAGER APIs will be supported in meta-rdk-wan)
 
 ⚙️ Functional Description
 DHCPManager acts as a controller and orchestrator for DHCP utilities and services:
@@ -30,7 +30,7 @@ DHCPManager acts as a controller and orchestrator for DHCP utilities and service
 •	It triggers these utilities based on system events and network interface states.
 •	It monitors and maintains lease information, including IP addresses, lease durations, and renewal status.
 •	On events such as renewal, lease failure, or expiration, it publishes updates to WANMANAGER, ensuring the system remains aware of network status.
-•	On the LAN side, DHCPManager starts and manages DHCPv4 and DHCPv6 servers to provide IP addresses and configuration to LAN clients connected to the RDKB gateway.
+•	In future versions, on the LAN side, DHCPManager starts and manages DHCPv4 and DHCPv6 servers to provide IP addresses and configuration to LAN clients connected to the RDKB gateway.
 •	This design ensures robust and dynamic DHCP handling across both WAN and LAN interfaces.
 
 🤝 Contribution Guidelines
