@@ -26,7 +26,9 @@
 #include "util.h"
 #include "dhcpv4_interface.h"
 #include "dhcpv6_interface.h"
+#if defined(FEATURE_MAPT) || defined(FEATURE_SUPPORT_MAPT_NAT46) || defined(FEATURE_MAPE)
 #include "dhcpmgr_map_apis.h"
+#endif
 
 #define  ARRAY_SZ(x) (sizeof(x) / sizeof((x)[0]))
 #define  MAC_ADDR_SIZE 18
@@ -261,12 +263,14 @@ static void DhcpMgr_createDhcpv6LeaseInfoMsg(DHCPv6_PLUGIN_MSG *src, DHCP_MGR_IP
     }
     else if (src->mape.Assigned == TRUE)
     {
+#ifdef FEATURE_MAPE
         unsigned char  mapeContainer[BUFLEN_256]; /* MAP-E option 94 in hex format*/
         memset(mapeContainer, 0, sizeof(mapeContainer));
         memcpy(mapeContainer, src->mape.Container, sizeof(src->mape.Container));
         DhcpMgr_MapParseOptResponse(dest->sitePrefix, mapeContainer, &dest->map);
         dest->mapeAssigned = TRUE;
         dest->map.mapType = MAP_TYPE_MAPE;
+#endif
     }
 }
 
